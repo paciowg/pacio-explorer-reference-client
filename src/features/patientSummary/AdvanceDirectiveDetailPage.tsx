@@ -420,6 +420,14 @@ function createBinaryViewer(label: string, binary: Binary): AttachmentViewer | n
   }
 }
 
+function isBinary(resource: Resource | undefined): resource is Binary {
+  return resource?.resourceType === 'Binary'
+}
+
+function isDocumentReference(resource: Resource | undefined): resource is DocumentReference {
+  return resource?.resourceType === 'DocumentReference'
+}
+
 function getBundlePdfViewers(bundle: Bundle, composition: Composition) {
   const viewers: AttachmentViewer[] = []
   const seenLabels = new Set<string>()
@@ -428,7 +436,7 @@ function getBundlePdfViewers(bundle: Bundle, composition: Composition) {
     for (const entry of section.entry ?? []) {
       const resource = resolveBundleResource(bundle, entry.reference)
 
-      if (resource?.resourceType === 'Binary') {
+      if (isBinary(resource)) {
         const viewer = createBinaryViewer(section.title || 'View PDF', resource)
         if (viewer && !seenLabels.has(viewer.label)) {
           viewers.push(viewer)
@@ -436,7 +444,7 @@ function getBundlePdfViewers(bundle: Bundle, composition: Composition) {
         }
       }
 
-      if (resource?.resourceType === 'DocumentReference') {
+      if (isDocumentReference(resource)) {
         for (const contentItem of resource.content ?? []) {
           const viewer = createAttachmentViewer(
             contentItem.attachment?.title || section.title || 'View PDF',
@@ -453,7 +461,7 @@ function getBundlePdfViewers(bundle: Bundle, composition: Composition) {
         const containedResources = (resource as Resource & { contained?: Resource[] }).contained ?? []
 
         for (const contained of containedResources) {
-          if (contained.resourceType === 'Binary') {
+          if (isBinary(contained)) {
             const viewer = createBinaryViewer(section.title || 'View PDF', contained)
             if (viewer && !seenLabels.has(viewer.label)) {
               viewers.push(viewer)
@@ -519,6 +527,8 @@ export function AdvanceDirectiveDetailPage({
       return
     }
 
+    const baseUrl = activeServer.baseUrl
+
     let isMounted = true
     setIsLoading(true)
     setErrorMessage('')
@@ -528,8 +538,8 @@ export function AdvanceDirectiveDetailPage({
     async function load() {
       try {
         const [patient, loadedDocumentReference] = await Promise.all([
-          fetchPatient(activeServer.baseUrl, patientId),
-          fetchDocumentReference(activeServer.baseUrl, documentReferenceId),
+          fetchPatient(baseUrl, patientId),
+          fetchDocumentReference(baseUrl, documentReferenceId),
         ])
 
         if (!isMounted) return
@@ -541,7 +551,7 @@ export function AdvanceDirectiveDetailPage({
 
         const bundleReference = getReferencedBundleUrl(
           loadedDocumentReference,
-          activeServer.baseUrl,
+          baseUrl,
         )
 
         if (!bundleReference) {
@@ -549,7 +559,7 @@ export function AdvanceDirectiveDetailPage({
         }
 
         try {
-          const bundle = await fetchBundleByReference(activeServer.baseUrl, bundleReference)
+          const bundle = await fetchBundleByReference(baseUrl, bundleReference)
           if (!isMounted) return
 
           const derivedData = buildBundleDerivedData(bundle)
@@ -579,8 +589,9 @@ export function AdvanceDirectiveDetailPage({
             : 'Unable to load the advance directive.',
         )
       } finally {
-        if (!isMounted) return
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 

@@ -12,6 +12,7 @@ import type {
   Observation,
   Patient,
   Quantity,
+  Resource,
 } from 'fhir/r4'
 import {
   formatAddress,
@@ -258,7 +259,7 @@ function getRelationship(relationships: CodeableConcept[] | undefined) {
   )
 }
 
-function getBundleResources<T extends { resourceType?: string }>(
+function getBundleResources<T extends Resource>(
   bundle: Bundle | null,
   resourceType: string,
 ): T[] {

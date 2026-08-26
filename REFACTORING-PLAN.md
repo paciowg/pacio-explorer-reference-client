@@ -2,7 +2,7 @@
 
 ## Summary
 
-Refactor the application into predictable layers while preserving routes, UI behavior, FHIR requests, generated document content, persistence, and error handling. Provide a short, documented path from the PACIO ADI workflow through explicit IG resource builders and shared FHIR document mechanics. Keep generic FHIR utilities independent of application features, reduce oversized React modules, restore a passing build, and add regression coverage before moving behavior.
+Refactor the application into predictable layers while preserving routes, UI behavior, FHIR requests, generated document content, persistence, and error handling. Provide a short, documented path from the PACIO ADI workflow through explicit IG resource builders and shared FHIR document mechanics. Keep generic FHIR utilities independent of application features, reduce oversized React modules, retain the passing build, and add regression coverage before moving behavior.
 
 ## Review Findings
 
@@ -78,15 +78,7 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 
 ## Step-by-Step Implementation
 
-### 1. Restore and record a usable baseline
-
-- Add `@types/fhir` and `vitest` as development dependencies and update `package-lock.json`.
-- Add `test` as `vitest run` and optionally `test:watch` as `vitest`.
-- Confirm that installing the FHIR declarations removes the cascading type errors; fix only genuine remaining type errors without changing runtime behavior.
-- Remove returns from `finally` blocks by guarding state updates inside the block, preserving unmounted-component behavior.
-- Remove the unused `AuthenticatorOption`.
-
-### 2. Add characterization coverage before moving behavior
+### 1. Add characterization coverage before moving behavior
 
 - Test `formatAdiVersionNumber` with UTC boundaries and invalid input.
 - Test the public PMO Bundle and server `DocumentReference` builders using fixed inputs and deterministic UUID mocks.
@@ -94,14 +86,14 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 - Mock `fetch` to characterize FHIR URLs, headers, pagination merging, error parsing, `$everything` fallback-related requests, bundle closure, and the two POST operations used during PMO creation.
 - Add model tests for patient summaries and advance-directive extraction, including missing fields and unavailable bundles.
 
-### 3. Correct generic dependency direction
+### 2. Correct generic dependency direction
 
 - Move `normalizeBaseUrl` into `src/lib/fhir/url.ts`.
 - Import it from both FHIR transport and server storage so `lib` no longer depends on a feature.
 - Type `createDocumentReference` to accept and return `DocumentReference` instead of generic `Resource`.
 - Keep `client.ts` as the single, straightforward list of generic FHIR operations; organize it into transport, pagination, reads, searches, and writes with section comments rather than adding extra client abstractions.
 
-### 4. Simplify generic bundle handling
+### 3. Simplify generic bundle handling
 
 - Add `createDocumentBundle` as the small shared constructor described above. Require callers to supply the Composition and Bundle entries explicitly rather than introducing a schema, fluent builder, or IG abstraction framework.
 - Add a reusable bundle index that resolves entries by `fullUrl`, `ResourceType/id`, absolute same-server references, and contained IDs.
@@ -109,7 +101,7 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 - In `closeBundleReferences`, fetch each wave of unique unresolved references with `Promise.all`, then append results in the original reference order so Bundle output remains stable.
 - Preserve recursive closure, error messages, deduplication, and URN rewriting behavior.
 
-### 5. Create focused PACIO ADI builders
+### 4. Create focused PACIO ADI builders
 
 - Move PMO Composition, source-form Binary, narratives, terminology, and Bundle construction into `src/igs/pacioAdi/pmoDocument.ts`; have it call the generic `createDocumentBundle` constructor.
 - Move companion ADI `DocumentReference` construction into `src/igs/pacioAdi/documentReference.ts`.
@@ -120,14 +112,14 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 - Preserve the generated FHIR resource shape exactly. Do not correct the separately identified conformance drift in this refactor.
 - Do not create a generalized IG builder, inheritance hierarchy, configuration-driven schema, or FHIR-building DSL. Shared helpers should cover mechanical FHIR operations only.
 
-### 6. Extract pure ADI reading logic
+### 5. Extract pure ADI reading logic
 
 - Create `src/igs/pacioAdi/adiDocument.ts` for extension parsing, Composition selection, facilitator/data-enterer interpretation, document-detail derivation, referenced-Bundle detection, and attachment discovery.
 - Return plain attachment descriptors containing label, MIME type, embedded data or URL; do not call browser APIs from the IG module.
 - Use the generic bundle index for reference resolution.
 - Preserve current precedence between Composition and `DocumentReference` values and preserve current warning/fallback behavior.
 
-### 7. Organize the advance-directive feature
+### 6. Organize the advance-directive feature
 
 - Move `PatientPmoCreatePage.tsx` and `AdvanceDirectiveDetailPage.tsx` into `src/features/advanceDirectives/`; update routing imports without changing hashes.
 - Extract PMO option derivation, jurisdiction calculation, date conversion, identifier creation, and file-to-base64 conversion into `pmoFormModel.ts`.
@@ -141,7 +133,7 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 - Keep page modules focused on React state, effects, event handling, and rendering.
 - Move Blob URL creation and `window.open` behavior into a small browser attachment utility.
 
-### 8. Split patient-summary transformations by concern
+### 7. Split patient-summary transformations by concern
 
 - Retain `patientSummaryModel.ts` as the public composition point.
 - Move demographic/contact extraction into `patientDemographics.ts`.
@@ -149,27 +141,27 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 - Preserve all current inclusion rules, ordering, truncation, placeholders, and ten-item limit.
 - Apply the ten-item limit in the model only; presentation components should render the items they receive.
 
-### 9. Remove presentation-to-feature coupling
+### 8. Remove presentation-to-feature coupling
 
 - Define the clinical list item interfaces in a small component-owned type module or directly in the reusable component props.
 - Have patient-summary models depend on those neutral presentation types, rather than reusable components importing from a feature model.
 - Keep `AppLayout`'s server context use because it is application-shell behavior rather than a generic visual primitive.
 
-### 10. Remove confirmed dead code and normalize naming
+### 9. Remove confirmed dead code and normalize naming
 
 - Remove `fetchPractitioners` if the complete test suite and source search confirm no caller.
 - Remove the PMO page's unused success-message state and rendering path.
 - Use one naming convention for ADI/PMO types and functions: `AdiPmo...` for TypeScript symbols and `pacioAdi` for the IG directory.
 - Avoid unrelated component abstractions or formatting-only rewrites.
 
-### 11. Clean the stylesheet without changing visuals
+### 10. Clean the stylesheet without changing visuals
 
 - Keep a single stylesheet for this small application.
 - Add clear sections for shell, server pages, patient pages, advance-directive pages, shared forms/buttons, banners, and responsive rules.
 - Consolidate duplicate selectors only when the final cascade and computed values remain identical.
 - Remove selectors only after confirming they have no static or dynamically constructed use.
 
-### 12. Bring documentation in line with the application
+### 11. Bring documentation in line with the application
 
 - Update README to describe both read and PMO creation workflows, all FHIR endpoints used, the current root-level run commands, and the new directory ownership.
 - Document the reference path from the feature workflow through `pmoDocument.ts`, `documentReference.ts`, shared document-Bundle helpers, and transport. Explain what is reusable FHIR behavior and what is PACIO ADI-specific.

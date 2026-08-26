@@ -9,6 +9,7 @@ import type {
   PractitionerRole,
   Reference,
   RelatedPerson,
+  Resource,
 } from 'fhir/r4'
 import {
   fetchOrganizations,
@@ -50,12 +51,6 @@ type OrganizationOption = {
   value: string
   label: string
   organization: Organization
-}
-
-type AuthenticatorOption = {
-  value: string
-  label: string
-  reference: Reference
 }
 
 type FacilitatorOption = {
@@ -107,11 +102,15 @@ function getPractitionerMap(bundle: Bundle) {
 
   for (const entry of bundle.entry ?? []) {
     const resource = entry.resource
-    if (resource?.resourceType !== 'Practitioner' || !resource.id) continue
+    if (!isPractitioner(resource) || !resource.id) continue
     map.set(`Practitioner/${resource.id}`, resource)
   }
 
   return map
+}
+
+function isPractitioner(resource: Resource | undefined): resource is Practitioner {
+  return resource?.resourceType === 'Practitioner'
 }
 
 function getPractitionerRoleOptions(
@@ -357,6 +356,8 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
       return
     }
 
+    const baseUrl = activeServer.baseUrl
+
     let isMounted = true
     setIsLoading(true)
     setErrorMessage('')
@@ -369,10 +370,10 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
           organizationBundle,
           relatedPersonBundle,
         ] = await Promise.all([
-          fetchPatient(activeServer.baseUrl, patientId),
-          fetchPractitionerRoles(activeServer.baseUrl, 200),
-          fetchOrganizations(activeServer.baseUrl, 200),
-          fetchRelatedPersons(activeServer.baseUrl, patientId, 200),
+          fetchPatient(baseUrl, patientId),
+          fetchPractitionerRoles(baseUrl, 200),
+          fetchOrganizations(baseUrl, 200),
+          fetchRelatedPersons(baseUrl, patientId, 200),
         ])
 
         if (!isMounted) return
@@ -400,8 +401,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
           error instanceof Error ? error.message : 'Unable to load PMO creation data.',
         )
       } finally {
-        if (!isMounted) return
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 

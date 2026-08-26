@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { BundleEntry } from 'fhir/r4'
+import type { BundleEntry, Patient, Resource } from 'fhir/r4'
 import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
 import { SelectableClinicalSummarySection } from '../../components/SelectableClinicalSummarySection'
 import { fetchPatient, fetchPatientEverything } from '../../lib/fhir/client'
@@ -35,6 +35,10 @@ function logBundleResourceSummary(patientId: string, entries: BundleEntry[] | un
     })
 }
 
+function isPatient(resource: Resource | undefined, patientId: string): resource is Patient {
+  return resource?.resourceType === 'Patient' && resource.id === patientId
+}
+
 export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
   const { activeServer } = useSavedServers()
   const [summary, setSummary] = useState<PatientSummaryModel | null>(null)
@@ -48,6 +52,8 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
       return
     }
 
+    const baseUrl = activeServer.baseUrl
+
     let isMounted = true
     setIsLoading(true)
     setErrorMessage('')
@@ -55,7 +61,7 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
 
     async function load() {
       try {
-        const bundle = await fetchPatientEverything(activeServer.baseUrl, patientId, {
+        const bundle = await fetchPatientEverything(baseUrl, patientId, {
           maxResults: 500,
           pageCount: 250,
         })
@@ -63,10 +69,8 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
         const patient =
           bundle.entry
             ?.map((entry) => entry.resource)
-            .find(
-              (resource) =>
-                resource?.resourceType === 'Patient' && resource.id === patientId,
-            ) || (await fetchPatient(activeServer.baseUrl, patientId))
+            .find((resource): resource is Patient => isPatient(resource, patientId)) ||
+          (await fetchPatient(baseUrl, patientId))
 
         if (!isMounted) return
 
@@ -86,7 +90,7 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
         )
 
         try {
-          const patient = await fetchPatient(activeServer.baseUrl, patientId)
+          const patient = await fetchPatient(baseUrl, patientId)
           if (!isMounted) return
 
           console.log(`Retrieving data for patient ${patientId}`)
@@ -114,8 +118,9 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
           console.error(`Failed to load summary for patient ${patientId}.`, error)
         }
       } finally {
-        if (!isMounted) return
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
