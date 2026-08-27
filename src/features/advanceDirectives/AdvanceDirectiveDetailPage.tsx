@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type {
-  Attachment,
   Binary,
   Bundle,
-  BundleEntry,
   CodeableConcept,
   Composition,
   DocumentReference,
@@ -17,6 +15,7 @@ import {
   fetchDocumentReference,
   fetchPatient,
 } from '../../lib/fhir/client'
+import { createBundleIndex } from '../../lib/fhir/bundleIndex'
 import {
   formatDate,
   getCodeableConceptText,
@@ -24,8 +23,10 @@ import {
   placeholderValue,
 } from '../../lib/fhir/formatters'
 import { navigateTo } from '../../lib/routing/routes'
-import { normalizeBaseUrl } from '../servers/serverStorage'
+import { normalizeBaseUrl } from '../../lib/fhir/url'
+import { readAdiDocument } from '../../igs/pacioAdi/adiDocument'
 import { useSavedServers } from '../servers/useSavedServers'
+import { createAttachmentViewer, createBinaryViewer, type AttachmentViewer } from './browserAttachments'
 
 type AdvanceDirectiveDetailPageProps = {
   patientId: string
@@ -35,11 +36,6 @@ type AdvanceDirectiveDetailPageProps = {
 type DetailRow = {
   label: string
   value: string
-}
-
-type AttachmentViewer = {
-  label: string
-  open: () => void
 }
 
 type BundleDerivedData = {
@@ -204,6 +200,7 @@ function buildDocumentDetailsRows(
   const documentReferenceStatus = documentReference.docStatus || documentReference.status
   const compositionVersion = getAdiVersionFromExtensions(composition?.extension)
   const documentReferenceVersion = getAdiVersionFromExtensions(documentReference.extension)
+  const adiDocument = composition ? readAdiDocument(composition, documentReference) : null
 
   const compositionCategories = formatCodeableConcepts(composition?.category)
   const compositionSubject = formatReference(composition?.subject)
@@ -217,7 +214,7 @@ function buildDocumentDetailsRows(
     },
     {
       label: 'Version',
-      value: compositionVersion || documentReferenceVersion || placeholderValue(),
+      value: adiDocument?.versionNumber || compositionVersion || documentReferenceVersion || placeholderValue(),
     },
     {
       label: 'Title',
@@ -253,11 +250,11 @@ function buildDocumentDetailsRows(
     },
     {
       label: 'Facilitator',
-      value: getFacilitators(composition),
+      value: adiDocument ? formatReferences(adiDocument.facilitators) : getFacilitators(composition),
     },
     {
       label: 'Data enterer',
-      value: getDataEntererFromExtensions(composition?.extension),
+      value: adiDocument ? formatReference(adiDocument.dataEnterer) : getDataEntererFromExtensions(composition?.extension),
     },
     {
       label: 'Attester',
@@ -305,60 +302,6 @@ function buildDocumentDetailsRows(
   ]
 }
 
-function buildBundleEntryMaps(bundle: Bundle) {
-  const entryByFullUrl = new Map<string, BundleEntry>()
-  const entryByReference = new Map<string, BundleEntry>()
-  const containedById = new Map<string, Resource>()
-
-  for (const entry of bundle.entry ?? []) {
-    if (entry.fullUrl) {
-      entryByFullUrl.set(entry.fullUrl, entry)
-    }
-
-    const resource = entry.resource
-    if (resource?.resourceType && resource.id) {
-      entryByReference.set(`${resource.resourceType}/${resource.id}`, entry)
-    }
-
-    const containedResources = (resource as Resource & { contained?: Resource[] })?.contained ?? []
-    for (const contained of containedResources) {
-      if (contained.id) {
-        containedById.set(`#${contained.id}`, contained)
-      }
-    }
-  }
-
-  return { entryByFullUrl, entryByReference, containedById }
-}
-
-function resolveBundleResource(
-  bundle: Bundle,
-  reference: string | undefined,
-): Resource | undefined {
-  if (!reference) return undefined
-
-  const { entryByFullUrl, entryByReference, containedById } = buildBundleEntryMaps(bundle)
-
-  if (reference.startsWith('#')) {
-    return containedById.get(reference)
-  }
-
-  if (entryByFullUrl.has(reference)) {
-    return entryByFullUrl.get(reference)?.resource
-  }
-
-  if (entryByReference.has(reference)) {
-    return entryByReference.get(reference)?.resource
-  }
-
-  const normalizedReference = reference.replace(/^https?:\/\/[^/]+\//, '')
-  if (entryByReference.has(normalizedReference)) {
-    return entryByReference.get(normalizedReference)?.resource
-  }
-
-  return undefined
-}
-
 function getDocumentComposition(bundle: Bundle) {
   return (
     bundle.entry
@@ -366,58 +309,6 @@ function getDocumentComposition(bundle: Bundle) {
       .find((resource): resource is Composition => resource?.resourceType === 'Composition') ||
     null
   )
-}
-
-function createBlobUrlViewer(label: string, mimeType: string, byteCharacters: string) {
-  return {
-    label,
-    open: () => {
-      const bytes = Uint8Array.from(byteCharacters, (character) => character.charCodeAt(0))
-      const blob = new Blob([bytes], { type: mimeType })
-      const blobUrl = window.URL.createObjectURL(blob)
-      window.open(blobUrl, '_blank', 'noopener,noreferrer')
-      window.setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl)
-      }, 60_000)
-    },
-  } satisfies AttachmentViewer
-}
-
-function createAttachmentViewer(
-  label: string,
-  attachment: Attachment,
-): AttachmentViewer | null {
-  const contentType = attachment.contentType || ''
-  if (contentType !== 'application/pdf') return null
-
-  if (attachment.data) {
-    try {
-      return createBlobUrlViewer(label, contentType, atob(attachment.data))
-    } catch {
-      return null
-    }
-  }
-
-  if (attachment.url) {
-    return {
-      label,
-      open: () => {
-        window.open(attachment.url!, '_blank', 'noopener,noreferrer')
-      },
-    }
-  }
-
-  return null
-}
-
-function createBinaryViewer(label: string, binary: Binary): AttachmentViewer | null {
-  if (binary.contentType !== 'application/pdf' || !binary.data) return null
-
-  try {
-    return createBlobUrlViewer(label, binary.contentType, atob(binary.data))
-  } catch {
-    return null
-  }
 }
 
 function isBinary(resource: Resource | undefined): resource is Binary {
@@ -428,13 +319,14 @@ function isDocumentReference(resource: Resource | undefined): resource is Docume
   return resource?.resourceType === 'DocumentReference'
 }
 
-function getBundlePdfViewers(bundle: Bundle, composition: Composition) {
+function getBundlePdfViewers(bundle: Bundle, composition: Composition, baseUrl: string) {
   const viewers: AttachmentViewer[] = []
   const seenLabels = new Set<string>()
+  const bundleIndex = createBundleIndex(bundle, baseUrl)
 
   for (const section of composition.section ?? []) {
     for (const entry of section.entry ?? []) {
-      const resource = resolveBundleResource(bundle, entry.reference)
+      const resource = bundleIndex.resolve(entry.reference, composition)
 
       if (isBinary(resource)) {
         const viewer = createBinaryViewer(section.title || 'View PDF', resource)
@@ -499,13 +391,13 @@ function getReferencedBundleUrl(documentReference: DocumentReference, baseUrl: s
   return ''
 }
 
-function buildBundleDerivedData(bundle: Bundle): BundleDerivedData | null {
+function buildBundleDerivedData(bundle: Bundle, baseUrl: string): BundleDerivedData | null {
   const composition = getDocumentComposition(bundle)
   if (!composition) return null
 
   return {
     composition,
-    pdfViewers: getBundlePdfViewers(bundle, composition),
+    pdfViewers: getBundlePdfViewers(bundle, composition, baseUrl),
   }
 }
 
@@ -562,7 +454,7 @@ export function AdvanceDirectiveDetailPage({
           const bundle = await fetchBundleByReference(baseUrl, bundleReference)
           if (!isMounted) return
 
-          const derivedData = buildBundleDerivedData(bundle)
+          const derivedData = buildBundleDerivedData(bundle, baseUrl)
 
           if (derivedData) {
             setBundleDerivedData(derivedData)

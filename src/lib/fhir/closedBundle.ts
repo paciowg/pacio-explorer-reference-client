@@ -40,8 +40,14 @@ export async function closeBundleReferences(baseUrl: string, bundle: Bundle): Pr
       break
     }
 
-    for (const reference of unresolvedReferences) {
-      const resource = await fetchResourceByReference(baseUrl, reference)
+    const resolvedResources = await Promise.all(
+      unresolvedReferences.map(async (reference) => ({
+        reference,
+        resource: await fetchResourceByReference(baseUrl, reference),
+      })),
+    )
+
+    for (const { reference, resource } of resolvedResources) {
 
       if (!resource.id || !resource.resourceType) {
         throw new Error(`Unable to resolve required bundle reference: ${reference}`)

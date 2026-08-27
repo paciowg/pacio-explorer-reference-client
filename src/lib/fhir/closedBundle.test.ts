@@ -29,4 +29,17 @@ describe('closeBundleReferences', () => {
       undefined, 'Practitioner/practitioner-1', 'Patient/patient-1', 'Organization/org-1',
     ])
   })
+
+  it('preserves a failed referenced-resource error', async () => {
+    fetchResourceByReference.mockRejectedValueOnce(new Error('Referenced resource was unavailable.'))
+
+    await expect(closeBundleReferences('https://example.test/fhir', {
+      resourceType: 'Bundle', type: 'document', entry: [{
+        resource: {
+          resourceType: 'Composition', status: 'final', type: { text: 'PMO' },
+          date: '2025-01-01T00:00:00Z', title: 'PMO', author: [{ reference: 'Practitioner/practitioner-1' }],
+        },
+      }],
+    } as unknown as import('fhir/r4').Bundle)).rejects.toThrow('Referenced resource was unavailable.')
+  })
 })
