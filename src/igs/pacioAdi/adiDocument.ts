@@ -1,3 +1,4 @@
+/** Reads PACIO ADI-specific metadata without imposing ADI assumptions on generic document display. */
 import type { Composition, DocumentReference, Reference } from 'fhir/r4'
 
 export type AdiDocumentModel = {
@@ -19,6 +20,7 @@ export function readAdiDocument(
     composition.meta?.profile?.some((profile) => profile.includes('pacio-adi'))
   if (!isAdi) return null
 
+  // Read both locations while generated and current-IG documents can differ on extension placement.
   const versionNumber = composition.extension?.find((extension) => extension.url === ADI_DOC_VERSION_EXTENSION_URL)?.valueString ||
     documentReference.extension?.find((extension) => extension.url === ADI_DOC_VERSION_EXTENSION_URL)?.valueString
   const dataEnterer = composition.extension?.find((extension) => extension.url === ADI_DATA_ENTERER_EXTENSION_URL)?.valueReference

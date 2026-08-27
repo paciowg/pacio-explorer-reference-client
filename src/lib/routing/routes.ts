@@ -1,3 +1,4 @@
+/** Defines, parses, and generates the application's dependency-free hash routes. */
 export type AppRoute =
   | { name: 'home' }
   | { name: 'patients' }

@@ -1,3 +1,4 @@
+/** Combines patient demographics and clinical selections into the page's presentation model. */
 import type { Bundle, Patient } from 'fhir/r4'
 import type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
 import { buildClinicalSummary } from './clinicalSummary'

@@ -1,3 +1,4 @@
+/** Converts FHIR people and organizations into PMO form options and submission values. */
 import type {
   Bundle,
   CodeableConcept,
@@ -43,6 +44,7 @@ export function toIsoDateTimeLocalValue(date: Date) {
 }
 
 export function toUtcMidnightIso(dateValue: string) {
+  // HTML date inputs have no time zone; this workflow gives them a stable UTC instant.
   return `${dateValue}T00:00:00.000Z`
 }
 
@@ -53,6 +55,7 @@ export function addOneYearToDateValue(dateValue: string) {
 }
 
 export function getPatientJurisdiction(patient: Patient): CodeableConcept | undefined {
+  // ADI jurisdiction uses an ISO 3166-2 subdivision only when both address parts are available.
   const address = patient.address?.find((item) => item.country?.trim() && item.state?.trim())
   if (!address) return undefined
   const country = address.country?.trim().toUpperCase()
@@ -196,6 +199,7 @@ export function getDataEntererOptions(
   relatedPersons: RelatedPerson[],
 ): PmoDataEntererOption[] {
   const options: PmoDataEntererOption[] = []
+  // Prefer role references and add a bare Practitioner only when no fetched role represents it.
   const practitionerReferencesCoveredByRole = new Set<string>()
   if (patient?.id) {
     options.push({

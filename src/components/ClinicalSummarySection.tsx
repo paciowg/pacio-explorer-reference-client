@@ -1,3 +1,4 @@
+/** Renders a read-only clinical-summary list with consistent empty and unavailable states. */
 import type { ReactNode } from 'react'
 import type { ClinicalListItem } from './clinicalTypes'
 

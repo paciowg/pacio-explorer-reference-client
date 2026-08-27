@@ -1,3 +1,4 @@
+/** Verifies PMO creation orchestration and the resources posted to the FHIR server. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Bundle, Composition, DocumentReference } from 'fhir/r4'
 import {

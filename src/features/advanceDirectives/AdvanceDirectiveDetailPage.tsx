@@ -1,3 +1,4 @@
+/** Loads and displays an advance directive, enriching generic metadata from its document Bundle when available. */
 import { useEffect, useMemo, useState } from 'react'
 import type { DocumentReference } from 'fhir/r4'
 import {
@@ -65,6 +66,7 @@ export function AdvanceDirectiveDetailPage({
         )
         setDocumentReference(loadedDocumentReference)
 
+        // Bundle enrichment is optional: generic DocumentReference details remain useful on failure.
         const bundleReference = getReferencedBundleUrl(loadedDocumentReference, baseUrl)
         if (!bundleReference) return
 

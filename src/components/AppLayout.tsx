@@ -1,3 +1,4 @@
+/** Provides the shared application shell around route-specific page content. */
 import type { ReactNode } from 'react'
 import { getRouteHref, navigateTo } from '../lib/routing/routes'
 import { useSavedServers } from '../features/servers/useSavedServers'

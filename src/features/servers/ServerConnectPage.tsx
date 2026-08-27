@@ -1,3 +1,4 @@
+/** Supports validating, saving, selecting, and removing browser-local FHIR server connections. */
 import { useMemo, useState } from 'react'
 import { validateFhirServer } from '../../lib/fhir/client'
 import { navigateTo } from '../../lib/routing/routes'

@@ -1,3 +1,4 @@
+/** Constructs generic FHIR document Bundles without depending on PACIO profiles or terminology. */
 import type { Bundle, BundleEntry, Composition } from 'fhir/r4'
 
 export type CreateDocumentBundleInput = {
@@ -6,6 +7,10 @@ export type CreateDocumentBundleInput = {
   supportingEntries: BundleEntry[]
 }
 
+/**
+ * Creates the common FHIR document envelope. FHIR requires the Composition to be
+ * the first entry in a document Bundle: https://hl7.org/fhir/R4/documents.html
+ */
 export function createDocumentBundle(input: CreateDocumentBundleInput): Bundle {
   return {
     resourceType: 'Bundle',

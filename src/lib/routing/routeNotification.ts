@@ -1,3 +1,4 @@
+/** Carries a single transient notification across hash-route navigation. */
 const ROUTE_NOTIFICATION_KEY = 'pacio.browserClient.routeNotification'
 
 export type RouteNotificationTone = 'success' | 'warning' | 'error' | 'info'

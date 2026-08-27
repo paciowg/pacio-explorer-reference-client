@@ -1,3 +1,4 @@
+/** Recursively fetches same-server resources until a FHIR Bundle contains every resolvable reference. */
 import type { Bundle, BundleEntry, Resource } from 'fhir/r4'
 import { fetchResourceByReference } from './client'
 import { getBundleResourceReferences } from './bundleReferences'
@@ -24,11 +25,16 @@ function getIncludedReferenceSet(bundle: Bundle) {
   return included
 }
 
+/**
+ * Recursively follows relative references until all referenced resources are included.
+ * The input is cloned so callers retain the original partial Bundle.
+ */
 export async function closeBundleReferences(baseUrl: string, bundle: Bundle): Promise<Bundle> {
   const nextBundle = cloneBundle(bundle)
   const includedReferences = getIncludedReferenceSet(nextBundle)
   const fetchedReferences = new Set<string>()
 
+  // Newly fetched resources can introduce more references, so one pass is not sufficient.
   while (true) {
     const references = Array.from(getBundleResourceReferences(nextBundle))
     const unresolvedReferences = references.filter(

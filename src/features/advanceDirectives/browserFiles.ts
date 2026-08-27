@@ -1,3 +1,4 @@
+/** Reads an uploaded browser File as base64 data suitable for a FHIR Binary resource. */
 export async function readFileAsBase64(file: File) {
   const buffer = await file.arrayBuffer()
   let binary = ''

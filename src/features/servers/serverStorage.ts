@@ -1,3 +1,4 @@
+/** Normalizes and persists saved and active FHIR server settings in browser local storage. */
 import { normalizeBaseUrl } from '../../lib/fhir/url'
 
 export type SavedServer = {
@@ -17,6 +18,7 @@ function isBrowser() {
 export { normalizeBaseUrl }
 
 function createServerId(baseUrl: string) {
+  // A normalized base URL is the stable identity, so saving the same endpoint updates one entry.
   return normalizeBaseUrl(baseUrl)
 }
 
@@ -29,6 +31,7 @@ function readJson<T>(key: string, fallback: T): T {
   try {
     return JSON.parse(raw) as T
   } catch {
+    // Corrupt browser state must not prevent the connection page from loading.
     return fallback
   }
 }

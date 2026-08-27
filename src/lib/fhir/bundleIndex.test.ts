@@ -1,3 +1,4 @@
+/** Verifies resolution of contained, relative, fullUrl, and same-server absolute Bundle references. */
 import { describe, expect, it } from 'vitest'
 import { createBundleIndex } from './bundleIndex'
 

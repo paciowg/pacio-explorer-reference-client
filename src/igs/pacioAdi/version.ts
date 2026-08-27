@@ -1,3 +1,4 @@
+/** Formats creation instants as the UTC timestamp-based version used by PACIO ADI documents. */
 export function formatAdiVersionNumber(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value)
 

@@ -1,3 +1,4 @@
+/** Verifies clinical-summary filtering, ordering, formatting, and list limits. */
 import { describe, expect, it } from 'vitest'
 import type { Bundle } from 'fhir/r4'
 import { buildClinicalSummary } from './clinicalSummary'

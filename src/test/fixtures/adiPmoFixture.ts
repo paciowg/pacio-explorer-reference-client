@@ -1,3 +1,4 @@
+/** Provides a fixed, representative PACIO ADI PMO Bundle and companion DocumentReference for tests. */
 import type {
   Binary,
   Bundle,

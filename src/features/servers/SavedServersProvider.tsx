@@ -1,3 +1,4 @@
+/** Owns saved-server state and exposes the active FHIR server to the React tree. */
 import type { ReactNode } from 'react'
 import { useCallback, useMemo, useState } from 'react'
 import {

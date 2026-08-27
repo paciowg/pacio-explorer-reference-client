@@ -1,3 +1,4 @@
+/** Coordinates the PMO form, supporting-resource lookup, validation, and ADI document submission. */
 import { useEffect, useMemo, useState } from 'react'
 import type {
   Patient,
@@ -90,6 +91,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
     async function load() {
       try {
+        // Load every resource class that can supply a participant or custodian reference.
         const [
           patientResult,
           practitionerRoleBundle,
@@ -232,6 +234,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
     setErrorMessage('')
 
     try {
+      // Convert browser-only form values before handing the workflow domain-ready FHIR data.
       const pdfBase64 = await readFileAsBase64(pdfFile)
       const now = new Date().toISOString()
       const signingTime = toUtcMidnight(signedDate)

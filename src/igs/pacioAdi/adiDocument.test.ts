@@ -1,3 +1,4 @@
+/** Verifies tolerant extraction of PACIO ADI extensions and facilitator references. */
 import { describe, expect, it } from 'vitest'
 import { readAdiDocument } from './adiDocument'
 

@@ -1,3 +1,4 @@
+/** Provides the application's small FHIR R4 transport layer and endpoint-specific validation. */
 import type {
   Bundle,
   BundleEntry,
@@ -100,6 +101,7 @@ function mergeBundles(bundles: Bundle[]): Bundle {
 
   for (const bundle of bundles) {
     for (const entry of bundle.entry ?? []) {
+      // Broad $everything includes can repeat the same resource on later pages.
       const resourceType = entry.resource?.resourceType || 'unknown'
       const resourceId = entry.resource?.id || entry.fullUrl || JSON.stringify(entry.resource)
       const key = `${resourceType}-${resourceId}`
@@ -137,6 +139,7 @@ async function fetchPaginatedBundle(
   let collectedEntries = bundle.entry?.length ?? 0
   let nextUrl = getNextLink(bundle)
 
+  // Stop between complete server pages; the merged result can therefore slightly exceed maxResults.
   while (nextUrl && collectedEntries < maxResults) {
     const nextBundle = await fhirGetAbsolute<Bundle>(nextUrl)
 
@@ -215,6 +218,7 @@ export async function fetchBundleByReference(baseUrl: string, reference: string)
   }
 
   if (trimmedReference.startsWith('http://') || trimmedReference.startsWith('https://')) {
+    // The browser client does not follow document links to another server or trust domain.
     if (!trimmedReference.startsWith(`${normalizedBaseUrl}/`)) {
       throw new Error(`Unsupported external Bundle reference: ${reference}`)
     }
@@ -303,6 +307,7 @@ export async function fetchPatientEverything(
   const maxResults = options?.maxResults ?? DEFAULT_PATIENT_EVERYTHING_MAX_RESULTS
   const pageCount = options?.pageCount ?? DEFAULT_PATIENT_EVERYTHING_PAGE_COUNT
 
+  // Includes provide enough neighboring resources to build summaries and follow document references.
   const searchParams = new URLSearchParams({
     _count: String(pageCount),
     _include: '*',

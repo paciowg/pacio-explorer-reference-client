@@ -1,3 +1,4 @@
+/** Verifies generic and ADI-enriched advance-directive display and PDF discovery behavior. */
 import { describe, expect, it } from 'vitest'
 import type { Binary, Bundle, Composition, DocumentReference } from 'fhir/r4'
 import {

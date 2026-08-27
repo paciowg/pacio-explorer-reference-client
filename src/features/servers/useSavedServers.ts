@@ -1,3 +1,4 @@
+/** Defines the saved-server React context and its consumer hook. */
 import { createContext, useContext } from 'react'
 import type { SavedServer } from './serverStorage'
 

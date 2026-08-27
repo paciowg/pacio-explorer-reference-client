@@ -1,3 +1,4 @@
+/** Extracts display-ready US Core demographic values from a FHIR Patient resource. */
 import type {
   CodeableConcept,
   ContactPoint,

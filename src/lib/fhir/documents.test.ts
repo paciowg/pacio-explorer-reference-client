@@ -1,3 +1,4 @@
+/** Verifies the structural invariants of generic FHIR document Bundles. */
 import { describe, expect, it } from 'vitest'
 import { createDocumentBundle } from './documents'
 

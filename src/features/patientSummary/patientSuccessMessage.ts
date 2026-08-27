@@ -1,3 +1,4 @@
+/** Persists the one-time success message shown after returning to a patient summary. */
 const PATIENT_SUCCESS_MESSAGE_KEY = 'pacio.browserClient.patientSuccessMessage'
 
 type PatientSuccessMessage = {

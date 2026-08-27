@@ -1,3 +1,4 @@
+/** Builds a minimal PACIO ADI portable medical order document Bundle from validated form data. */
 import type {
   Binary,
   Bundle,
@@ -93,6 +94,7 @@ function buildComposition(input: CreateAdiPmoBundleInput, sourceFormBinary: Bina
     language: 'en-US',
     text: buildCompositionNarrative({ patientDisplayName, authorDisplayName, attesterDisplay: input.attester.display, signedDate: input.signedDate, status: input.status, facilitatorDisplay: input.facilitator?.display, dataEntererDisplay: input.dataEnterer?.display }),
     extension: [
+      // Temporary compatibility behavior: the current cached IG places this on DocumentReference.
       { url: ADI_DOC_VERSION_EXTENSION_URL, valueString: formatAdiVersionNumber(input.createdAt) },
       ...(input.dataEnterer ? [{ url: ADI_DATA_ENTERER_EXTENSION_URL, valueReference: { reference: input.dataEnterer.reference, display: input.dataEnterer.display } }] : []),
     ],
@@ -105,6 +107,7 @@ function buildComposition(input: CreateAdiPmoBundleInput, sourceFormBinary: Bina
     title: `ADI POLST PMO for ${patientDisplayName}`,
     attester: [{ mode: 'legal', time: input.signedDate, party: { reference: input.attester.reference, display: input.attester.display } }],
     ...(input.custodian ? { custodian: input.custodian } : {}),
+    // This direct PractitionerRole detail is retained pending a separate IG conformance update.
     ...(input.facilitator ? { event: [{ code: [{ coding: [ACP_SERVICES_CODE], text: ACP_SERVICES_CODE.display }], detail: [input.facilitator] }] } : {}),
     section: [
       {
@@ -125,6 +128,7 @@ export function buildAdiPmoBundle(input: CreateAdiPmoBundleInput): Bundle {
   const sourceFormBinary = buildSourceFormBinary(input)
   const composition = buildComposition(input, sourceFormBinary)
   const supportingEntries: BundleEntry[] = [{ fullUrl: `${sourceFormBinary.resourceType}/${sourceFormBinary.id}`, resource: sourceFormBinary }]
+  // Include only direct Composition references and the Practitioner behind its author role.
   const referencesToInclude = new Set<string>([
     `Patient/${input.patient.id}`, `PractitionerRole/${input.practitionerRole.id}`, input.attester.reference,
     ...(input.facilitator?.reference ? [input.facilitator.reference] : []),

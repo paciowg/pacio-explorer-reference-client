@@ -1,3 +1,4 @@
+/** Loads, filters, and displays patients from the active FHIR server. */
 import { useEffect, useMemo, useState } from 'react'
 import { fetchPatients } from '../../lib/fhir/client'
 import { navigateTo } from '../../lib/routing/routes'

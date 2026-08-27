@@ -1,3 +1,4 @@
+/** Keeps React rendering synchronized with the browser's current hash route. */
 import { useEffect, useState } from 'react'
 import { parseHashRoute, type AppRoute } from './routes'
 

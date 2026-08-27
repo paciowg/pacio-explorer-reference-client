@@ -1,3 +1,4 @@
+/** Converts FHIR Binary and Attachment content into browser-openable PDF viewer models. */
 import type { Attachment, Binary } from 'fhir/r4'
 
 export type AttachmentViewer = { label: string; open: () => void }

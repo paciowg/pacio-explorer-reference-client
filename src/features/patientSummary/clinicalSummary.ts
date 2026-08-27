@@ -1,3 +1,4 @@
+/** Selects a small, readable clinical summary from resources returned by Patient/$everything. */
 import type {
   AllergyIntolerance,
   Bundle,
@@ -16,6 +17,8 @@ import {
   placeholderValue,
 } from '../../lib/fhir/formatters'
 
+// This reference client intentionally recognizes a small explicit LOINC subset rather than
+// attempting terminology expansion in the browser.
 const BLOOD_PRESSURE_PANEL_CODES = new Set(['85354-9'])
 const SYSTOLIC_BP_CODES = new Set(['8480-6'])
 const DIASTOLIC_BP_CODES = new Set(['8462-4'])
@@ -60,6 +63,7 @@ function getActiveProblems(bundle: Bundle | null): ClinicalListItem[] {
   return getBundleResources<Condition>(bundle, 'Condition')
     .filter((condition) => {
       const status = condition.clinicalStatus?.coding?.[0]?.code
+      // Missing status is retained so incomplete example data remains visible.
       return !status || ['active', 'recurrence', 'relapse'].includes(status)
     })
     .sort((a, b) =>
@@ -150,6 +154,7 @@ function getMostRecentVitals(bundle: Bundle | null): ClinicalListItem[] {
     },
   )
 
+  // Select one latest usable Observation per supported vital, not simply the latest panel.
   const latestBloodPressure = getLatestBloodPressure(observations)
   const latestHeartRate = getLatestQuantityObservation(observations, HEART_RATE_CODES)
   const latestRespiratoryRate = getLatestQuantityObservation(

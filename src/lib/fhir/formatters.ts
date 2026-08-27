@@ -1,3 +1,4 @@
+/** Formats common FHIR datatypes for display without applying workflow-specific semantics. */
 import type {
   Address,
   CodeableConcept,

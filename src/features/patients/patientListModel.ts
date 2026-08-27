@@ -1,3 +1,4 @@
+/** Converts Patient search results into sortable and searchable list rows. */
 import type { Bundle, HumanName, Identifier, Patient } from 'fhir/r4'
 import { getDisplayNameFromHumanName, getFirstMrn, placeholderValue } from '../../lib/fhir/formatters'
 

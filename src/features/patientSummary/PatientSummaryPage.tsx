@@ -1,3 +1,4 @@
+/** Loads a patient's FHIR data and renders a summary, with a patient-only fallback when $everything fails. */
 import { useEffect, useState } from 'react'
 import type { BundleEntry, Patient, Resource } from 'fhir/r4'
 import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
@@ -84,6 +85,7 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
           }),
         )
       } catch (everythingError) {
+        // Some R4 servers do not implement Patient/$everything; demographics still work from Patient.
         console.warn(
           `Failed to retrieve $everything data for patient ${patientId}. Falling back to Patient/${patientId}.`,
           everythingError,

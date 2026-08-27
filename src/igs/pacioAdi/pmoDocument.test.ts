@@ -1,3 +1,4 @@
+/** Verifies the PACIO ADI PMO document Bundle shape and optional participant mappings. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Composition } from 'fhir/r4'
 import { buildAdiPmoBundle } from './pmoDocument'

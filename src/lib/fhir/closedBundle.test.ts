@@ -1,3 +1,4 @@
+/** Verifies recursive collection of resources needed to make a document Bundle self-contained. */
 import { describe, expect, it, vi } from 'vitest'
 
 const { fetchResourceByReference } = vi.hoisted(() => ({ fetchResourceByReference: vi.fn() }))

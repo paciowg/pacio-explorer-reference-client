@@ -1,3 +1,4 @@
+/** Indexes a FHIR Bundle for safe resolution of contained, relative, and same-server references. */
 import type { Bundle, Resource } from 'fhir/r4'
 import { normalizeBaseUrl } from './url'
 
@@ -5,6 +6,10 @@ export type BundleIndex = {
   resolve(reference: string | undefined, containingResource?: Resource): Resource | undefined
 }
 
+/**
+ * Resolves references only against resources already present in the Bundle.
+ * Absolute references are accepted only when they belong to the configured FHIR server.
+ */
 export function createBundleIndex(bundle: Bundle, baseUrl?: string): BundleIndex {
   const byFullUrl = new Map<string, Resource>()
   const byReference = new Map<string, Resource>()
@@ -21,6 +26,7 @@ export function createBundleIndex(bundle: Bundle, baseUrl?: string): BundleIndex
     resolve(reference, containingResource) {
       if (!reference) return undefined
       if (reference.startsWith('#')) {
+        // Fragment references are scoped to the resource that contains them, not the whole Bundle.
         const contained = (containingResource as Resource & { contained?: Resource[] } | undefined)
           ?.contained
         return contained?.find((resource) => `#${resource.id}` === reference)

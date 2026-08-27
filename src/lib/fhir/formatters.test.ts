@@ -1,3 +1,4 @@
+/** Verifies reusable display formatting for common FHIR datatypes. */
 import { describe, expect, it } from 'vitest'
 import { formatAdiVersionNumber } from '../../igs/pacioAdi/version'
 

@@ -1,3 +1,4 @@
+/** Derives display rows and PDF viewers from DocumentReference and document Bundle resources. */
 import type {
   Binary,
   Bundle,
@@ -115,6 +116,7 @@ export function buildDocumentDetailsRows(
   const compositionAuthor = formatReferences(composition?.author)
   const compositionCustodian = formatReference(composition?.custodian)
 
+  // Prefer the clinical document's values; DocumentReference remains a generic fallback index.
   return [
     { label: 'Status', value: composition?.status || documentReference.docStatus || documentReference.status || placeholderValue() },
     { label: 'Version', value: adiDocument?.versionNumber || placeholderValue() },
@@ -166,6 +168,7 @@ export function getBundlePdfViewers(
     }
   }
 
+  // Source PDFs may be direct Binary entries, DocumentReference attachments, or contained Binaries.
   for (const section of composition.section ?? []) {
     for (const entry of section.entry ?? []) {
       const resource = bundleIndex.resolve(entry.reference, composition)

@@ -1,3 +1,4 @@
+/** Renders clinical-summary items that can navigate to a resource-specific detail view. */
 import type { ReactNode } from 'react'
 import type { SelectableClinicalListItem } from './clinicalTypes'
 

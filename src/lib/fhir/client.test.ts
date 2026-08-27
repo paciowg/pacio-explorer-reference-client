@@ -1,3 +1,4 @@
+/** Verifies FHIR transport headers, validation, pagination, reference safety, and error reporting. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createBundle,

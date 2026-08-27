@@ -1,3 +1,4 @@
+/** Builds the PACIO ADI DocumentReference that indexes a posted document Bundle. */
 import type { CodeableConcept, DocumentReference, Period, Reference } from 'fhir/r4'
 import { createAhdCategory, createPmoType, type PmoStatus } from './pmoDocument'
 import { formatAdiVersionNumber } from './version'
@@ -37,6 +38,7 @@ export function buildAdiDocumentReference(input: CreateAdiDocumentReferenceInput
       { url: ADI_DOC_VERSION_EXTENSION_URL, valueString: formatAdiVersionNumber(input.createdAt) },
       ...(input.jurisdiction ? [{ url: ADI_JURISDICTION_EXTENSION_URL, valueCodeableConcept: input.jurisdiction }] : []),
     ],
+    // This matches Composition.identifier so both resources identify the same clinical document.
     masterIdentifier: createAdiDocumentIdentifier(input.documentIdentifierValue),
     identifier: [createAdiDocumentSetIdentifier(input.setIdentifierValue)],
     type: createPmoType(), category: [createAhdCategory()],

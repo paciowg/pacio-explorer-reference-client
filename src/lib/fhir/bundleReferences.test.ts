@@ -1,3 +1,4 @@
+/** Verifies reference discovery and conversion of closed Bundle references to UUID URNs. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Composition } from 'fhir/r4'
 import { withUrnUuidBundleReferences } from './bundleReferences'

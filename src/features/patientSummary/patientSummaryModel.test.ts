@@ -1,3 +1,4 @@
+/** Verifies patient-summary composition for complete and patient-only data loads. */
 import { describe, expect, it } from 'vitest'
 import { buildPatientSummaryModel } from './patientSummaryModel'
 

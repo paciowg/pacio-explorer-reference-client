@@ -1,3 +1,4 @@
+/** Discovers resolvable FHIR references and rewrites references between bundled resources as UUID URNs. */
 import type { Bundle, BundleEntry, Resource } from 'fhir/r4'
 
 type ResourceWithId = Resource & { id: string }
@@ -47,6 +48,7 @@ function replaceInternalReferences(
   }
 }
 
+/** Returns relative references that may need to be included to make the Bundle self-contained. */
 export function getBundleResourceReferences(bundle: Bundle) {
   const references = new Set<string>()
 
@@ -87,6 +89,10 @@ export function getBundleResourceReferences(bundle: Bundle) {
   return references
 }
 
+/**
+ * Gives each identified resource a UUID fullUrl and rewrites internal references to match.
+ * UUID URNs keep document entries addressable without implying that their original server URLs are stable.
+ */
 export function withUrnUuidBundleReferences(bundle: Bundle): Bundle {
   const nextBundle = cloneBundle(bundle)
   const fullUrlByReference = new Map<string, string>()

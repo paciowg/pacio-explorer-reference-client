@@ -1,3 +1,4 @@
+/** Selects the page for the current hash route and carries route-level notifications between pages. */
 import { useEffect, useState } from 'react'
 import './App.css'
 import { useHashRoute } from './lib/routing/useHashRoute'
