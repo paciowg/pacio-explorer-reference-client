@@ -30,10 +30,10 @@ export const fixturePractitionerRole: PractitionerRole = {
   code: [{ text: 'Physician' }],
 }
 
-// This fixed input is the representative pre-refactor PMO fixture. Tests assert
-// its generated resources field-by-field so later milestones can compare output
-// after normalizing UUIDs and creation timestamps.
-export const preRefactorAdiPmoInput = {
+// These fixed values represent the intended PMO output. In particular, the
+// Composition identifier and companion DocumentReference master identifier
+// identify the same document and therefore share one value.
+export const representativeAdiPmoInput = {
   patient: fixturePatient,
   practitionerRole: fixturePractitionerRole,
   practitionerByReference: new Map([['Practitioner/practitioner-1', fixturePractitioner]]),
@@ -47,7 +47,7 @@ export const preRefactorAdiPmoInput = {
   pdfBase64: 'JVBERi0xLjQ=',
 }
 
-export const preRefactorDocumentReferenceInput = {
+export const representativeDocumentReferenceInput = {
   subject: { reference: 'Patient/patient-1', display: 'Ada Lovelace' },
   author: [{ reference: 'PractitionerRole/role-1', display: 'Dr. Grace Hopper — Physician' }],
   authenticator: { reference: 'RelatedPerson/attester-1', display: 'Alex Attester' },
@@ -74,7 +74,7 @@ export const preRefactorDocumentReferenceInput = {
   contextPeriod: { start: FIXED_SIGNED_DATE, end: '2026-01-01T00:00:00.000Z' },
 }
 
-export const preRefactorAdiPmoBundle: Bundle = {
+export const representativeAdiPmoBundle: Bundle = {
   resourceType: 'Bundle',
   type: 'document',
   timestamp: FIXED_CREATED_AT,
@@ -84,7 +84,7 @@ export const preRefactorAdiPmoBundle: Bundle = {
       resource: {
         resourceType: 'Composition',
         meta: { profile: ['http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-PMOComposition'] },
-        identifier: { system: 'https://pacioproject.org/adi-document-identifier', value: 'composition-uuid' },
+        identifier: { system: 'https://pacioproject.org/adi-document-identifier', value: 'document-1' },
         language: 'en-US',
         text: {
           status: 'generated',
@@ -135,7 +135,7 @@ export const preRefactorAdiPmoBundle: Bundle = {
   ],
 }
 
-export const preRefactorAdiDocumentReference: DocumentReference = {
+export const representativeAdiDocumentReference: DocumentReference = {
   resourceType: 'DocumentReference',
   meta: { profile: ['http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'] },
   status: 'current',
@@ -143,18 +143,18 @@ export const preRefactorAdiDocumentReference: DocumentReference = {
   extension: [
     { url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-authentication-time', valueDateTime: FIXED_SIGNED_DATE },
     { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-docVersionNumber-extension', valueString: '20250102030405' },
-    { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-jurisdiction-extension', valueCodeableConcept: preRefactorDocumentReferenceInput.jurisdiction },
+    { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-jurisdiction-extension', valueCodeableConcept: representativeDocumentReferenceInput.jurisdiction },
   ],
-  masterIdentifier: preRefactorDocumentReferenceInput.masterIdentifier,
-  identifier: preRefactorDocumentReferenceInput.identifier,
-  type: preRefactorDocumentReferenceInput.type,
-  category: preRefactorDocumentReferenceInput.category,
-  subject: preRefactorDocumentReferenceInput.subject,
-  author: preRefactorDocumentReferenceInput.author,
-  authenticator: preRefactorDocumentReferenceInput.authenticator,
-  custodian: preRefactorDocumentReferenceInput.custodian,
+  masterIdentifier: representativeDocumentReferenceInput.masterIdentifier,
+  identifier: representativeDocumentReferenceInput.identifier,
+  type: representativeDocumentReferenceInput.type,
+  category: representativeDocumentReferenceInput.category,
+  subject: representativeDocumentReferenceInput.subject,
+  author: representativeDocumentReferenceInput.author,
+  authenticator: representativeDocumentReferenceInput.authenticator,
+  custodian: representativeDocumentReferenceInput.custodian,
   date: FIXED_CREATED_AT,
-  description: preRefactorDocumentReferenceInput.description,
-  context: { period: preRefactorDocumentReferenceInput.contextPeriod },
-  content: [{ attachment: { contentType: 'application/fhir+json', url: preRefactorDocumentReferenceInput.contentUrl, creation: FIXED_CREATED_AT } }],
+  description: representativeDocumentReferenceInput.description,
+  context: { period: representativeDocumentReferenceInput.contextPeriod },
+  content: [{ attachment: { contentType: 'application/fhir+json', url: representativeDocumentReferenceInput.contentUrl, creation: FIXED_CREATED_AT } }],
 }

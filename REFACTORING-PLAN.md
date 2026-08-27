@@ -178,6 +178,7 @@ Document the reference path as `feature workflow -> PACIO ADI builders -> shared
 - `@types/fhir` and Vitest are already installed; no dependency addition or upgrade is part of this refactor.
 - The PACIO ADI IG is under active development. This refactor will not pin an IG revision, refresh the IG mirror, or attempt to resolve known moving conformance targets.
 - The refactor preserves current user-visible and FHIR-output behavior, including existing request limits, `$everything` parameters, two-step writes, and partial-write failure behavior.
+- Approved output-preservation exception: the PMO workflow intentionally uses the same document identifier value for `Composition.identifier` and the companion `DocumentReference.masterIdentifier`; the earlier implementation generated unrelated values for the same document.
 - Known ADI conformance corrections are explicitly deferred to a separate change with then-current IG review, profile validation, and intentional output-change review.
 - No router, state-management library, CSS framework, backend, caching layer, or additional FHIR client dependency will be introduced.
 - Reuse is capability-oriented: generic FHIR mechanics may be shared across PACIO IGs, while IG-specific profiles and semantics remain explicit in focused modules.

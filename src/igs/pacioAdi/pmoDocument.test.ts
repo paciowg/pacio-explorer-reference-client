@@ -4,27 +4,27 @@ import { buildAdiPmoBundle } from './pmoDocument'
 import { buildAdiDocumentReference } from './documentReference'
 import {
   FIXED_CREATED_AT,
-  preRefactorAdiDocumentReference,
-  preRefactorAdiPmoBundle,
-  preRefactorAdiPmoInput,
-  preRefactorDocumentReferenceInput,
+  representativeAdiDocumentReference,
+  representativeAdiPmoBundle,
+  representativeAdiPmoInput,
+  representativeDocumentReferenceInput,
 } from '../../test/fixtures/adiPmoFixture'
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe('pre-refactor ADI PMO builders', () => {
-  it('builds the representative PMO Bundle with its existing profiles, narratives, entries, and references', () => {
+describe('ADI PMO builders', () => {
+  it('builds the representative PMO Bundle with its intended profiles, narratives, entries, and references', () => {
     vi.stubGlobal('crypto', { randomUUID: vi.fn().mockReturnValue('unused-uuid') })
 
     const bundle = buildAdiPmoBundle({
-      ...preRefactorAdiPmoInput,
-      documentIdentifierValue: 'composition-uuid',
+      ...representativeAdiPmoInput,
+      documentIdentifierValue: representativeDocumentReferenceInput.masterIdentifier.value!,
       compositionFullUrl: 'urn:uuid:composition-uuid',
     })
     const [compositionEntry, binaryEntry, patientEntry, roleEntry, practitionerEntry] = bundle.entry ?? []
     const composition = compositionEntry.resource as Composition
 
-    expect(bundle).toEqual(preRefactorAdiPmoBundle)
+    expect(bundle).toEqual(representativeAdiPmoBundle)
 
     expect(bundle).toMatchObject({ resourceType: 'Bundle', type: 'document', timestamp: FIXED_CREATED_AT })
     expect(bundle.entry).toHaveLength(5)
@@ -34,7 +34,7 @@ describe('pre-refactor ADI PMO builders', () => {
       'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-PMOComposition',
     ])
     expect(composition?.identifier).toEqual({
-      system: 'https://pacioproject.org/adi-document-identifier', value: 'composition-uuid',
+      system: 'https://pacioproject.org/adi-document-identifier', value: 'document-1',
     })
     expect(composition?.extension).toEqual([
       {
@@ -75,36 +75,36 @@ describe('pre-refactor ADI PMO builders', () => {
 
   it('builds the representative server DocumentReference with its ADI metadata', () => {
     const documentReference = buildAdiDocumentReference({
-      subject: preRefactorDocumentReferenceInput.subject,
-      author: preRefactorDocumentReferenceInput.author,
-      authenticator: preRefactorDocumentReferenceInput.authenticator,
-      custodian: preRefactorDocumentReferenceInput.custodian,
-      status: preRefactorDocumentReferenceInput.docStatus,
-      signedDate: preRefactorDocumentReferenceInput.authenticationTime,
-      createdAt: preRefactorDocumentReferenceInput.createdAt,
-      jurisdiction: preRefactorDocumentReferenceInput.jurisdiction,
-      contextPeriod: preRefactorDocumentReferenceInput.contextPeriod,
-      bundleUrl: preRefactorDocumentReferenceInput.contentUrl,
-      documentIdentifierValue: preRefactorDocumentReferenceInput.masterIdentifier.value!,
-      setIdentifierValue: preRefactorDocumentReferenceInput.identifier[0].value!,
+      subject: representativeDocumentReferenceInput.subject,
+      author: representativeDocumentReferenceInput.author,
+      authenticator: representativeDocumentReferenceInput.authenticator,
+      custodian: representativeDocumentReferenceInput.custodian,
+      status: representativeDocumentReferenceInput.docStatus,
+      signedDate: representativeDocumentReferenceInput.authenticationTime,
+      createdAt: representativeDocumentReferenceInput.createdAt,
+      jurisdiction: representativeDocumentReferenceInput.jurisdiction,
+      contextPeriod: representativeDocumentReferenceInput.contextPeriod,
+      bundleUrl: representativeDocumentReferenceInput.contentUrl,
+      documentIdentifierValue: representativeDocumentReferenceInput.masterIdentifier.value!,
+      setIdentifierValue: representativeDocumentReferenceInput.identifier[0].value!,
     })
 
-    expect(documentReference).toEqual(preRefactorAdiDocumentReference)
+    expect(documentReference).toEqual(representativeAdiDocumentReference)
 
-    expect(documentReference.meta?.profile).toEqual(preRefactorDocumentReferenceInput.profileUrls)
+    expect(documentReference.meta?.profile).toEqual(representativeDocumentReferenceInput.profileUrls)
     expect(documentReference.status).toBe('current')
     expect(documentReference.docStatus).toBe('final')
-    expect(documentReference.type).toEqual(preRefactorDocumentReferenceInput.type)
-    expect(documentReference.category).toEqual(preRefactorDocumentReferenceInput.category)
-    expect(documentReference.subject).toEqual(preRefactorDocumentReferenceInput.subject)
-    expect(documentReference.author).toEqual(preRefactorDocumentReferenceInput.author)
-    expect(documentReference.authenticator).toEqual(preRefactorDocumentReferenceInput.authenticator)
-    expect(documentReference.custodian).toEqual(preRefactorDocumentReferenceInput.custodian)
-    expect(documentReference.identifier).toEqual(preRefactorDocumentReferenceInput.identifier)
-    expect(documentReference.masterIdentifier).toEqual(preRefactorDocumentReferenceInput.masterIdentifier)
+    expect(documentReference.type).toEqual(representativeDocumentReferenceInput.type)
+    expect(documentReference.category).toEqual(representativeDocumentReferenceInput.category)
+    expect(documentReference.subject).toEqual(representativeDocumentReferenceInput.subject)
+    expect(documentReference.author).toEqual(representativeDocumentReferenceInput.author)
+    expect(documentReference.authenticator).toEqual(representativeDocumentReferenceInput.authenticator)
+    expect(documentReference.custodian).toEqual(representativeDocumentReferenceInput.custodian)
+    expect(documentReference.identifier).toEqual(representativeDocumentReferenceInput.identifier)
+    expect(documentReference.masterIdentifier).toEqual(representativeDocumentReferenceInput.masterIdentifier)
     expect(documentReference.date).toBe(FIXED_CREATED_AT)
     expect(documentReference.description).toBe('Ada Lovelace ADI POLST PMO Document')
-    expect(documentReference.context?.period).toEqual(preRefactorDocumentReferenceInput.contextPeriod)
+    expect(documentReference.context?.period).toEqual(representativeDocumentReferenceInput.contextPeriod)
     expect(documentReference.content).toEqual([{
       attachment: {
         contentType: 'application/fhir+json', url: 'https://example.test/fhir/Bundle/bundle-1', creation: FIXED_CREATED_AT,
@@ -113,7 +113,7 @@ describe('pre-refactor ADI PMO builders', () => {
     expect(documentReference.extension).toEqual([
       { url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-authentication-time', valueDateTime: '2025-01-01T00:00:00.000Z' },
       { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-docVersionNumber-extension', valueString: '20250102030405' },
-      { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-jurisdiction-extension', valueCodeableConcept: preRefactorDocumentReferenceInput.jurisdiction },
+      { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-jurisdiction-extension', valueCodeableConcept: representativeDocumentReferenceInput.jurisdiction },
     ])
   })
 })

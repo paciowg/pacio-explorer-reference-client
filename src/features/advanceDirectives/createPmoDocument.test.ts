@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Bundle, DocumentReference } from 'fhir/r4'
+import type { Bundle, Composition, DocumentReference } from 'fhir/r4'
 import {
   fixturePatient,
   fixturePractitioner,
@@ -68,6 +68,7 @@ describe('createPmoDocument', () => {
     expect(mocks.closeBundleReferences).toHaveBeenCalledOnce()
     const postedBundle = mocks.createBundle.mock.calls[0][1] as Bundle
     const postedDocumentReference = mocks.createDocumentReference.mock.calls[0][1] as DocumentReference
+    const postedComposition = postedBundle.entry?.[0].resource as Composition
     expect(postedBundle.type).toBe('document')
     expect(postedBundle.entry?.[0].resource).toMatchObject({
       resourceType: 'Composition',
@@ -78,6 +79,7 @@ describe('createPmoDocument', () => {
       identifier: [{ system: 'https://pacioproject.org/adi-document-set-identifier', value: 'uuid-2' }],
       content: [{ attachment: { url: 'https://example.test/fhir/Bundle/bundle-1' } }],
     })
+    expect(postedComposition.identifier).toEqual(postedDocumentReference.masterIdentifier)
   })
 
   it('preserves the created Bundle when the DocumentReference write fails', async () => {

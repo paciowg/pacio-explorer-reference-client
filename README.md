@@ -77,6 +77,8 @@ The app remains a small browser reference client. It does not add a backend, cac
 
 ADI document versions are UTC timestamps in `YYYYMMDDhhmmss` form. `Bundle.timestamp`, `Composition.date`, and the ADI document-version extension use the creation instant.
 
+The PMO workflow generates one document identifier and uses it for both `Composition.identifier` and the companion `DocumentReference.masterIdentifier`. This shared value is an intentional correction to the earlier implementation, which generated unrelated values for the same document. It is an approved exception to the refactor's otherwise strict output-preservation rule.
+
 The PACIO ADI IG is actively evolving. This behavior-preserving implementation intentionally retains two temporary deviations for later conformance work:
 
 - The app emits the ADI document-version extension on `Composition`, while the cached ADI FSH defines that extension in the `DocumentReference` context.
