@@ -1,144 +1,92 @@
-# PACIO POC Standalone Browser Client
+# PACIO Explorer
 
-The goal of this area of the pseudo-ehr is to explore the cost and value of a PACIO (https://pacioproject.org/) demonstration and reference implementation that
+PACIO Explorer is a standalone React browser client for open FHIR R4 servers. It has no backend: the browser stores saved server settings locally and makes FHIR requests directly to the selected server. The server must permit the required requests with CORS.
 
-* Has no code or dependency relationship on the existing pseudo-ehr Ruby on Rails reference implementation
-* Uses standard TypeScript and web app infrastructure (Vite, React) that may be more accessible as a reference implementation than Ruby and Rails
-* Removes the reliance on a backend application server, allowing hosting of FHIR client functionality on GitHub pages
-* Focuses more on providing a clear and declarative reference implementation without some of the complex overhead of the Ruby on Rails implementation (e.g., caching, multilevel job and API infrastructure)
+## Workflows
 
-The initial application exploration will
+### Read patient data
 
-* Start with Vite, Typescript, React
-* Use `@types/fhir`
-* Interact with FHIR servers using standard browser `fetch`
-* Support only open FHIR R4 endpoints to start with
+1. Connect to a FHIR R4 server; the client validates `GET /metadata`.
+2. Browse up to 100 patients and filter them in the browser.
+3. Open a patient summary. The client uses `Patient/{id}/$everything` with pagination and falls back to `Patient/{id}` if `$everything` is unavailable.
+4. Open an advance directive. The client displays generic `DocumentReference` metadata and, when its attachment references a document Bundle, loads its Composition and PDF source forms.
 
-## Phase 1
+Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
-Initial application development supports the following:
+### Create an ADI PMO
 
-1. Connect to a FHIR server
-2. Keep a list of previously used FHIR servers and a short reference name for each in browser local storage
-3. List up to 100 Patient records on the active server
-4. Allow the user to filter or search for patients client-side
-5. When a patient is selected
-   1. That patient's full record is loaded primarily using `$everything`
-   2. If `$everything` fails, the app falls back to `Patient/{id}`
-   3. A patient summary page is displayed
-6. When an advance directive is selected from the patient summary
-   1. The app loads `DocumentReference/{id}`
-   2. A generic advance directive detail page is displayed
+From a patient summary, select the PMO creation flow and provide the required author, attester, authenticator, signed date, and PDF source form. The client builds a PACIO ADI PMO document Bundle, posts it, then builds and posts the companion ADI `DocumentReference` pointing to that Bundle. The writes are intentionally separate: if the second write fails, the Bundle remains on the server and the page reports the error.
 
-Phase 1 is read-only.
+## FHIR requests
 
-The patient summary displays:
-
-- personal information
-- contact information
-- demographics
-- emergency contacts
-- active problems
-- current medications
-- known allergies
-- most recent vitals
-- advance directives
-
-The initial clinical summary sections are non-interactive except for Advance Directives, which support selection and drill-in to a detail page. Each section shows up to 10 items with dates where available and clear empty states.
-
-Display conventions:
-
-- missing scalar values: `--`
-- empty loaded lists: `None recorded`
-- unavailable bundle-derived sections: `Unavailable`
-
-Routing uses a small hash-based route switch:
-
-- `#/`
-- `#/patients`
-- `#/patients/:id`
-- `#/patients/:id/advance-directives/:documentReferenceId`
-
-This keeps the app simple and friendly to static hosting environments.
-
-Phase 1 should be completed in a manner that supports future PACIO reference capabilities in later iterations.
-
-For more detailed planning and current decisions, see:
-
-- `IMPLEMENTATION_PLAN.md`
-
-## ADI document versioning
-
-When the browser client creates an ADI document bundle and companion ADI `DocumentReference`, the ADI version number is generated as a UTC timestamp string in `YYYYMMDDhhmmss` format.
-
-For newly created documents in this app:
-
-- the version number is derived from the document creation instant
-- `Bundle.timestamp` uses that same creation instant
-- `Composition.date` also uses that same creation instant
-- the ADI doc version extension is populated consistently from that derived version value
-
-This supports timestamp-labeled version ordering aligned with CDA-oriented guidance, while leaving room for future handling of imported historical documents where `Composition.date` may differ from bundle creation time.
-
-## Phase 2
-
-Once basic FHIR support is in place some PACIO specific functionality will be explored. Candidates include:
-
-1. Transition of Care document bundle builder
-2. Advanced Directive document bundle builder
-
-## Proposed architectural choices
-
-The goal is to have a clear reference implementation that is easy to follow but still use abstractions to simplify code.
-
-Current structure:
-
-- `src/lib/fhir/` for FHIR fetch and formatting helpers
-- `src/lib/routing/` for hash route parsing and navigation
-- `src/features/servers/` for saved server state and connection flow
-- `src/features/patients/` for patient list loading and filtering
-- `src/features/patientSummary/` for patient summary derivation, rendering, and advance directive detail pages
-- `src/components/` for reusable presentational components
-
-## Running the app
-
-Start the Vite dev server in `browser_client_poc/` and open the app in a browser. The app connects directly to the configured FHIR server from the browser, so the selected demo server must allow browser access and CORS for:
+The app uses these endpoints relative to the configured server URL:
 
 - `GET /metadata`
 - `GET /Patient?_count=100`
 - `GET /Patient/{id}`
-- `GET /Patient/{id}/$everything`
+- `GET /Patient/{id}/$everything` with `_count`, `_include`, `_revinclude`, and `_include:iterate`
 - `GET /DocumentReference/{id}`
+- `GET /Bundle/{id}` and same-server Bundle references
+- `GET /PractitionerRole?_count=200&_include=PractitionerRole:practitioner`
+- `GET /Organization?_count=200`
+- `GET /RelatedPerson?patient={id}&_count=200`
+- `GET /{resourceType}/{id}` while closing PMO Bundle references
+- `POST /Bundle`
+- `POST /DocumentReference`
 
-# React + TypeScript + Vite
+## Run and verify
 
-This was created as a template that provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Run commands from the repository root:
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+For verification:
+
+```sh
+npm test
+npm run build
+npm run lint
+```
+
+## Architecture
+
+The PMO creation reference path is deliberately short:
+
+```text
+PMO form -> createPmoDocument -> PACIO ADI builders -> shared FHIR helpers -> FHIR transport
+```
+
+- `src/features/advanceDirectives/` owns PMO workflow orchestration, generic advance-directive display, and browser file/attachment behavior.
+- `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
+- `src/lib/fhir/` owns generic URL normalization, transport, document Bundle construction, Bundle indexing, and reference closure.
+- `src/features/patientSummary/` owns patient-summary composition and demographics.
+- `src/components/` owns reusable presentation components and presentation types.
+
+Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance-directive display remains available for non-ADI `DocumentReference` resources; PACIO ADI enrichment is optional.
+
+## ADI versioning and temporary conformance deviations
+
+ADI document versions are UTC timestamps in `YYYYMMDDhhmmss` form. `Bundle.timestamp`, `Composition.date`, and the ADI document-version extension use the creation instant.
+
+The PACIO ADI IG is actively evolving. This behavior-preserving implementation intentionally retains two temporary deviations for later conformance work:
+
+- The app emits the ADI document-version extension on `Composition`, while the cached ADI FSH defines that extension in the `DocumentReference` context.
+- PMO facilitator data is emitted as a direct `PractitionerRole` reference, which does not yet align with the current facilitator constraint.
+
+Do not treat these as settled guidance. A separate conformance-focused change should review the current IG, validate profiles, and intentionally approve generated-resource changes.
+
+## Routes and persistence
+
+- `#/` — server connection and saved servers
+- `#/patients` — patient list
+- `#/patients/:id` — patient summary
+- `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
+
+Saved and active server settings are stored only in browser local storage.
+
+## Historical planning
+
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) is historical background. For the current architecture and refactoring status, use this README and [REFACTORING-PLAN.md](REFACTORING-PLAN.md).

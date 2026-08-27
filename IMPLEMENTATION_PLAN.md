@@ -1,4 +1,6 @@
-# Browser Client POC Implementation Plan
+# Browser Client POC Implementation Plan (Historical)
+
+> This document predates the implemented PMO creation workflow and current architecture. See [README.md](README.md) and [REFACTORING-PLAN.md](REFACTORING-PLAN.md) for current guidance.
 
 ## Purpose
 
