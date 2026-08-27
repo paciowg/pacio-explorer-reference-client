@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type {
   Bundle,
-  CodeableConcept,
-  Identifier,
   Organization,
   Patient,
   Practitioner,
@@ -18,7 +16,6 @@ import {
   fetchRelatedPersons,
 } from '../../lib/fhir/client'
 import {
-  formatAdiVersionNumber,
   getCodeableConceptText,
   getDisplayNameFromHumanName,
   getPractitionerDisplayName,
@@ -26,14 +23,17 @@ import {
 } from '../../lib/fhir/formatters'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { useSavedServers } from '../servers/useSavedServers'
-import {
-  buildClosedAdiPmoBundle,
-  type PmoAttesterOption,
-  type PmoDataEntererOption,
-  writeAdiPmoBundle,
-} from '../../services/AdiPmoService'
-import { writeServerDocumentReference } from '../../services/DocumentReferenceService'
+import { type PmoAttesterOption, type PmoDataEntererOption } from '../../igs/pacioAdi/pmoDocument'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
+import { readFileAsBase64 } from './browserFiles'
+import { createPmoDocument } from './createPmoDocument'
+import {
+  addOneYearToDateValue as calculateContextPeriodEnd,
+  getPatientJurisdiction as calculatePatientJurisdiction,
+  getPmoSubmissionError,
+  toIsoDateTimeLocalValue as formatDateInput,
+  toUtcMidnightIso as toUtcMidnight,
+} from './pmoFormModel'
 
 type PatientPmoCreatePageProps = {
   patientId: string
@@ -57,44 +57,6 @@ type FacilitatorOption = {
   value: string
   label: string
   reference: Reference
-}
-
-const ADI_DOCUMENT_REFERENCE_PROFILE_URL =
-  'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
-const ADI_DOCUMENT_IDENTIFIER_SYSTEM =
-  'https://pacioproject.org/adi-document-identifier'
-const ADI_DOCUMENT_SET_IDENTIFIER_SYSTEM =
-  'https://pacioproject.org/adi-document-set-identifier'
-
-function toIsoDateTimeLocalValue(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function toUtcMidnightIso(dateValue: string) {
-  return `${dateValue}T00:00:00.000Z`
-}
-
-function addOneYearToDateValue(dateValue: string) {
-  const date = new Date(`${dateValue}T00:00:00Z`)
-  date.setUTCFullYear(date.getUTCFullYear() + 1)
-  return toIsoDateTimeLocalValue(date)
-}
-
-async function readFileAsBase64(file: File) {
-  const buffer = await file.arrayBuffer()
-  let binary = ''
-  const bytes = new Uint8Array(buffer)
-  const chunkSize = 0x8000
-
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    const chunk = bytes.subarray(index, index + chunkSize)
-    binary += String.fromCharCode(...chunk)
-  }
-
-  return btoa(binary)
 }
 
 function getPractitionerMap(bundle: Bundle) {
@@ -279,44 +241,6 @@ function getDataEntererOptions(
   return options
 }
 
-function normalizeJurisdictionCodePart(value: string | undefined) {
-  if (!value) return ''
-  return value.trim().toUpperCase()
-}
-
-function getPatientJurisdiction(patient: Patient): CodeableConcept | undefined {
-  const address = patient.address?.find((item) => item.country?.trim() && item.state?.trim())
-
-  if (!address) return undefined
-
-  const country = normalizeJurisdictionCodePart(address.country)
-  const state = normalizeJurisdictionCodePart(address.state)
-
-  if (!country || !state) return undefined
-
-  return {
-    coding: [
-      {
-        system: 'urn:iso:std:iso:3166:-2',
-        code: `${country}-${state}`,
-      },
-    ],
-    text: `${country}-${state}`,
-  }
-}
-
-function createIdentifier(system: string): Identifier {
-  const value =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `identifier-${Date.now()}-${Math.random().toString(16).slice(2)}`
-
-  return {
-    system,
-    value,
-  }
-}
-
 export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
   const { activeServer } = useSavedServers()
   const [patient, setPatient] = useState<Patient | null>(null)
@@ -333,9 +257,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
   const [authenticatorReference, setAuthenticatorReference] = useState('')
   const [facilitatorReference, setFacilitatorReference] = useState('')
   const [dataEntererReference, setDataEntererReference] = useState('')
-  const [signedDate, setSignedDate] = useState(toIsoDateTimeLocalValue(new Date()))
+  const [signedDate, setSignedDate] = useState(formatDateInput(new Date()))
   const [contextPeriodEnd, setContextPeriodEnd] = useState(
-    addOneYearToDateValue(toIsoDateTimeLocalValue(new Date())),
+    calculateContextPeriodEnd(formatDateInput(new Date())),
   )
   const [hasEditedContextPeriodEnd, setHasEditedContextPeriodEnd] = useState(false)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
@@ -346,7 +270,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
   useEffect(() => {
     if (!hasEditedContextPeriodEnd) {
-      setContextPeriodEnd(addOneYearToDateValue(signedDate))
+      setContextPeriodEnd(calculateContextPeriodEnd(signedDate))
     }
   }, [signedDate, hasEditedContextPeriodEnd])
 
@@ -480,9 +404,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
     const dataEnterer = dataEntererOptions.find(
       (option) => option.reference === dataEntererReference,
     )
-    const documentIdentifier = createIdentifier(ADI_DOCUMENT_IDENTIFIER_SYSTEM)
-    const setIdentifier = createIdentifier(ADI_DOCUMENT_SET_IDENTIFIER_SYSTEM)
-    const jurisdiction = getPatientJurisdiction(patient)
+    const jurisdiction = calculatePatientJurisdiction(patient)
     const custodian = custodianReference
       ? ({
           reference: custodianReference,
@@ -493,23 +415,14 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
         } satisfies Reference)
       : undefined
 
-    if (!authorRole) {
-      setErrorMessage('Please select an author.')
-      return
-    }
-
-    if (!attester) {
-      setErrorMessage('Please select an attester.')
-      return
-    }
-
-    if (!authenticator) {
-      setErrorMessage('Please select an authenticator.')
-      return
-    }
-
-    if (!pdfFile) {
-      setErrorMessage('Please upload a PDF source form.')
+    const validationError = getPmoSubmissionError({
+      hasAuthor: Boolean(authorRole),
+      hasAttester: Boolean(attester),
+      hasAuthenticator: Boolean(authenticator),
+      hasPdf: Boolean(pdfFile),
+    })
+    if (validationError || !authorRole || !attester || !authenticator || !pdfFile) {
+      setErrorMessage(validationError || 'Unable to validate the PMO form.')
       return
     }
 
@@ -520,9 +433,8 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
     try {
       const pdfBase64 = await readFileAsBase64(pdfFile)
       const now = new Date().toISOString()
-      const signingTime = toUtcMidnightIso(signedDate)
-      const contextPeriodEndTime = toUtcMidnightIso(contextPeriodEnd)
-      const versionNumber = formatAdiVersionNumber(now)
+      const signingTime = toUtcMidnight(signedDate)
+      const contextPeriodEndTime = toUtcMidnight(contextPeriodEnd)
 
       console.log(
         [
@@ -544,81 +456,30 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
         ].join('\n'),
       )
 
-      const bundle = await buildClosedAdiPmoBundle(activeServer.baseUrl, {
+      await createPmoDocument({
+        baseUrl: activeServer.baseUrl,
         patient,
         practitionerRole: authorRole,
         practitionerByReference,
+        subject: {
+          reference: `Patient/${patient.id}`,
+          display: getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || '',
+        },
+        author: {
+          reference: `PractitionerRole/${authorRole.id}`,
+          display: getPractitionerRoleDisplayName(authorRole, practitionerByReference),
+        },
         attester,
+        authenticator,
         facilitator,
         dataEnterer,
         custodian,
         status,
         signedDate: signingTime,
+        contextPeriodEnd: contextPeriodEndTime,
         createdAt: now,
         pdfBase64,
-      })
-
-      const createdBundle = await writeAdiPmoBundle(activeServer.baseUrl, bundle)
-      const bundleId = createdBundle.id
-
-      if (!bundleId) {
-        throw new Error('The server did not return an id for the created Bundle.')
-      }
-
-      const normalizedBaseUrl = activeServer.baseUrl.replace(/\/+$/, '')
-      const bundleUrl = `${normalizedBaseUrl}/Bundle/${bundleId}`
-
-      await writeServerDocumentReference({
-        baseUrl: activeServer.baseUrl,
-        subject: {
-          reference: `Patient/${patient.id}`,
-          display: getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || '',
-        },
-        author: [
-          {
-            reference: `PractitionerRole/${authorRole.id}`,
-            display: getPractitionerRoleDisplayName(authorRole, practitionerByReference),
-          },
-        ],
-        authenticator,
-        type: {
-          coding: [
-            {
-              system: 'http://loinc.org',
-              code: '93037-0',
-              display: 'Portable medical order form',
-            },
-          ],
-          text: 'Portable medical order form',
-        },
-        category: [
-          {
-            coding: [
-              {
-                system: 'http://loinc.org',
-                code: '42348-3',
-                display: 'Advance healthcare directives',
-              },
-            ],
-            text: 'Advance healthcare directives',
-          },
-        ],
-        contentUrl: bundleUrl,
-        contentType: 'application/fhir+json',
-        docStatus: status,
-        description: `${getDisplayNameFromHumanName(patient.name?.[0]) || 'Patient'} ADI POLST PMO Document`,
-        version: versionNumber,
-        createdAt: now,
-        authenticationTime: signingTime,
-        profileUrls: [ADI_DOCUMENT_REFERENCE_PROFILE_URL],
-        custodian,
-        identifier: [setIdentifier],
-        masterIdentifier: documentIdentifier,
         jurisdiction,
-        contextPeriod: {
-          start: signingTime,
-          end: contextPeriodEndTime,
-        },
       })
 
       setRouteNotification({

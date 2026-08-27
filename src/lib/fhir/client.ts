@@ -11,7 +11,7 @@ import type {
   RelatedPerson,
   Resource,
 } from 'fhir/r4'
-import { normalizeBaseUrl } from '../../features/servers/serverStorage'
+import { normalizeBaseUrl } from './url'
 
 type FhirJson =
   | Bundle
@@ -289,8 +289,11 @@ export async function createBundle(baseUrl: string, bundle: Bundle) {
   return fhirPost<Bundle>(baseUrl, 'Bundle', bundle)
 }
 
-export async function createDocumentReference(baseUrl: string, documentReference: Resource) {
-  return fhirPost<Resource>(baseUrl, 'DocumentReference', documentReference)
+export async function createDocumentReference(
+  baseUrl: string,
+  documentReference: DocumentReference,
+) {
+  return fhirPost<DocumentReference>(baseUrl, 'DocumentReference', documentReference)
 }
 
 export async function fetchPatientEverything(

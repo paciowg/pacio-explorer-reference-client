@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatAdiVersionNumber } from './formatters'
+import { formatAdiVersionNumber } from '../../igs/pacioAdi/version'
 
 describe('formatAdiVersionNumber', () => {
   it('formats UTC timestamps at date boundaries', () => {

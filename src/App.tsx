@@ -6,7 +6,7 @@ import { AppLayout } from './components/AppLayout'
 import { ServerConnectPage } from './features/servers/ServerConnectPage'
 import { PatientListPage } from './features/patients/PatientListPage'
 import { PatientSummaryPage } from './features/patientSummary/PatientSummaryPage'
-import { PatientPmoCreatePage } from './features/patientSummary/PatientPmoCreatePage'
+import { PatientPmoCreatePage } from './features/advanceDirectives/PatientPmoCreatePage'
 import { AdvanceDirectiveDetailPage } from './features/patientSummary/AdvanceDirectiveDetailPage'
 import { useSavedServers } from './features/servers/useSavedServers'
 import {

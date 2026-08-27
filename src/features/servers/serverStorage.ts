@@ -1,3 +1,5 @@
+import { normalizeBaseUrl } from '../../lib/fhir/url'
+
 export type SavedServer = {
   id: string
   label: string
@@ -12,9 +14,7 @@ function isBrowser() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 }
 
-export function normalizeBaseUrl(baseUrl: string) {
-  return baseUrl.trim().replace(/\/+$/, '')
-}
+export { normalizeBaseUrl }
 
 function createServerId(baseUrl: string) {
   return normalizeBaseUrl(baseUrl)

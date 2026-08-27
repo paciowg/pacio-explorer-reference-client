@@ -1,21 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Composition } from 'fhir/r4'
-import { buildAdiPmoBundle } from './AdiPmoService'
-import { buildServerDocumentReference } from './DocumentReferenceService'
+import { buildAdiPmoBundle } from './pmoDocument'
+import { buildAdiDocumentReference } from './documentReference'
 import {
   FIXED_CREATED_AT,
   preRefactorAdiPmoInput,
   preRefactorDocumentReferenceInput,
-} from '../test/fixtures/adiPmoFixture'
+} from '../../test/fixtures/adiPmoFixture'
 
 afterEach(() => vi.unstubAllGlobals())
 
 describe('pre-refactor ADI PMO builders', () => {
   it('builds the representative PMO Bundle with its existing profiles, narratives, entries, and references', () => {
-    const uuid = vi.fn().mockReturnValue('composition-uuid')
-    vi.stubGlobal('crypto', { randomUUID: uuid })
+    vi.stubGlobal('crypto', { randomUUID: vi.fn().mockReturnValue('unused-uuid') })
 
-    const bundle = buildAdiPmoBundle(preRefactorAdiPmoInput)
+    const bundle = buildAdiPmoBundle({
+      ...preRefactorAdiPmoInput,
+      documentIdentifier: {
+        system: 'https://pacioproject.org/adi-document-identifier', value: 'composition-uuid',
+      },
+      compositionFullUrl: 'urn:uuid:composition-uuid',
+    })
     const [compositionEntry, binaryEntry, patientEntry, roleEntry, practitionerEntry] = bundle.entry ?? []
     const composition = compositionEntry.resource as Composition
 
@@ -67,7 +72,20 @@ describe('pre-refactor ADI PMO builders', () => {
   })
 
   it('builds the representative server DocumentReference with its ADI metadata', () => {
-    const documentReference = buildServerDocumentReference(preRefactorDocumentReferenceInput)
+    const documentReference = buildAdiDocumentReference({
+      subject: preRefactorDocumentReferenceInput.subject,
+      author: preRefactorDocumentReferenceInput.author,
+      authenticator: preRefactorDocumentReferenceInput.authenticator,
+      custodian: preRefactorDocumentReferenceInput.custodian,
+      status: preRefactorDocumentReferenceInput.docStatus,
+      signedDate: preRefactorDocumentReferenceInput.authenticationTime,
+      createdAt: preRefactorDocumentReferenceInput.createdAt,
+      jurisdiction: preRefactorDocumentReferenceInput.jurisdiction,
+      contextPeriod: preRefactorDocumentReferenceInput.contextPeriod,
+      bundleUrl: preRefactorDocumentReferenceInput.contentUrl,
+      documentIdentifier: preRefactorDocumentReferenceInput.masterIdentifier,
+      setIdentifier: preRefactorDocumentReferenceInput.identifier[0],
+    })
 
     expect(documentReference.meta?.profile).toEqual(preRefactorDocumentReferenceInput.profileUrls)
     expect(documentReference.status).toBe('current')
