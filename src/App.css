@@ -1,3 +1,5 @@
+/* Shell */
+
 * {
   box-sizing: border-box;
 }
@@ -138,6 +140,8 @@
   white-space: nowrap;
 }
 
+/* Server pages */
+
 .server-layout {
   display: grid;
   gap: 1.25rem;
@@ -162,6 +166,8 @@
 .saved-server-panel h3 {
   margin-bottom: 1rem;
 }
+
+/* Shared forms and buttons */
 
 .field-group {
   display: grid;
@@ -421,6 +427,8 @@
   outline-offset: 2px;
 }
 
+/* Banners */
+
 .active-server-banner,
 .info-banner,
 .warning-banner,
@@ -452,6 +460,8 @@
   background: #fef2f2;
   color: #991b1b;
 }
+
+/* Patient pages */
 
 .patient-search-group {
   max-width: 32rem;
@@ -531,6 +541,8 @@
 .summary-card.wide {
   grid-column: span 2;
 }
+
+/* Advance-directive pages */
 
 .source-attachments-section {
   margin-bottom: 0.5rem;
@@ -766,6 +778,8 @@ dd {
   color: #64748b;
   font-size: 0.9rem;
 }
+
+/* Responsive rules */
 
 @media (max-width: 1100px) {
   .app-header,

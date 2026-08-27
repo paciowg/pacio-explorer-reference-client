@@ -4,6 +4,8 @@ import { buildAdiPmoBundle } from './pmoDocument'
 import { buildAdiDocumentReference } from './documentReference'
 import {
   FIXED_CREATED_AT,
+  preRefactorAdiDocumentReference,
+  preRefactorAdiPmoBundle,
   preRefactorAdiPmoInput,
   preRefactorDocumentReferenceInput,
 } from '../../test/fixtures/adiPmoFixture'
@@ -16,13 +18,13 @@ describe('pre-refactor ADI PMO builders', () => {
 
     const bundle = buildAdiPmoBundle({
       ...preRefactorAdiPmoInput,
-      documentIdentifier: {
-        system: 'https://pacioproject.org/adi-document-identifier', value: 'composition-uuid',
-      },
+      documentIdentifierValue: 'composition-uuid',
       compositionFullUrl: 'urn:uuid:composition-uuid',
     })
     const [compositionEntry, binaryEntry, patientEntry, roleEntry, practitionerEntry] = bundle.entry ?? []
     const composition = compositionEntry.resource as Composition
+
+    expect(bundle).toEqual(preRefactorAdiPmoBundle)
 
     expect(bundle).toMatchObject({ resourceType: 'Bundle', type: 'document', timestamp: FIXED_CREATED_AT })
     expect(bundle.entry).toHaveLength(5)
@@ -83,9 +85,11 @@ describe('pre-refactor ADI PMO builders', () => {
       jurisdiction: preRefactorDocumentReferenceInput.jurisdiction,
       contextPeriod: preRefactorDocumentReferenceInput.contextPeriod,
       bundleUrl: preRefactorDocumentReferenceInput.contentUrl,
-      documentIdentifier: preRefactorDocumentReferenceInput.masterIdentifier,
-      setIdentifier: preRefactorDocumentReferenceInput.identifier[0],
+      documentIdentifierValue: preRefactorDocumentReferenceInput.masterIdentifier.value!,
+      setIdentifierValue: preRefactorDocumentReferenceInput.identifier[0].value!,
     })
+
+    expect(documentReference).toEqual(preRefactorAdiDocumentReference)
 
     expect(documentReference.meta?.profile).toEqual(preRefactorDocumentReferenceInput.profileUrls)
     expect(documentReference.status).toBe('current')

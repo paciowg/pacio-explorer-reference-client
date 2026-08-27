@@ -27,4 +27,17 @@ describe('createBundleIndex', () => {
     expect(index.resolve('#same-id', second)).toBe(second.contained[0])
     expect(index.resolve('#same-id')).toBeUndefined()
   })
+
+  it('does not resolve an external absolute reference even when it matches a fullUrl', () => {
+    const index = createBundleIndex({
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [{
+        fullUrl: 'https://external.test/Binary/external',
+        resource: { resourceType: 'Binary', id: 'external' },
+      }],
+    }, 'https://example.test/fhir')
+
+    expect(index.resolve('https://external.test/Binary/external')).toBeUndefined()
+  })
 })

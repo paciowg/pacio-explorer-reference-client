@@ -1,6 +1,10 @@
-import type { CodeableConcept, DocumentReference, Identifier, Period, Reference } from 'fhir/r4'
+import type { CodeableConcept, DocumentReference, Period, Reference } from 'fhir/r4'
 import { createAhdCategory, createPmoType, type PmoStatus } from './pmoDocument'
 import { formatAdiVersionNumber } from './version'
+import {
+  createAdiDocumentIdentifier,
+  createAdiDocumentSetIdentifier,
+} from './identifiers'
 
 export type CreateAdiDocumentReferenceInput = {
   subject: Reference
@@ -13,8 +17,8 @@ export type CreateAdiDocumentReferenceInput = {
   jurisdiction?: CodeableConcept
   contextPeriod: Period
   bundleUrl: string
-  documentIdentifier: Identifier
-  setIdentifier: Identifier
+  documentIdentifierValue: string
+  setIdentifierValue: string
 }
 
 const ADI_DOCUMENT_REFERENCE_PROFILE_URL = 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
@@ -33,8 +37,8 @@ export function buildAdiDocumentReference(input: CreateAdiDocumentReferenceInput
       { url: ADI_DOC_VERSION_EXTENSION_URL, valueString: formatAdiVersionNumber(input.createdAt) },
       ...(input.jurisdiction ? [{ url: ADI_JURISDICTION_EXTENSION_URL, valueCodeableConcept: input.jurisdiction }] : []),
     ],
-    masterIdentifier: input.documentIdentifier,
-    identifier: [input.setIdentifier],
+    masterIdentifier: createAdiDocumentIdentifier(input.documentIdentifierValue),
+    identifier: [createAdiDocumentSetIdentifier(input.setIdentifierValue)],
     type: createPmoType(), category: [createAhdCategory()],
     subject: input.subject, author: input.author,
     ...(input.authenticator ? { authenticator: input.authenticator } : {}),

@@ -25,6 +25,13 @@ export function createBundleIndex(bundle: Bundle, baseUrl?: string): BundleIndex
           ?.contained
         return contained?.find((resource) => `#${resource.id}` === reference)
       }
+      const isAbsoluteReference = reference.startsWith('http://') || reference.startsWith('https://')
+      if (
+        isAbsoluteReference &&
+        (!normalizedBaseUrl || !reference.startsWith(`${normalizedBaseUrl}/`))
+      ) {
+        return undefined
+      }
       if (byFullUrl.has(reference)) return byFullUrl.get(reference)
       if (byReference.has(reference)) return byReference.get(reference)
       if (!normalizedBaseUrl || !reference.startsWith(`${normalizedBaseUrl}/`)) return undefined

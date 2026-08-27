@@ -89,6 +89,7 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/` — server connection and saved servers
 - `#/patients` — patient list
 - `#/patients/:id` — patient summary
+- `#/patients/:id/pmo` — create an ADI portable medical order
 - `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
 
 Saved and active server settings are stored only in browser local storage.

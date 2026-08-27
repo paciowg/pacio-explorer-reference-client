@@ -1,21 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import type {
-  Binary,
-  Bundle,
-  CodeableConcept,
-  Composition,
-  DocumentReference,
-  Extension,
-  Identifier,
-  Reference,
-  Resource,
-} from 'fhir/r4'
+import type { DocumentReference } from 'fhir/r4'
 import {
   fetchBundleByReference,
   fetchDocumentReference,
   fetchPatient,
 } from '../../lib/fhir/client'
-import { createBundleIndex } from '../../lib/fhir/bundleIndex'
 import {
   formatDate,
   getCodeableConceptText,
@@ -23,382 +12,19 @@ import {
   placeholderValue,
 } from '../../lib/fhir/formatters'
 import { navigateTo } from '../../lib/routing/routes'
-import { normalizeBaseUrl } from '../../lib/fhir/url'
-import { readAdiDocument } from '../../igs/pacioAdi/adiDocument'
 import { useSavedServers } from '../servers/useSavedServers'
-import { createAttachmentViewer, createBinaryViewer, type AttachmentViewer } from './browserAttachments'
+import {
+  buildBundleDerivedData,
+  buildDocumentDetailsRows,
+  getBundleLoadWarning,
+  getReferencedBundleUrl,
+  MISSING_COMPOSITION_WARNING,
+  type BundleDerivedData,
+} from './advanceDirectiveModel'
 
 type AdvanceDirectiveDetailPageProps = {
   patientId: string
   documentReferenceId: string
-}
-
-type DetailRow = {
-  label: string
-  value: string
-}
-
-type BundleDerivedData = {
-  composition: Composition
-  pdfViewers: AttachmentViewer[]
-}
-
-const ADI_DOC_VERSION_EXTENSION_URL =
-  'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-docVersionNumber-extension'
-const ADI_DATA_ENTERER_EXTENSION_URL =
-  'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-dataEnterer-extension'
-const ADI_FACILITATOR_PROFILE_URL =
-  'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-Facilitator'
-const ACP_SERVICES_CODE = 'acp-services'
-
-function formatReference(reference: Reference | undefined) {
-  if (!reference) return placeholderValue()
-  return reference.display || reference.reference || placeholderValue()
-}
-
-function formatReferences(references: Reference[] | undefined) {
-  if (!references || references.length === 0) return placeholderValue()
-
-  const values = references
-    .map((reference) => formatReference(reference))
-    .filter((value) => value !== placeholderValue())
-
-  return values.length > 0 ? values.join(', ') : placeholderValue()
-}
-
-function formatCodeableConcepts(concepts: CodeableConcept[] | undefined) {
-  if (!concepts || concepts.length === 0) return placeholderValue()
-
-  const values = concepts
-    .map((concept) => getCodeableConceptText(concept))
-    .filter(Boolean)
-
-  return values.length > 0 ? values.join(', ') : placeholderValue()
-}
-
-function formatIdentifier(identifier: Identifier | undefined) {
-  return identifier?.value || ''
-}
-
-function formatIdentifiers(identifiers: Identifier[] | undefined) {
-  if (!identifiers || identifiers.length === 0) return placeholderValue()
-
-  const values = identifiers
-    .map((identifier) => formatIdentifier(identifier))
-    .filter(Boolean)
-
-  return values.length > 0 ? values.join(', ') : placeholderValue()
-}
-
-function formatContextPeriod(documentReference: DocumentReference) {
-  const start = documentReference.context?.period?.start
-  const end = documentReference.context?.period?.end
-
-  if (!start && !end) return placeholderValue()
-  if (start && end) return `${formatDate(start)} to ${formatDate(end)}`
-  if (start) return `From ${formatDate(start)}`
-  return `Through ${formatDate(end)}`
-}
-
-function formatSecurityLabels(documentReference: DocumentReference) {
-  return formatCodeableConcepts(documentReference.securityLabel)
-}
-
-function getAdiVersionFromExtensions(
-  extensions: { url?: string; valueString?: string }[] | undefined,
-) {
-  const version = extensions?.find(
-    (extension) => extension.url === ADI_DOC_VERSION_EXTENSION_URL,
-  )?.valueString
-
-  return version || ''
-}
-
-function getDataEntererFromExtensions(extensions: Extension[] | undefined) {
-  const extension = extensions?.find(
-    (item) => item.url === ADI_DATA_ENTERER_EXTENSION_URL,
-  )
-
-  const valueReference = extension?.valueReference
-  return valueReference ? formatReference(valueReference) : placeholderValue()
-}
-
-function formatAttester(composition: Composition | undefined) {
-  if (!composition?.attester || composition.attester.length === 0) {
-    return placeholderValue()
-  }
-
-  return composition.attester
-    .map((attester) =>
-      [
-        attester.mode || '',
-        attester.party?.display || attester.party?.reference || '',
-        attester.time ? formatDate(attester.time) : '',
-      ]
-        .filter(Boolean)
-        .join(', '),
-    )
-    .join(', ')
-}
-
-function getFacilitators(composition: Composition | undefined) {
-  if (!composition?.event || composition.event.length === 0) {
-    return placeholderValue()
-  }
-
-  const facilitatorReferences = composition.event
-    .filter((event) =>
-      event.code?.some((codeableConcept) =>
-        codeableConcept.coding?.some((coding) => coding.code === ACP_SERVICES_CODE),
-      ),
-    )
-    .flatMap((event) => event.detail ?? [])
-    .filter((reference) => {
-      const type = reference.type
-      const targetProfile = reference.extension
-        ?.find((extension) => extension.url === 'http://hl7.org/fhir/StructureDefinition/targetProfile')
-        ?.valueUri
-
-      return (
-        reference.reference ||
-        type === 'PractitionerRole' ||
-        targetProfile === ADI_FACILITATOR_PROFILE_URL
-      )
-    })
-
-  return formatReferences(facilitatorReferences)
-}
-
-function getCombinedIdentifiers(
-  composition: Composition | undefined,
-  documentReference: DocumentReference,
-) {
-  const allIdentifiers = [
-    ...(composition?.identifier ? [composition.identifier] : []),
-    ...(documentReference.identifier ?? []),
-  ]
-
-  const seen = new Set<string>()
-  const deduplicated: Identifier[] = []
-
-  for (const identifier of allIdentifiers) {
-    const key = formatIdentifier(identifier)
-    if (!key || seen.has(key)) continue
-
-    seen.add(key)
-    deduplicated.push(identifier)
-  }
-
-  return deduplicated
-}
-
-function buildDocumentDetailsRows(
-  documentReference: DocumentReference,
-  composition: Composition | undefined,
-): DetailRow[] {
-  const compositionStatus = composition?.status
-  const documentReferenceStatus = documentReference.docStatus || documentReference.status
-  const compositionVersion = getAdiVersionFromExtensions(composition?.extension)
-  const documentReferenceVersion = getAdiVersionFromExtensions(documentReference.extension)
-  const adiDocument = composition ? readAdiDocument(composition, documentReference) : null
-
-  const compositionCategories = formatCodeableConcepts(composition?.category)
-  const compositionSubject = formatReference(composition?.subject)
-  const compositionAuthor = formatReferences(composition?.author)
-  const compositionCustodian = formatReference(composition?.custodian)
-
-  return [
-    {
-      label: 'Status',
-      value: compositionStatus || documentReferenceStatus || placeholderValue(),
-    },
-    {
-      label: 'Version',
-      value: adiDocument?.versionNumber || compositionVersion || documentReferenceVersion || placeholderValue(),
-    },
-    {
-      label: 'Title',
-      value: composition?.title || placeholderValue(),
-    },
-    {
-      label: 'Type',
-      value:
-        getCodeableConceptText(composition?.type) ||
-        getCodeableConceptText(documentReference.type) ||
-        placeholderValue(),
-    },
-    {
-      label: 'Category',
-      value:
-        compositionCategories !== placeholderValue()
-          ? compositionCategories
-          : formatCodeableConcepts(documentReference.category),
-    },
-    {
-      label: 'Subject',
-      value:
-        compositionSubject !== placeholderValue()
-          ? compositionSubject
-          : formatReference(documentReference.subject),
-    },
-    {
-      label: 'Author',
-      value:
-        compositionAuthor !== placeholderValue()
-          ? compositionAuthor
-          : formatReferences(documentReference.author),
-    },
-    {
-      label: 'Facilitator',
-      value: adiDocument ? formatReferences(adiDocument.facilitators) : getFacilitators(composition),
-    },
-    {
-      label: 'Data enterer',
-      value: adiDocument ? formatReference(adiDocument.dataEnterer) : getDataEntererFromExtensions(composition?.extension),
-    },
-    {
-      label: 'Attester',
-      value: formatAttester(composition),
-    },
-    {
-      label: 'Authenticator',
-      value: formatReference(documentReference.authenticator),
-    },
-    {
-      label: 'Custodian',
-      value:
-        compositionCustodian !== placeholderValue()
-          ? compositionCustodian
-          : formatReference(documentReference.custodian),
-    },
-    {
-      label: 'Date',
-      value: formatDate(composition?.date || documentReference.date),
-    },
-    {
-      label: 'Description',
-      value: documentReference.description || placeholderValue(),
-    },
-    {
-      label: 'Master identifier',
-      value: formatIdentifiers(
-        documentReference.masterIdentifier
-          ? [documentReference.masterIdentifier]
-          : undefined,
-      ),
-    },
-    {
-      label: 'Identifier(s)',
-      value: formatIdentifiers(getCombinedIdentifiers(composition, documentReference)),
-    },
-    {
-      label: 'Context period',
-      value: formatContextPeriod(documentReference),
-    },
-    {
-      label: 'Security label',
-      value: formatSecurityLabels(documentReference),
-    },
-  ]
-}
-
-function getDocumentComposition(bundle: Bundle) {
-  return (
-    bundle.entry
-      ?.map((entry) => entry.resource)
-      .find((resource): resource is Composition => resource?.resourceType === 'Composition') ||
-    null
-  )
-}
-
-function isBinary(resource: Resource | undefined): resource is Binary {
-  return resource?.resourceType === 'Binary'
-}
-
-function isDocumentReference(resource: Resource | undefined): resource is DocumentReference {
-  return resource?.resourceType === 'DocumentReference'
-}
-
-function getBundlePdfViewers(bundle: Bundle, composition: Composition, baseUrl: string) {
-  const viewers: AttachmentViewer[] = []
-  const seenLabels = new Set<string>()
-  const bundleIndex = createBundleIndex(bundle, baseUrl)
-
-  for (const section of composition.section ?? []) {
-    for (const entry of section.entry ?? []) {
-      const resource = bundleIndex.resolve(entry.reference, composition)
-
-      if (isBinary(resource)) {
-        const viewer = createBinaryViewer(section.title || 'View PDF', resource)
-        if (viewer && !seenLabels.has(viewer.label)) {
-          viewers.push(viewer)
-          seenLabels.add(viewer.label)
-        }
-      }
-
-      if (isDocumentReference(resource)) {
-        for (const contentItem of resource.content ?? []) {
-          const viewer = createAttachmentViewer(
-            contentItem.attachment?.title || section.title || 'View PDF',
-            contentItem.attachment,
-          )
-          if (viewer && !seenLabels.has(viewer.label)) {
-            viewers.push(viewer)
-            seenLabels.add(viewer.label)
-          }
-        }
-      }
-
-      if (resource) {
-        const containedResources = (resource as Resource & { contained?: Resource[] }).contained ?? []
-
-        for (const contained of containedResources) {
-          if (isBinary(contained)) {
-            const viewer = createBinaryViewer(section.title || 'View PDF', contained)
-            if (viewer && !seenLabels.has(viewer.label)) {
-              viewers.push(viewer)
-              seenLabels.add(viewer.label)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return viewers
-}
-
-function getReferencedBundleUrl(documentReference: DocumentReference, baseUrl: string) {
-  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
-
-  for (const contentItem of documentReference.content ?? []) {
-    const url = contentItem.attachment?.url?.trim()
-    if (!url) continue
-
-    if (url.startsWith('Bundle/')) {
-      return url
-    }
-
-    if (url.startsWith('/Bundle/')) {
-      return url.slice(1)
-    }
-
-    if (url.startsWith(`${normalizedBaseUrl}/Bundle/`)) {
-      return url
-    }
-  }
-
-  return ''
-}
-
-function buildBundleDerivedData(bundle: Bundle, baseUrl: string): BundleDerivedData | null {
-  const composition = getDocumentComposition(bundle)
-  if (!composition) return null
-
-  return {
-    composition,
-    pdfViewers: getBundlePdfViewers(bundle, composition, baseUrl),
-  }
 }
 
 export function AdvanceDirectiveDetailPage({
@@ -420,7 +46,6 @@ export function AdvanceDirectiveDetailPage({
     }
 
     const baseUrl = activeServer.baseUrl
-
     let isMounted = true
     setIsLoading(true)
     setErrorMessage('')
@@ -433,7 +58,6 @@ export function AdvanceDirectiveDetailPage({
           fetchPatient(baseUrl, patientId),
           fetchDocumentReference(baseUrl, documentReferenceId),
         ])
-
         if (!isMounted) return
 
         setPatientName(
@@ -441,88 +65,55 @@ export function AdvanceDirectiveDetailPage({
         )
         setDocumentReference(loadedDocumentReference)
 
-        const bundleReference = getReferencedBundleUrl(
-          loadedDocumentReference,
-          baseUrl,
-        )
-
-        if (!bundleReference) {
-          return
-        }
+        const bundleReference = getReferencedBundleUrl(loadedDocumentReference, baseUrl)
+        if (!bundleReference) return
 
         try {
           const bundle = await fetchBundleByReference(baseUrl, bundleReference)
           if (!isMounted) return
-
           const derivedData = buildBundleDerivedData(bundle, baseUrl)
-
           if (derivedData) {
             setBundleDerivedData(derivedData)
           } else {
-            setBundleWarningMessage(
-              'A Bundle was referenced, but no Composition was found. Showing DocumentReference details.',
-            )
+            setBundleWarningMessage(MISSING_COMPOSITION_WARNING)
           }
         } catch (bundleError) {
           if (!isMounted) return
-
-          setBundleWarningMessage(
-            bundleError instanceof Error
-              ? `Unable to load referenced Bundle. ${bundleError.message}`
-              : 'Unable to load referenced Bundle. Showing DocumentReference details.',
-          )
+          setBundleWarningMessage(getBundleLoadWarning(bundleError))
         }
       } catch (error) {
         if (!isMounted) return
-
         setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load the advance directive.',
+          error instanceof Error ? error.message : 'Unable to load the advance directive.',
         )
       } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+        if (isMounted) setIsLoading(false)
       }
     }
 
     void load()
-
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [activeServer, patientId, documentReferenceId])
 
   const documentDetailsRows = useMemo(
-    () =>
-      documentReference
-        ? buildDocumentDetailsRows(documentReference, bundleDerivedData?.composition)
-        : [],
+    () => documentReference
+      ? buildDocumentDetailsRows(documentReference, bundleDerivedData?.composition)
+      : [],
     [documentReference, bundleDerivedData],
   )
 
-  if (!activeServer) {
-    return null
-  }
+  if (!activeServer) return null
 
-  const pageTitle =
-    bundleDerivedData?.composition.title ||
+  const pageTitle = bundleDerivedData?.composition.title ||
     getCodeableConceptText(bundleDerivedData?.composition.type) ||
     getCodeableConceptText(documentReference?.type) ||
     'Advance Directive'
-
-  const pageDate =
-    bundleDerivedData?.composition.date ||
-    documentReference?.date
+  const pageDate = bundleDerivedData?.composition.date || documentReference?.date
 
   return (
     <section className="panel">
       <div className="panel-header">
-        <div>
-          <h2>Advance Directive</h2>
-        </div>
-
+        <div><h2>Advance Directive</h2></div>
         <div className="panel-server-details">
           <span className="panel-server-label">{activeServer.label}</span>
           <span className="panel-server-url">{activeServer.baseUrl}</span>

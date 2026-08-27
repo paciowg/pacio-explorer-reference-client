@@ -4,7 +4,6 @@ import type {
   BundleEntry,
   CodeableConcept,
   Composition,
-  Identifier,
   Patient,
   Practitioner,
   PractitionerRole,
@@ -14,6 +13,7 @@ import type {
 import { createDocumentBundle } from '../../lib/fhir/documents'
 import { getDisplayNameFromHumanName, getPractitionerRoleDisplayName } from '../../lib/fhir/formatters'
 import { formatAdiVersionNumber } from './version'
+import { createAdiDocumentIdentifier } from './identifiers'
 
 export type PmoStatus = 'preliminary' | 'final' | 'amended'
 export type PmoAttesterOption = { reference: string; display: string }
@@ -31,7 +31,7 @@ export type CreateAdiPmoBundleInput = {
   signedDate: string
   createdAt: string
   pdfBase64: string
-  documentIdentifier: Identifier
+  documentIdentifierValue: string
   compositionFullUrl: string
 }
 
@@ -89,7 +89,7 @@ function buildComposition(input: CreateAdiPmoBundleInput, sourceFormBinary: Bina
   return {
     resourceType: 'Composition',
     meta: { profile: [ADI_PMO_COMPOSITION_PROFILE] },
-    identifier: input.documentIdentifier,
+    identifier: createAdiDocumentIdentifier(input.documentIdentifierValue),
     language: 'en-US',
     text: buildCompositionNarrative({ patientDisplayName, authorDisplayName, attesterDisplay: input.attester.display, signedDate: input.signedDate, status: input.status, facilitatorDisplay: input.facilitator?.display, dataEntererDisplay: input.dataEnterer?.display }),
     extension: [
