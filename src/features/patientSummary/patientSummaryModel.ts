@@ -20,28 +20,14 @@ import {
   formatPhone,
   getCodeableConceptText,
   getDisplayNameFromHumanName,
-  getFirstMrn,
   placeholderValue,
 } from '../../lib/fhir/formatters'
+import type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
+import { buildPatientDemographics, type EmergencyContact } from './patientDemographics'
 
-export type EmergencyContact = {
-  name: string
-  relationship: string
-  phone: string
-  email: string
-  address: string
-}
+export type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
 
-export type ClinicalListItem = {
-  title: string
-  dateLabel?: string
-  dateValue?: string
-  secondaryText?: string
-}
-
-export type SelectableClinicalListItem = ClinicalListItem & {
-  id: string
-}
+export type { EmergencyContact } from './patientDemographics'
 
 export type PatientSummaryModel = {
   patientId: string
@@ -77,10 +63,6 @@ export type PatientSummaryModel = {
   clinicalSectionEmptyMessage: string
 }
 
-const US_CORE_RACE_URL =
-  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race'
-const US_CORE_ETHNICITY_URL =
-  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity'
 const US_CORE_BIRTHSEX_URL =
   'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex'
 
@@ -133,41 +115,24 @@ export function buildPatientSummaryModel(input: {
   bundleAvailable: boolean
 }): PatientSummaryModel {
   const { patient, bundle, bundleAvailable } = input
-  const name = patient.name?.[0]
-  const patientName = getDisplayNameFromHumanName(name) || placeholderValue()
-  const firstName = name?.given?.[0] || placeholderValue()
-  const lastName = name?.family || placeholderValue()
-  const birthDate = patient.birthDate || placeholderValue()
-  const gender = patient.gender ? capitalize(patient.gender) : placeholderValue()
-  const mrn = getFirstMrn(patient.identifier) || placeholderValue()
-  const patientMeta = [gender, `DOB: ${birthDate}`, `MRN: ${mrn}`].join(' · ')
+  const demographicModel = buildPatientDemographics(patient)
 
   return {
-    patientId: patient.id || '',
-    patientName,
-    patientMeta,
+    patientId: demographicModel.patientId,
+    patientName: demographicModel.patientName,
+    patientMeta: demographicModel.patientMeta,
     bundleStatusText: bundleAvailable ? '' : 'Showing patient-only fallback data',
     bundleStatusTone: bundleAvailable ? 'success' : 'warning',
     personalInformation: {
-      firstName,
-      lastName,
-      birthDate,
-      gender,
-      birthSex: getBirthSex(patient.extension),
-      maritalStatus: getMaritalStatus(patient.maritalStatus),
-      mrn,
+      ...demographicModel.personalInformation,
     },
     demographics: {
-      race: getUsCoreCategoryDisplay(patient.extension, US_CORE_RACE_URL),
-      ethnicity: getUsCoreCategoryDisplay(patient.extension, US_CORE_ETHNICITY_URL),
-      language: getLanguage(patient),
+      ...demographicModel.demographics,
     },
     contactInformation: {
-      address: formatAddress(patient.address?.[0]),
-      phone: formatPhone(patient.telecom),
-      email: getEmail(patient.telecom),
+      ...demographicModel.contactInformation,
     },
-    emergencyContacts: getEmergencyContacts(patient),
+    emergencyContacts: demographicModel.emergencyContacts,
     activeProblems: bundleAvailable ? getActiveProblems(bundle) : [],
     currentMedications: bundleAvailable ? getCurrentMedications(bundle) : [],
     knownAllergies: bundleAvailable ? getKnownAllergies(bundle) : [],
@@ -177,7 +142,7 @@ export function buildPatientSummaryModel(input: {
   }
 }
 
-function getLanguage(patient: Patient) {
+export function getLanguage(patient: Patient) {
   const code =
     patient.communication?.[0]?.language?.coding?.[0]?.code ||
     patient.communication?.[0]?.language?.text
@@ -185,13 +150,13 @@ function getLanguage(patient: Patient) {
   return code ? code.toUpperCase() : placeholderValue()
 }
 
-function getBirthSex(extensions: Extension[] | undefined) {
+export function getBirthSex(extensions: Extension[] | undefined) {
   const extension = extensions?.find((item) => item.url === US_CORE_BIRTHSEX_URL)
   const value = extension?.valueCode
   return value || placeholderValue()
 }
 
-function getUsCoreCategoryDisplay(
+export function getUsCoreCategoryDisplay(
   extensions: Extension[] | undefined,
   extensionUrl: string,
 ) {
@@ -205,7 +170,7 @@ function getUsCoreCategoryDisplay(
   return display || placeholderValue()
 }
 
-function getMaritalStatus(maritalStatus: CodeableConcept | undefined) {
+export function getMaritalStatus(maritalStatus: CodeableConcept | undefined) {
   const code = maritalStatus?.coding?.[0]?.code
 
   const mapped = code
@@ -227,7 +192,7 @@ function getEmail(telecom: ContactPoint[] | undefined) {
   return email || placeholderValue()
 }
 
-function getEmergencyContacts(patient: Patient): EmergencyContact[] {
+export function getEmergencyContacts(patient: Patient): EmergencyContact[] {
   return (
     patient.contact?.map((contact, index) => ({
       name:

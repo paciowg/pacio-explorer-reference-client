@@ -266,7 +266,6 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     if (!hasEditedContextPeriodEnd) {
@@ -428,7 +427,6 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
     setIsSubmitting(true)
     setErrorMessage('')
-    setSuccessMessage('')
 
     try {
       const pdfBase64 = await readFileAsBase64(pdfFile)
@@ -527,7 +525,6 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
         {isLoading ? <div className="info-banner">Loading PMO creation form...</div> : null}
         {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
-        {successMessage ? <div className="success-banner">{successMessage}</div> : null}
 
         {!isLoading && patient ? (
           <form onSubmit={handleSubmit}>

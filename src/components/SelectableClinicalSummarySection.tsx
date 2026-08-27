@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { SelectableClinicalListItem } from '../features/patientSummary/patientSummaryModel'
+import type { SelectableClinicalListItem } from './clinicalTypes'
 
 type SelectableClinicalSummarySectionProps = {
   title: string
@@ -16,8 +16,6 @@ export function SelectableClinicalSummarySection({
   footer,
   onSelect,
 }: SelectableClinicalSummarySectionProps) {
-  const visibleItems = items.slice(0, 10)
-
   return (
     <section className="summary-card clinical-summary-card">
       <div className="clinical-summary-header">
@@ -25,9 +23,9 @@ export function SelectableClinicalSummarySection({
         <span className="clinical-summary-cap">Up to 10 items</span>
       </div>
 
-      {visibleItems.length > 0 ? (
+      {items.length > 0 ? (
         <ul className="clinical-list">
-          {visibleItems.map((item) => (
+          {items.map((item) => (
             <li key={`${title}-${item.id}`} className="clinical-list-selectable-item">
               <button
                 type="button"

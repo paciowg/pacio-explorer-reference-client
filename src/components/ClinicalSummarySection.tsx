@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { ClinicalListItem } from '../features/patientSummary/patientSummaryModel'
+import type { ClinicalListItem } from './clinicalTypes'
 
 type ClinicalSummarySectionProps = {
   title: string
@@ -14,8 +14,6 @@ export function ClinicalSummarySection({
   emptyMessage = 'None recorded',
   footer,
 }: ClinicalSummarySectionProps) {
-  const visibleItems = items.slice(0, 10)
-
   return (
     <section className="summary-card clinical-summary-card">
       <div className="clinical-summary-header">
@@ -23,9 +21,9 @@ export function ClinicalSummarySection({
         <span className="clinical-summary-cap">Up to 10 items</span>
       </div>
 
-      {visibleItems.length > 0 ? (
+      {items.length > 0 ? (
         <ul className="clinical-list">
-          {visibleItems.map((item) => (
+          {items.map((item) => (
             <li
               key={`${title}-${item.title}-${item.dateValue ?? ''}-${item.secondaryText ?? ''}`}
               className="clinical-list-item"

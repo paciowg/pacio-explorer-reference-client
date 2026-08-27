@@ -247,10 +247,6 @@ export async function fetchBundleByReference(baseUrl: string, reference: string)
   return bundle
 }
 
-export async function fetchPractitioners(baseUrl: string, count = 100) {
-  return fhirGet<Bundle>(baseUrl, `/Practitioner?_count=${count}`)
-}
-
 export async function fetchPractitionerRoles(baseUrl: string, count = 100) {
   return fhirGet<Bundle>(
     baseUrl,
