@@ -8,7 +8,7 @@ PACIO Explorer is a standalone React browser client for open FHIR R4 servers. It
 
 1. Connect to a FHIR R4 server; the client validates `GET /metadata`.
 2. Browse up to 100 patients and filter them in the browser.
-3. Open a patient summary. The client uses `Patient/{id}/$everything` with pagination and falls back to `Patient/{id}` if `$everything` is unavailable.
+3. Open a patient summary. The client uses `Patient/{id}/$everything` with 250-entry pages, a 500-result cap, and falls back to `Patient/{id}` if `$everything` is unavailable.
 4. Open an advance directive. The client displays generic `DocumentReference` metadata and, when its attachment references a document Bundle, loads its Composition and PDF source forms.
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
@@ -51,6 +51,8 @@ npm run build
 npm run lint
 ```
 
+Before a release, manually smoke-test server connection and saved-server flows, patient search and fallback behavior, advance-directive PDF opening, and PMO creation against a CORS-enabled FHIR R4 server.
+
 ## Architecture
 
 The PMO creation reference path is deliberately short:
@@ -66,6 +68,10 @@ PMO form -> createPmoDocument -> PACIO ADI builders -> shared FHIR helpers -> FH
 - `src/components/` owns reusable presentation components and presentation types.
 
 Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance-directive display remains available for non-ADI `DocumentReference` resources; PACIO ADI enrichment is optional.
+
+## Deliberate constraints
+
+The app remains a small browser reference client. It does not add a backend, cache layer, router or state-management framework, or additional FHIR client dependency.
 
 ## ADI versioning and temporary conformance deviations
 
@@ -86,7 +92,3 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
 
 Saved and active server settings are stored only in browser local storage.
-
-## Historical planning
-
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) is historical background. For the current architecture and refactoring status, use this README and [REFACTORING-PLAN.md](REFACTORING-PLAN.md).
