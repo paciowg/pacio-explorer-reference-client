@@ -9,6 +9,8 @@ import { PatientListPage } from './features/patients/PatientListPage'
 import { PatientSummaryPage } from './features/patientSummary/PatientSummaryPage'
 import { PatientPmoCreatePage } from './features/advanceDirectives/PatientPmoCreatePage'
 import { AdvanceDirectiveDetailPage } from './features/advanceDirectives/AdvanceDirectiveDetailPage'
+import { PatientTocCreatePage } from './features/transitionsOfCare/PatientTocCreatePage'
+import { TocDetailPage } from './features/transitionsOfCare/TocDetailPage'
 import { useSavedServers } from './features/servers/useSavedServers'
 import {
   clearRouteNotification,
@@ -63,6 +65,12 @@ function App() {
           patientId={route.patientId}
           documentReferenceId={route.documentReferenceId}
         />
+      ) : null}
+      {route.name === 'patientTocCreate' ? (
+        <PatientTocCreatePage patientId={route.patientId} />
+      ) : null}
+      {route.name === 'tocDetail' ? (
+        <TocDetailPage patientId={route.patientId} documentReferenceId={route.documentReferenceId} />
       ) : null}
     </AppLayout>
   )

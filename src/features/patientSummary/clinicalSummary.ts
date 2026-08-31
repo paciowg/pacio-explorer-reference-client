@@ -16,6 +16,7 @@ import {
   getCodeableConceptText,
   placeholderValue,
 } from '../../lib/fhir/formatters'
+import { getTocDocuments } from '../transitionsOfCare/tocModel'
 
 // This reference client intentionally recognizes a small explicit LOINC subset rather than
 // attempting terminology expansion in the browser.
@@ -36,6 +37,7 @@ export type ClinicalSummary = {
   knownAllergies: ClinicalListItem[]
   mostRecentVitals: ClinicalListItem[]
   advanceDirectives: SelectableClinicalListItem[]
+  transitionOfCares: SelectableClinicalListItem[]
 }
 
 export function buildClinicalSummary(bundle: Bundle | null): ClinicalSummary {
@@ -45,6 +47,7 @@ export function buildClinicalSummary(bundle: Bundle | null): ClinicalSummary {
     knownAllergies: getKnownAllergies(bundle),
     mostRecentVitals: getMostRecentVitals(bundle),
     advanceDirectives: getAdvanceDirectives(bundle),
+    transitionOfCares: getTocDocuments(bundle),
   }
 }
 

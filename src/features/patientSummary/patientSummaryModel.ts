@@ -37,6 +37,7 @@ export type PatientSummaryModel = {
   knownAllergies: ClinicalListItem[]
   mostRecentVitals: ClinicalListItem[]
   advanceDirectives: SelectableClinicalListItem[]
+  transitionOfCares: SelectableClinicalListItem[]
   clinicalSectionEmptyMessage: string
 }
 

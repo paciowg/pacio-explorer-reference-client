@@ -315,6 +315,25 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
                   </div>
                 }
               />
+              <SelectableClinicalSummarySection
+                title="Transitions of Care"
+                items={summary.transitionOfCares}
+                emptyMessage={summary.clinicalSectionEmptyMessage}
+                onSelect={(item) =>
+                  navigateTo(`/patients/${patientId}/transitions-of-care/${item.id}`)
+                }
+                footer={
+                  <div className="clinical-section-footer">
+                    <button
+                      type="button"
+                      className="secondary-button outline compact"
+                      onClick={() => navigateTo(`/patients/${patientId}/transitions-of-care/new`)}
+                    >
+                      Create TOC document
+                    </button>
+                  </div>
+                }
+              />
             </div>
           </>
         ) : null}

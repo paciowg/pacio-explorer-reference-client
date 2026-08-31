@@ -15,7 +15,6 @@ import {
   getCodeableConceptText,
   placeholderValue,
 } from '../../lib/fhir/formatters'
-import { normalizeBaseUrl } from '../../lib/fhir/url'
 import { readAdiDocument } from '../../igs/pacioAdi/adiDocument'
 import {
   createAttachmentViewer,
@@ -193,20 +192,7 @@ export function getBundlePdfViewers(
   return viewers
 }
 
-export function getReferencedBundleUrl(
-  documentReference: DocumentReference,
-  baseUrl: string,
-) {
-  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
-  for (const contentItem of documentReference.content ?? []) {
-    const url = contentItem.attachment?.url?.trim()
-    if (!url) continue
-    if (url.startsWith('Bundle/')) return url
-    if (url.startsWith('/Bundle/')) return url.slice(1)
-    if (url.startsWith(`${normalizedBaseUrl}/Bundle/`)) return url
-  }
-  return ''
-}
+export { getReferencedBundleUrl } from '../../lib/fhir/documentReferences'
 
 export function buildBundleDerivedData(
   bundle: Bundle,

@@ -1,10 +1,12 @@
 /** Constructs generic FHIR document Bundles without depending on PACIO profiles or terminology. */
-import type { Bundle, BundleEntry, Composition } from 'fhir/r4'
+import type { Bundle, BundleEntry, Composition, Identifier } from 'fhir/r4'
 
 export type CreateDocumentBundleInput = {
   timestamp: string
   compositionEntry: BundleEntry & { resource: Composition }
   supportingEntries: BundleEntry[]
+  identifier?: Identifier
+  profileUrls?: string[]
 }
 
 /**
@@ -14,6 +16,8 @@ export type CreateDocumentBundleInput = {
 export function createDocumentBundle(input: CreateDocumentBundleInput): Bundle {
   return {
     resourceType: 'Bundle',
+    ...(input.profileUrls?.length ? { meta: { profile: input.profileUrls } } : {}),
+    ...(input.identifier ? { identifier: input.identifier } : {}),
     type: 'document',
     timestamp: input.timestamp,
     entry: [input.compositionEntry, ...input.supportingEntries],

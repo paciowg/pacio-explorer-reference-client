@@ -10,12 +10,19 @@ PACIO Explorer is a standalone React browser client for open FHIR R4 servers. It
 2. Browse up to 100 patients and filter them in the browser.
 3. Open a patient summary. The client uses `Patient/{id}/$everything` with 250-entry pages, a 500-result cap, and falls back to `Patient/{id}` if `$everything` is unavailable.
 4. Open an advance directive. The client displays generic `DocumentReference` metadata and, when its attachment references a document Bundle, loads its Composition and PDF source forms.
+5. Open a Transition of Care document. The client loads the same-server document Bundle referenced by its `DocumentReference`, then presents Composition metadata, required TOC sections, empty reasons, and readable summaries of included resources.
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
 ### Create an ADI PMO
 
 From a patient summary, select the PMO creation flow and provide the required author, attester, authenticator, signed date, and PDF source form. The client builds a PACIO ADI PMO document Bundle, posts it, then builds and posts the companion ADI `DocumentReference` pointing to that Bundle. The writes are intentionally separate: if the second write fails, the Bundle remains on the server and the page reports the error.
+
+### Create a Transition of Care document
+
+From a patient summary, open the TOC creation flow and choose a title, status, author, custodian, and at least one patient resource. The form exposes all 15 required TOC sections and records an explicit empty reason for every section without selected entries. It builds a profiled PACIO TOC document Bundle, closes and rewrites its internal references for portability, posts it, and then posts the companion TOC `DocumentReference`.
+
+Selected advance directives are included as ADI `DocumentReference` entries. Their existing attachment links continue to identify the separate ADI document Bundles; those Bundles are not flattened into the TOC document.
 
 ## FHIR requests
 
@@ -55,14 +62,17 @@ Before a release, manually smoke-test server connection and saved-server flows, 
 
 ## Architecture
 
-The PMO creation reference path is deliberately short:
+The document-creation reference paths are deliberately short:
 
 ```text
 PMO form -> createPmoDocument -> PACIO ADI builders -> shared FHIR helpers -> FHIR transport
+TOC form -> createTocDocument -> PACIO TOC builders -> shared FHIR helpers -> FHIR transport
 ```
 
 - `src/features/advanceDirectives/` owns PMO workflow orchestration, generic advance-directive display, and browser file/attachment behavior.
 - `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
+- `src/features/transitionsOfCare/` owns TOC selection, workflow orchestration, discovery, and display.
+- `src/igs/pacioToc/` owns pure PACIO TOC section definitions and resource construction.
 - `src/lib/fhir/` owns generic URL normalization, transport, document Bundle construction, Bundle indexing, and reference closure.
 - `src/features/patientSummary/` owns patient-summary composition and demographics.
 - `src/components/` owns reusable presentation components and presentation types.
@@ -72,6 +82,8 @@ Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance
 ## Deliberate constraints
 
 The app remains a small browser reference client. It does not add a backend, cache layer, router or state-management framework, or additional FHIR client dependency.
+
+TOC support reads indexed TOC `DocumentReference` resources that point to same-server document Bundles. Legacy standalone TOC Compositions, updates, version lineage, cross-server sharing, discharge notifications, and full in-browser FHIR profile validation are outside the current scope.
 
 ## ADI versioning and temporary conformance deviations
 
@@ -93,5 +105,7 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/patients/:id` — patient summary
 - `#/patients/:id/pmo` — create an ADI portable medical order
 - `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
+- `#/patients/:id/transitions-of-care/new` — create a Transition of Care document
+- `#/patients/:id/transitions-of-care/:documentReferenceId` — Transition of Care detail
 
 Saved and active server settings are stored only in browser local storage.

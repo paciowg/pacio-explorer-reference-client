@@ -1,0 +1,200 @@
+/** Classifies patient resources for TOC sections and derives readable TOC list and detail models. */
+import type {
+  AllergyIntolerance,
+  Bundle,
+  CarePlan,
+  Composition,
+  Condition,
+  Device,
+  DiagnosticReport,
+  DocumentReference,
+  Goal,
+  Immunization,
+  Medication,
+  MedicationRequest,
+  MedicationStatement,
+  Observation,
+  Procedure,
+  QuestionnaireResponse,
+  Resource,
+  ServiceRequest,
+} from 'fhir/r4'
+import type { SelectableClinicalListItem } from '../../components/clinicalTypes'
+import {
+  TOC_DOCUMENT_REFERENCE_PROFILE,
+  TOC_SECTION_DEFINITIONS,
+  TOC_TYPE_CODE,
+  type TocSectionKey,
+} from '../../igs/pacioToc/tocDocument'
+import { createBundleIndex } from '../../lib/fhir/bundleIndex'
+import { formatDate, getCodeableConceptText, placeholderValue } from '../../lib/fhir/formatters'
+
+const ADI_DOCUMENT_REFERENCE_PROFILE = 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
+
+export type TocResourceOption = {
+  reference: string
+  resource: Resource
+  title: string
+  secondaryText?: string
+  dateValue?: string
+}
+
+export type TocSectionOptions = {
+  key: TocSectionKey
+  title: string
+  options: TocResourceOption[]
+}
+
+function resources(bundle: Bundle | null) {
+  return bundle?.entry?.flatMap((entry) => entry.resource ? [entry.resource] : []) ?? []
+}
+
+function hasCode(concepts: { coding?: { code?: string }[] }[] | undefined, code: string) {
+  return concepts?.some((concept) => concept.coding?.some((coding) => coding.code === code)) ?? false
+}
+
+function observationCategory(resource: Resource, code: string) {
+  return resource.resourceType === 'Observation' && hasCode((resource as Observation).category, code)
+}
+
+function profileIncludes(resource: Resource, fragment: string) {
+  return resource.meta?.profile?.some((profile) => profile.includes(fragment)) ?? false
+}
+
+function isAdiDocumentReference(resource: Resource) {
+  if (resource.resourceType !== 'DocumentReference') return false
+  const document = resource as DocumentReference
+  return document.meta?.profile?.includes(ADI_DOCUMENT_REFERENCE_PROFILE) || hasCode(document.category, '42348-3')
+}
+
+function eligibleForSection(resource: Resource, key: TocSectionKey) {
+  switch (key) {
+    case 'advanceDirectives': return isAdiDocumentReference(resource)
+    case 'allergies': return resource.resourceType === 'AllergyIntolerance'
+    case 'behavioralHealth': return resource.resourceType === 'QuestionnaireResponse' || observationCategory(resource, 'cognitive-status') || observationCategory(resource, 'behavioral-health')
+    case 'functionalStatus': return resource.resourceType === 'QuestionnaireResponse' || observationCategory(resource, 'functional-status') || profileIncludes(resource, 'pacio-pfe')
+    case 'immunizations': return resource.resourceType === 'Immunization'
+    case 'dischargeInstructions': return resource.resourceType === 'DiagnosticReport' || (resource.resourceType === 'DocumentReference' && !isAdiDocumentReference(resource))
+    case 'medicalDevices': return resource.resourceType === 'Device' || resource.resourceType === 'DeviceRequest'
+    case 'medications': return ['List', 'MedicationRequest', 'Medication', 'MedicationStatement'].includes(resource.resourceType)
+    case 'planOfCare': return resource.resourceType === 'CarePlan' || resource.resourceType === 'Goal'
+    case 'problems': return resource.resourceType === 'Condition'
+    case 'procedures': return resource.resourceType === 'Procedure' || resource.resourceType === 'ServiceRequest'
+    case 'reasonForTransfer': return ['Condition', 'Procedure', 'Observation', 'Composition', 'Encounter'].includes(resource.resourceType)
+    case 'clinicalResults': return resource.resourceType === 'DiagnosticReport' || (resource.resourceType === 'Observation' && !observationCategory(resource, 'vital-signs') && !observationCategory(resource, 'functional-status') && !observationCategory(resource, 'social-history'))
+    case 'socialHistory': return observationCategory(resource, 'social-history') || profileIncludes(resource, 'NarrativeHistoryOfStatus')
+    case 'vitalSigns': return observationCategory(resource, 'vital-signs')
+  }
+}
+
+function resourceDate(resource: Resource) {
+  switch (resource.resourceType) {
+    case 'AllergyIntolerance': return (resource as AllergyIntolerance).recordedDate
+    case 'Condition': return (resource as Condition).recordedDate || (resource as Condition).onsetDateTime
+    case 'Observation': return (resource as Observation).effectiveDateTime || (resource as Observation).issued
+    case 'Procedure': return (resource as Procedure).performedDateTime
+    case 'Immunization': return (resource as Immunization).occurrenceDateTime
+    case 'DiagnosticReport': return (resource as DiagnosticReport).effectiveDateTime || (resource as DiagnosticReport).issued
+    case 'DocumentReference': return (resource as DocumentReference).date
+    case 'MedicationStatement': return (resource as MedicationStatement).dateAsserted || (resource as MedicationStatement).effectiveDateTime
+    case 'MedicationRequest': return (resource as MedicationRequest).authoredOn
+    case 'CarePlan': return (resource as CarePlan).period?.start || (resource as CarePlan).created
+    case 'Goal': return (resource as Goal).startDate
+    case 'ServiceRequest': return (resource as ServiceRequest).authoredOn
+    case 'Composition': return (resource as Composition).date
+    case 'QuestionnaireResponse': return (resource as QuestionnaireResponse).authored
+    default: return undefined
+  }
+}
+
+export function summarizeTocResource(resource: Resource): TocResourceOption | null {
+  if (!resource.id) return null
+  let title = ''
+  let secondaryText: string | undefined
+  switch (resource.resourceType) {
+    case 'AllergyIntolerance': title = getCodeableConceptText((resource as AllergyIntolerance).code); break
+    case 'Condition': title = getCodeableConceptText((resource as Condition).code); break
+    case 'Observation': title = getCodeableConceptText((resource as Observation).code); break
+    case 'Procedure': title = getCodeableConceptText((resource as Procedure).code); break
+    case 'Immunization': title = getCodeableConceptText((resource as Immunization).vaccineCode); break
+    case 'DiagnosticReport': title = getCodeableConceptText((resource as DiagnosticReport).code); break
+    case 'DocumentReference': title = getCodeableConceptText((resource as DocumentReference).type); secondaryText = (resource as DocumentReference).description; break
+    case 'MedicationRequest': title = getCodeableConceptText((resource as MedicationRequest).medicationCodeableConcept) || (resource as MedicationRequest).medicationReference?.display || ''; break
+    case 'MedicationStatement': title = getCodeableConceptText((resource as MedicationStatement).medicationCodeableConcept) || (resource as MedicationStatement).medicationReference?.display || ''; break
+    case 'Medication': title = getCodeableConceptText((resource as Medication).code); break
+    case 'CarePlan': title = (resource as CarePlan).title || (resource as CarePlan).description || ''; break
+    case 'Goal': title = (resource as Goal).description?.text || ''; break
+    case 'ServiceRequest': title = getCodeableConceptText((resource as ServiceRequest).code); break
+    case 'QuestionnaireResponse': title = (resource as QuestionnaireResponse).questionnaire || 'Questionnaire response'; break
+    case 'Device': title = (resource as Device).deviceName?.[0]?.name || (resource as Device).type?.text || ''; break
+    default: title = `${resource.resourceType}/${resource.id}`
+  }
+  const rawDate = resourceDate(resource)
+  return {
+    reference: `${resource.resourceType}/${resource.id}`,
+    resource,
+    title: title || `${resource.resourceType}/${resource.id}`,
+    secondaryText,
+    dateValue: rawDate ? formatDate(rawDate) : undefined,
+  }
+}
+
+export function buildTocSectionOptions(bundle: Bundle | null): TocSectionOptions[] {
+  const available = resources(bundle)
+  return TOC_SECTION_DEFINITIONS.map((definition) => ({
+    key: definition.key,
+    title: definition.title,
+    options: available.filter((resource) => eligibleForSection(resource, definition.key))
+      .map(summarizeTocResource).filter((option): option is TocResourceOption => Boolean(option)),
+  }))
+}
+
+export function isTocDocumentReference(resource: Resource): resource is DocumentReference {
+  if (resource.resourceType !== 'DocumentReference' || !resource.id) return false
+  const document = resource as DocumentReference
+  return Boolean(document.meta?.profile?.includes(TOC_DOCUMENT_REFERENCE_PROFILE) ||
+    document.type?.coding?.some((coding) => coding.code === TOC_TYPE_CODE))
+}
+
+export function getTocDocuments(bundle: Bundle | null): SelectableClinicalListItem[] {
+  return resources(bundle).filter(isTocDocumentReference)
+    .sort((a, b) => Date.parse(b.date || '') - Date.parse(a.date || ''))
+    .slice(0, 10)
+    .map((document) => ({
+      id: document.id!,
+      title: document.description || getCodeableConceptText(document.type) || placeholderValue(),
+      dateLabel: document.date ? 'Date' : undefined,
+      dateValue: document.date ? formatDate(document.date) : undefined,
+      secondaryText: document.docStatus || document.status,
+    }))
+}
+
+function plainNarrative(value: string | undefined) {
+  return value?.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim() || ''
+}
+
+export type TocViewSection = {
+  title: string
+  narrative: string
+  emptyReason: string
+  entries: TocResourceOption[]
+}
+
+export function buildTocViewSections(bundle: Bundle, baseUrl: string): { composition: Composition; sections: TocViewSection[] } | null {
+  const composition = resources(bundle).find((resource): resource is Composition => resource.resourceType === 'Composition')
+  if (!composition) return null
+  const index = createBundleIndex(bundle, baseUrl)
+  return {
+    composition,
+    sections: (composition.section ?? []).map((section) => ({
+      title: section.title || getCodeableConceptText(section.code) || 'Untitled section',
+      narrative: plainNarrative(section.text?.div),
+      emptyReason: getCodeableConceptText(section.emptyReason),
+      entries: (section.entry ?? []).flatMap((entry) => {
+        const resolved = index.resolve(entry.reference, composition)
+        const summary = resolved ? summarizeTocResource(resolved) : null
+        return summary ? [summary] : []
+      }),
+    })),
+  }
+}
