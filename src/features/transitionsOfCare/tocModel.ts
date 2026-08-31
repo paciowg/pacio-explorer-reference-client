@@ -28,7 +28,7 @@ import {
   type TocSectionKey,
 } from '../../igs/pacioToc/tocDocument'
 import { createBundleIndex } from '../../lib/fhir/bundleIndex'
-import { formatDate, getCodeableConceptText, getNarrativeText, placeholderValue } from '../../lib/fhir/formatters'
+import { formatDate, getCodeableConceptText, getNarrativeText } from '../../lib/fhir/formatters'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 
 const ADI_DOCUMENT_REFERENCE_PROFILE = 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
@@ -166,7 +166,7 @@ export function getTocDocuments(bundle: Bundle | null): SelectableClinicalListIt
     .slice(0, 10)
     .map((document) => ({
       id: document.id!,
-      title: document.description || getCodeableConceptText(document.type) || placeholderValue(),
+      title: getSimpleResourceDisplay(document),
       dateLabel: document.date ? 'Date' : undefined,
       dateValue: document.date ? formatDate(document.date) : undefined,
       secondaryText: document.docStatus || document.status,

@@ -16,6 +16,7 @@ import {
   getCodeableConceptText,
   placeholderValue,
 } from '../../lib/fhir/formatters'
+import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 import { getTocDocuments } from '../transitionsOfCare/tocModel'
 
 // This reference client intentionally recognizes a small explicit LOINC subset rather than
@@ -79,7 +80,7 @@ function getActiveProblems(bundle: Bundle | null): ClinicalListItem[] {
       const rawDateValue = condition.onsetDateTime || condition.recordedDate
 
       return {
-        title: getCodeableConceptText(condition.code) || placeholderValue(),
+        title: getSimpleResourceDisplay(condition),
         dateLabel: condition.onsetDateTime ? 'Onset' : condition.recordedDate ? 'Recorded' : undefined,
         dateValue: rawDateValue ? formatDate(rawDateValue) : undefined,
       }
@@ -106,10 +107,7 @@ function getCurrentMedications(bundle: Bundle | null): ClinicalListItem[] {
         statement.effectivePeriod?.start
 
       return {
-        title:
-          getCodeableConceptText(statement.medicationCodeableConcept) ||
-          statement.medicationReference?.display ||
-          placeholderValue(),
+        title: getSimpleResourceDisplay(statement),
         dateLabel: rawDateValue ? 'Recorded' : undefined,
         dateValue: rawDateValue ? formatDate(rawDateValue) : undefined,
       }
@@ -131,7 +129,7 @@ function getKnownAllergies(bundle: Bundle | null): ClinicalListItem[] {
       const rawDateValue = allergy.lastOccurrence || allergy.recordedDate
 
       return {
-        title: getCodeableConceptText(allergy.code) || placeholderValue(),
+        title: getSimpleResourceDisplay(allergy),
         dateLabel: rawDateValue
           ? hasLastOccurrence
             ? 'Last occurrence'

@@ -19,6 +19,18 @@ describe('TOC models', () => {
     expect(sections.find((section) => section.key === 'problems')?.options[0].reference).toBe('Condition/condition-1')
   })
 
+  it('uses the shared DocumentReference display precedence for TOC discovery', () => {
+    const documents: Bundle = {
+      resourceType: 'Bundle', type: 'collection', entry: [
+        { resource: { resourceType: 'DocumentReference', id: 'described', status: 'current', description: 'Discharge to home', type: { text: 'Transfer Summary Note', coding: [{ code: '18761-7' }] }, content: [] } as DocumentReference },
+        { resource: { resourceType: 'DocumentReference', id: 'typed', status: 'current', type: { coding: [{ code: '18761-7', display: 'Transfer Summary Note' }] }, content: [] } as DocumentReference },
+      ],
+    }
+    expect(getTocDocuments(documents).map((document) => document.title)).toEqual([
+      'Discharge to home', 'Transfer Summary Note',
+    ])
+  })
+
   it('sorts dated section resources newest-first and leaves undated resources last in source order', () => {
     const datedBundle: Bundle = {
       resourceType: 'Bundle', type: 'collection', entry: [

@@ -58,4 +58,24 @@ describe('buildClinicalSummary', () => {
     expect(model.advanceDirectives[0].secondaryText).toHaveLength(120)
     expect(model.advanceDirectives[0].secondaryText?.endsWith('...')).toBe(true)
   })
+
+  it('uses shared resource display fallbacks without changing clinical metadata', () => {
+    const model = buildClinicalSummary({
+      resourceType: 'Bundle', type: 'searchset', entry: [
+        { resource: { resourceType: 'Condition', id: 'condition-without-code', onsetDateTime: '2025-02-01' } },
+        { resource: { resourceType: 'MedicationStatement', id: 'referenced-medication', status: 'active', medicationReference: { reference: 'Medication/aspirin', display: 'Aspirin tablet' }, dateAsserted: '2025-02-02' } },
+        { resource: { resourceType: 'AllergyIntolerance', id: 'allergy-without-code', recordedDate: '2025-02-03' } },
+      ],
+    } as unknown as Bundle)
+
+    expect(model.activeProblems).toEqual([{
+      title: 'Condition/condition-without-code', dateLabel: 'Onset', dateValue: '2025-02-01',
+    }])
+    expect(model.currentMedications).toEqual([{
+      title: 'Aspirin tablet', dateLabel: 'Recorded', dateValue: '2025-02-02',
+    }])
+    expect(model.knownAllergies).toEqual([{
+      title: 'AllergyIntolerance/allergy-without-code', dateLabel: 'Recorded', dateValue: '2025-02-03',
+    }])
+  })
 })
