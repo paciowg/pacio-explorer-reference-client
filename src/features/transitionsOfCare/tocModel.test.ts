@@ -1,5 +1,5 @@
 /** Verifies TOC discovery, section classification, and readable Bundle interpretation. */
-import type { Bundle, Composition, Condition, DocumentReference, Observation } from 'fhir/r4'
+import type { Bundle, Composition, Condition, DocumentReference, Observation, QuestionnaireResponse } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { buildTocSectionOptions, buildTocViewSections, getTocDocuments } from './tocModel'
 
@@ -17,6 +17,19 @@ describe('TOC models', () => {
     const sections = buildTocSectionOptions(bundle)
     expect(sections.find((section) => section.key === 'vitalSigns')?.options[0].reference).toBe('Observation/vital-1')
     expect(sections.find((section) => section.key === 'problems')?.options[0].reference).toBe('Condition/condition-1')
+  })
+
+  it('sorts dated section resources newest-first and leaves undated resources last in source order', () => {
+    const datedBundle: Bundle = {
+      resourceType: 'Bundle', type: 'collection', entry: [
+        { resource: { resourceType: 'QuestionnaireResponse', id: 'undated-1', status: 'completed', questionnaire: 'Questionnaire/one' } as QuestionnaireResponse },
+        { resource: { resourceType: 'QuestionnaireResponse', id: 'older', status: 'completed', authored: '2026-01-01', questionnaire: 'Questionnaire/older' } as QuestionnaireResponse },
+        { resource: { resourceType: 'QuestionnaireResponse', id: 'newer', status: 'completed', authored: '2026-03-01', questionnaire: 'Questionnaire/newer' } as QuestionnaireResponse },
+        { resource: { resourceType: 'QuestionnaireResponse', id: 'undated-2', status: 'completed', questionnaire: 'Questionnaire/two' } as QuestionnaireResponse },
+      ],
+    }
+    const behavioral = buildTocSectionOptions(datedBundle).find((section) => section.key === 'behavioralHealth')
+    expect(behavioral?.options.map((option) => option.resource.id)).toEqual(['newer', 'older', 'undated-1', 'undated-2'])
   })
 
   it('resolves and summarizes Composition section entries', () => {

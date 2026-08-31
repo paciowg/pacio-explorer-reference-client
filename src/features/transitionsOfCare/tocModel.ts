@@ -5,12 +5,13 @@ import type {
   CarePlan,
   Composition,
   Condition,
-  Device,
+  DeviceRequest,
   DiagnosticReport,
   DocumentReference,
+  Encounter,
   Goal,
   Immunization,
-  Medication,
+  List,
   MedicationRequest,
   MedicationStatement,
   Observation,
@@ -27,7 +28,8 @@ import {
   type TocSectionKey,
 } from '../../igs/pacioToc/tocDocument'
 import { createBundleIndex } from '../../lib/fhir/bundleIndex'
-import { formatDate, getCodeableConceptText, placeholderValue } from '../../lib/fhir/formatters'
+import { formatDate, getCodeableConceptText, getNarrativeText, placeholderValue } from '../../lib/fhir/formatters'
+import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 
 const ADI_DOCUMENT_REFERENCE_PROFILE = 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
 
@@ -92,7 +94,7 @@ function resourceDate(resource: Resource) {
     case 'AllergyIntolerance': return (resource as AllergyIntolerance).recordedDate
     case 'Condition': return (resource as Condition).recordedDate || (resource as Condition).onsetDateTime
     case 'Observation': return (resource as Observation).effectiveDateTime || (resource as Observation).issued
-    case 'Procedure': return (resource as Procedure).performedDateTime
+    case 'Procedure': return (resource as Procedure).performedDateTime || (resource as Procedure).performedPeriod?.start
     case 'Immunization': return (resource as Immunization).occurrenceDateTime
     case 'DiagnosticReport': return (resource as DiagnosticReport).effectiveDateTime || (resource as DiagnosticReport).issued
     case 'DocumentReference': return (resource as DocumentReference).date
@@ -103,37 +105,39 @@ function resourceDate(resource: Resource) {
     case 'ServiceRequest': return (resource as ServiceRequest).authoredOn
     case 'Composition': return (resource as Composition).date
     case 'QuestionnaireResponse': return (resource as QuestionnaireResponse).authored
+    case 'DeviceRequest': return (resource as DeviceRequest).authoredOn
+    case 'Encounter': return (resource as Encounter).period?.start
+    case 'List': return (resource as List).date
     default: return undefined
   }
 }
 
+function sortResourcesByDate(resourcesToSort: Resource[]) {
+  return resourcesToSort
+    .map((resource, index) => ({ resource, index, timestamp: Date.parse(resourceDate(resource) || '') }))
+    .sort((a, b) => {
+      const aHasDate = Number.isFinite(a.timestamp)
+      const bHasDate = Number.isFinite(b.timestamp)
+      if (aHasDate && bHasDate && a.timestamp !== b.timestamp) return b.timestamp - a.timestamp
+      if (aHasDate !== bHasDate) return aHasDate ? -1 : 1
+      return a.index - b.index
+    })
+    .map(({ resource }) => resource)
+}
+
 export function summarizeTocResource(resource: Resource): TocResourceOption | null {
   if (!resource.id) return null
-  let title = ''
   let secondaryText: string | undefined
-  switch (resource.resourceType) {
-    case 'AllergyIntolerance': title = getCodeableConceptText((resource as AllergyIntolerance).code); break
-    case 'Condition': title = getCodeableConceptText((resource as Condition).code); break
-    case 'Observation': title = getCodeableConceptText((resource as Observation).code); break
-    case 'Procedure': title = getCodeableConceptText((resource as Procedure).code); break
-    case 'Immunization': title = getCodeableConceptText((resource as Immunization).vaccineCode); break
-    case 'DiagnosticReport': title = getCodeableConceptText((resource as DiagnosticReport).code); break
-    case 'DocumentReference': title = getCodeableConceptText((resource as DocumentReference).type); secondaryText = (resource as DocumentReference).description; break
-    case 'MedicationRequest': title = getCodeableConceptText((resource as MedicationRequest).medicationCodeableConcept) || (resource as MedicationRequest).medicationReference?.display || ''; break
-    case 'MedicationStatement': title = getCodeableConceptText((resource as MedicationStatement).medicationCodeableConcept) || (resource as MedicationStatement).medicationReference?.display || ''; break
-    case 'Medication': title = getCodeableConceptText((resource as Medication).code); break
-    case 'CarePlan': title = (resource as CarePlan).title || (resource as CarePlan).description || ''; break
-    case 'Goal': title = (resource as Goal).description?.text || ''; break
-    case 'ServiceRequest': title = getCodeableConceptText((resource as ServiceRequest).code); break
-    case 'QuestionnaireResponse': title = (resource as QuestionnaireResponse).questionnaire || 'Questionnaire response'; break
-    case 'Device': title = (resource as Device).deviceName?.[0]?.name || (resource as Device).type?.text || ''; break
-    default: title = `${resource.resourceType}/${resource.id}`
+  const title = getSimpleResourceDisplay(resource)
+  if (resource.resourceType === 'DocumentReference') {
+    const description = (resource as DocumentReference).description
+    secondaryText = description && description !== title ? description : undefined
   }
   const rawDate = resourceDate(resource)
   return {
     reference: `${resource.resourceType}/${resource.id}`,
     resource,
-    title: title || `${resource.resourceType}/${resource.id}`,
+    title,
     secondaryText,
     dateValue: rawDate ? formatDate(rawDate) : undefined,
   }
@@ -144,7 +148,7 @@ export function buildTocSectionOptions(bundle: Bundle | null): TocSectionOptions
   return TOC_SECTION_DEFINITIONS.map((definition) => ({
     key: definition.key,
     title: definition.title,
-    options: available.filter((resource) => eligibleForSection(resource, definition.key))
+    options: sortResourcesByDate(available.filter((resource) => eligibleForSection(resource, definition.key)))
       .map(summarizeTocResource).filter((option): option is TocResourceOption => Boolean(option)),
   }))
 }
@@ -169,10 +173,6 @@ export function getTocDocuments(bundle: Bundle | null): SelectableClinicalListIt
     }))
 }
 
-function plainNarrative(value: string | undefined) {
-  return value?.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim() || ''
-}
-
 export type TocViewSection = {
   title: string
   narrative: string
@@ -188,7 +188,7 @@ export function buildTocViewSections(bundle: Bundle, baseUrl: string): { composi
     composition,
     sections: (composition.section ?? []).map((section) => ({
       title: section.title || getCodeableConceptText(section.code) || 'Untitled section',
-      narrative: plainNarrative(section.text?.div),
+      narrative: getNarrativeText(section.text),
       emptyReason: getCodeableConceptText(section.emptyReason),
       entries: (section.entry ?? []).flatMap((entry) => {
         const resolved = index.resolve(entry.reference, composition)

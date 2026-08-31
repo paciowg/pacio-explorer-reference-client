@@ -1,6 +1,7 @@
 /** Coordinates review, validation, and submission of a PACIO TOC document. */
 import { useEffect, useMemo, useState } from 'react'
 import type { Bundle, Patient } from 'fhir/r4'
+import { FhirResourceTypeBadge } from '../../components/FhirResourceTypeBadge'
 import { TOC_SECTION_DEFINITIONS, type TocSectionKey, type TocStatus } from '../../igs/pacioToc/tocDocument'
 import { fetchOrganizations, fetchPatient, fetchPatientEverything, fetchPractitionerRoles } from '../../lib/fhir/client'
 import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
@@ -131,7 +132,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
           return <fieldset key={section.key} className="toc-section-card" disabled={isSubmitting}>
             <legend>{section.title}</legend>
             <div className="toc-section-actions"><span>{section.options.length} eligible</span><button type="button" className="link-button" onClick={() => setSectionSelection(section.key, section.options.map((option) => option.reference))}>Select all</button><button type="button" className="link-button" onClick={() => setSectionSelection(section.key, [])}>Clear</button></div>
-            {section.options.length ? <ul className="toc-option-list">{section.options.map((option) => <li key={option.reference}><label><input type="checkbox" checked={selectedReferences.includes(option.reference)} onChange={(event) => setSectionSelection(section.key, event.target.checked ? [...selectedReferences, option.reference] : selectedReferences.filter((reference) => reference !== option.reference))} /><span><strong>{option.title}</strong>{option.secondaryText ? <small>{option.secondaryText}</small> : null}{option.dateValue ? <small>{option.dateValue}</small> : null}</span></label></li>)}</ul> : <p className="empty-state">No eligible resources found</p>}
+            {section.options.length ? <ul className="toc-option-list">{section.options.map((option) => <li key={option.reference}><label><input type="checkbox" checked={selectedReferences.includes(option.reference)} onChange={(event) => setSectionSelection(section.key, event.target.checked ? [...selectedReferences, option.reference] : selectedReferences.filter((reference) => reference !== option.reference))} /><span><span className="toc-option-title-row"><strong>{option.title}</strong><FhirResourceTypeBadge resourceType={option.resource.resourceType} /></span>{option.secondaryText ? <small>{option.secondaryText}</small> : null}{option.dateValue ? <small>{option.dateValue}</small> : null}</span></label></li>)}</ul> : <p className="empty-state">No eligible resources found</p>}
             {selectedReferences.length === 0 ? <div className="field-group toc-empty-reason"><label htmlFor={`empty-${section.key}`}>Empty reason</label><select id={`empty-${section.key}`} value={emptyReasons[section.key]} onChange={(event) => setEmptyReasons((current) => ({ ...current, [section.key]: event.target.value }))}>{EMPTY_REASONS.map((reason) => <option key={reason.code} value={reason.code}>{reason.label}</option>)}</select></div> : null}
           </fieldset>
         })}</div>

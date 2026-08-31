@@ -5,6 +5,7 @@ import type {
   ContactPoint,
   HumanName,
   Identifier,
+  Narrative,
   Practitioner,
   PractitionerRole,
 } from 'fhir/r4'
@@ -50,12 +51,37 @@ export function formatAddress(address: Address | undefined) {
 }
 
 export function getCodeableConceptText(codeableConcept: CodeableConcept | undefined) {
-  return (
-    codeableConcept?.text ||
-    codeableConcept?.coding?.[0]?.display ||
-    codeableConcept?.coding?.[0]?.code ||
-    ''
-  )
+  const text = codeableConcept?.text?.trim()
+  if (text) return text
+
+  const display = codeableConcept?.coding
+    ?.map((coding) => coding.display?.trim())
+    .find(Boolean)
+  if (display) return display
+
+  return codeableConcept?.coding
+    ?.map((coding) => coding.code?.trim())
+    .find(Boolean) || ''
+}
+
+function decodeXhtmlEntities(value: string) {
+  const namedEntities: Record<string, string> = {
+    amp: '&', apos: "'", gt: '>', lt: '<', nbsp: ' ', quot: '"',
+  }
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, name: string) => {
+    if (name.startsWith('#x')) return String.fromCodePoint(Number.parseInt(name.slice(2), 16))
+    if (name.startsWith('#')) return String.fromCodePoint(Number.parseInt(name.slice(1), 10))
+    return namedEntities[name.toLowerCase()] ?? entity
+  })
+}
+
+/** Converts generated FHIR XHTML narrative to normalized text without rendering its markup. */
+export function getNarrativeText(narrative: Narrative | undefined) {
+  if (!narrative?.div) return ''
+  const withoutExecutableContent = narrative.div
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+  return decodeXhtmlEntities(withoutExecutableContent).replace(/\s+/g, ' ').trim()
 }
 
 export function formatDate(value: string | undefined) {
