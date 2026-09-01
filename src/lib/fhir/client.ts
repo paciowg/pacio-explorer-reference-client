@@ -76,7 +76,8 @@ async function fhirPost<TResponse = Resource>(
 async function parseFhirResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') || ''
   const hasJsonBody = contentType.includes('json')
-  const payload = hasJsonBody ? await response.json() : null
+  const responseText = hasJsonBody ? await response.text() : ''
+  const payload = responseText ? JSON.parse(responseText) : null
 
   if (!response.ok) {
     const operationOutcomeIssue = payload?.issue?.[0]
@@ -174,6 +175,22 @@ export async function validateFhirServer(baseUrl: string) {
 
 export async function fetchPatients(baseUrl: string, count = 100) {
   return fhirGet<Bundle>(baseUrl, `/Patient?_count=${count}`)
+}
+
+export async function searchPatients(
+  baseUrl: string,
+  parameters: { identifier?: string; family?: string; given?: string },
+) {
+  const searchParams = new URLSearchParams({ _count: '100' })
+  if (parameters.identifier) searchParams.set('identifier', parameters.identifier)
+  if (parameters.family) searchParams.set('family', parameters.family)
+  if (parameters.given) searchParams.set('given', parameters.given)
+
+  const bundle = await fhirGet<Bundle>(baseUrl, `/Patient?${searchParams.toString()}`)
+  if (bundle.resourceType !== 'Bundle') {
+    throw new Error('The server did not return a Patient search Bundle.')
+  }
+  return bundle
 }
 
 export async function fetchPatient(baseUrl: string, patientId: string) {
@@ -294,6 +311,33 @@ export async function createDocumentReference(
   documentReference: DocumentReference,
 ) {
   return fhirPost<DocumentReference>(baseUrl, 'DocumentReference', documentReference)
+}
+
+export async function createPatient(baseUrl: string, patient: Patient) {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
+  const response = await fetch(`${normalizedBaseUrl}/Patient`, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/fhir+json, application/json',
+      'Content-Type': 'application/fhir+json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify(patient),
+  })
+  const createdPatient = await parseFhirResponse<Patient | null>(response)
+
+  if (createdPatient?.resourceType === 'Patient' && createdPatient.id) {
+    return createdPatient
+  }
+
+  const location = response.headers.get('location') || response.headers.get('content-location') || ''
+  const patientId = location.match(/(?:^|\/)Patient\/([^/?]+)(?:\/_history\/[^/?]+)?(?:[/?]|$)/)?.[1]
+  if (!patientId) {
+    throw new Error('The server did not return an id for the created Patient.')
+  }
+
+  return { ...patient, id: decodeURIComponent(patientId) }
 }
 
 export async function fetchPatientEverything(

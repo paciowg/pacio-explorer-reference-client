@@ -3,11 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createBundle,
   createDocumentReference,
+  createPatient,
   fetchBundleByReference,
   fetchPatientEverything,
+  searchPatients,
   validateFhirServer,
 } from './client'
-import type { Bundle, DocumentReference } from 'fhir/r4'
+import type { Bundle, DocumentReference, Patient } from 'fhir/r4'
 
 function response(body: unknown, options: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
@@ -91,5 +93,46 @@ describe('FHIR transport', () => {
       ['https://example.test/fhir/Bundle', 'POST', 'application/fhir+json', JSON.stringify(bundle)],
       ['https://example.test/fhir/DocumentReference', 'POST', 'application/fhir+json', JSON.stringify(documentReference)],
     ])
+  })
+
+  it('encodes Patient searches and reads created Patient ids from response or location', async () => {
+    const createdPatient: Patient = { resourceType: 'Patient', id: 'patient-2' }
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ resourceType: 'Bundle', type: 'searchset' }))
+      .mockResolvedValueOnce(response(createdPatient, { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, {
+        status: 201,
+        headers: {
+          'content-type': 'application/fhir+json',
+          Location: 'https://example.test/fhir/Patient/patient-3/_history/1',
+        },
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await searchPatients('https://example.test/fhir', {
+      identifier: 'https://example.test/mrn|12345',
+    })
+    await expect(createPatient('https://example.test/fhir', {
+      resourceType: 'Patient', name: [{ text: 'Ada Lovelace' }],
+    })).resolves.toEqual(createdPatient)
+    await expect(createPatient('https://example.test/fhir', {
+      resourceType: 'Patient', name: [{ text: 'Grace Hopper' }],
+    })).resolves.toMatchObject({ id: 'patient-3', name: [{ text: 'Grace Hopper' }] })
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://example.test/fhir/Patient?_count=100&identifier=https%3A%2F%2Fexample.test%2Fmrn%7C12345',
+    )
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      headers: expect.objectContaining({ Prefer: 'return=representation' }),
+    })
+  })
+
+  it('rejects Patient creation when the destination returns no Patient id', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 201 })))
+
+    await expect(createPatient('https://example.test/fhir', {
+      resourceType: 'Patient', name: [{ text: 'Ada Lovelace' }],
+    })).rejects.toThrow('The server did not return an id for the created Patient.')
   })
 })

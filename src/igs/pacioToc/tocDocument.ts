@@ -137,8 +137,8 @@ export function buildTocBundle(input: BuildTocBundleInput): Bundle {
 
 export type BuildTocDocumentReferenceInput = {
   subject: Reference
-  author: Reference
-  custodian: Reference
+  author?: Reference
+  custodian?: Reference
   status: TocStatus
   createdAt: string
   title: string
@@ -158,8 +158,8 @@ export function buildTocDocumentReference(input: BuildTocDocumentReferenceInput)
     type: tocType(),
     category: [{ coding: [{ system: 'http://hl7.org/fhir/us/core/CodeSystem/us-core-documentreference-category', code: 'clinical-note', display: 'Clinical Note' }] }],
     subject: input.subject,
-    author: [input.author],
-    custodian: input.custodian,
+    ...(input.author ? { author: [input.author] } : {}),
+    ...(input.custodian ? { custodian: input.custodian } : {}),
     date: input.createdAt,
     description: input.title,
     content: [{ attachment: { contentType: 'application/fhir+json', url: input.bundleUrl, creation: input.createdAt } }],

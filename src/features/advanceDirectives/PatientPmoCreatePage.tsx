@@ -25,6 +25,7 @@ import {
 } from '../../lib/fhir/resourceOptions'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { useSavedServers } from '../servers/useSavedServers'
+import { DestinationServerField } from '../servers/DestinationServerField'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { readFileAsBase64 } from './browserFiles'
 import { createPmoDocument } from './createPmoDocument'
@@ -48,7 +49,7 @@ type PatientPmoCreatePageProps = {
 type PmoStatus = 'preliminary' | 'final' | 'amended'
 
 export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
-  const { activeServer } = useSavedServers()
+  const { activeServer, savedServers } = useSavedServers()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [practitionerRoles, setPractitionerRoles] = useState<PractitionerRoleOption[]>([])
   const [practitionerByReference, setPractitionerByReference] = useState<
@@ -69,9 +70,14 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
   )
   const [hasEditedContextPeriodEnd, setHasEditedContextPeriodEnd] = useState(false)
   const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [destinationBaseUrl, setDestinationBaseUrl] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (activeServer) setDestinationBaseUrl(activeServer.baseUrl)
+  }, [activeServer])
 
   useEffect(() => {
     if (!hasEditedContextPeriodEnd) {
@@ -199,6 +205,14 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
     if (!activeServer || !patient) return
 
+    const destinationServer = savedServers.find(
+      (server) => server.baseUrl === destinationBaseUrl,
+    )
+    if (!destinationServer) {
+      setErrorMessage('Please select a destination FHIR server.')
+      return
+    }
+
     const authorRole = practitionerRoles.find((option) => option.value === authorRoleId)?.role
     const attester = attesterOptions.find((option) => option.reference === attesterReference)
     const authenticator = authenticatorOptions.find(
@@ -246,7 +260,8 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
         [
           'Creating an ADI document with the following data:',
           `- Patient: ${getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || patientId}`,
-          `- Server: ${activeServer.label} (${activeServer.baseUrl})`,
+          `- Source server: ${activeServer.label} (${activeServer.baseUrl})`,
+          `- Destination server: ${destinationServer.label} (${destinationServer.baseUrl})`,
           `- Document status: ${status}`,
           `- Author (PractitionerRole): ${getPractitionerRoleDisplayName(authorRole, practitionerByReference)}`,
           `- Facilitator: ${facilitator?.display || 'None'}`,
@@ -263,14 +278,11 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
       )
 
       await createPmoDocument({
-        baseUrl: activeServer.baseUrl,
+        sourceBaseUrl: activeServer.baseUrl,
+        destinationBaseUrl: destinationServer.baseUrl,
         patient,
         practitionerRole: authorRole,
         practitionerByReference,
-        subject: {
-          reference: `Patient/${patient.id}`,
-          display: getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || '',
-        },
         author: {
           reference: `PractitionerRole/${authorRole.id}`,
           display: getPractitionerRoleDisplayName(authorRole, practitionerByReference),
@@ -290,7 +302,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
       setRouteNotification({
         routeHref: getRouteHref(`/patients/${patientId}`),
-        message: 'ADI PMO created successfully.',
+        message: `ADI PMO created successfully on ${destinationServer.label}.`,
         tone: 'success',
       })
       navigateTo(`/patients/${patientId}`)
@@ -315,6 +327,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
         </div>
 
         <div className="panel-server-details">
+          <span className="section-kicker">Source FHIR server</span>
           <span className="panel-server-label">{activeServer.label}</span>
           <span className="panel-server-url">{activeServer.baseUrl}</span>
         </div>
@@ -336,6 +349,14 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
         {!isLoading && patient ? (
           <form onSubmit={handleSubmit}>
+            <DestinationServerField
+              id="pmo-destination-server"
+              servers={savedServers}
+              value={destinationBaseUrl}
+              disabled={isSubmitting}
+              onChange={setDestinationBaseUrl}
+            />
+
             <div className="field-group">
               <label htmlFor="pmo-status">Document status</label>
               <select

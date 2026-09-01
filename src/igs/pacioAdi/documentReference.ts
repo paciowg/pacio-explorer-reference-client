@@ -9,7 +9,7 @@ import {
 
 export type CreateAdiDocumentReferenceInput = {
   subject: Reference
-  author: Reference[]
+  author?: Reference[]
   authenticator?: Reference
   custodian?: Reference
   status: PmoStatus
@@ -42,7 +42,8 @@ export function buildAdiDocumentReference(input: CreateAdiDocumentReferenceInput
     masterIdentifier: createAdiDocumentIdentifier(input.documentIdentifierValue),
     identifier: [createAdiDocumentSetIdentifier(input.setIdentifierValue)],
     type: createPmoType(), category: [createAhdCategory()],
-    subject: input.subject, author: input.author,
+    subject: input.subject,
+    ...(input.author?.length ? { author: input.author } : {}),
     ...(input.authenticator ? { authenticator: input.authenticator } : {}),
     ...(input.custodian ? { custodian: input.custodian } : {}),
     date: input.createdAt,

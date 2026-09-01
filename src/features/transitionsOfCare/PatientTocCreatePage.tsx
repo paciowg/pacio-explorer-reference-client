@@ -47,7 +47,7 @@ async function loadTocCreateData(baseUrl: string, patientId: string) {
 }
 
 export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
-  const { activeServer } = useSavedServers()
+  const { activeServer, savedServers } = useSavedServers()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [patientBundle, setPatientBundle] = useState<Bundle | null>(null)
   const [authorOptions, setAuthorOptions] = useState<ReturnType<typeof getPractitionerRoleOptions>>([])
@@ -58,10 +58,15 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
   const [custodianId, setCustodianId] = useState('')
   const [selected, setSelected] = useState(emptySelections)
   const [emptyReasons, setEmptyReasons] = useState(defaultEmptyReasons)
+  const [destinationBaseUrl, setDestinationBaseUrl] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (activeServer) setDestinationBaseUrl(activeServer.baseUrl)
+  }, [activeServer])
 
   useEffect(() => {
     if (!activeServer) {
@@ -110,6 +115,13 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!activeServer || !patient) return
+    const destinationServer = savedServers.find(
+      (server) => server.baseUrl === destinationBaseUrl,
+    )
+    if (!destinationServer) {
+      setErrorMessage('Please select a destination FHIR server.')
+      return
+    }
     const author = authorOptions.find((option) => option.value === authorId)
     const custodian = custodianOptions.find((option) => option.value === custodianId)
     if (!title.trim()) {
@@ -132,7 +144,8 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
     setErrorMessage('')
     try {
       await createTocDocument({
-        baseUrl: activeServer.baseUrl,
+        sourceBaseUrl: activeServer.baseUrl,
+        destinationBaseUrl: destinationServer.baseUrl,
         patient,
         title: title.trim(),
         status,
@@ -149,7 +162,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
       })
       setRouteNotification({
         routeHref: getRouteHref(`/patients/${patientId}`),
-        message: 'Transition of Care document created successfully.',
+        message: `Transition of Care document created successfully on ${destinationServer.label}.`,
         tone: 'success',
       })
       navigateTo(`/patients/${patientId}`)
@@ -166,6 +179,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
       <div className="panel-header">
         <h2>Create Transition of Care</h2>
         <div className="panel-server-details">
+          <span className="section-kicker">Source FHIR server</span>
           <span className="panel-server-label">{activeServer.label}</span>
           <span className="panel-server-url">{activeServer.baseUrl}</span>
         </div>
@@ -195,11 +209,14 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
             selected={selected}
             emptyReasons={emptyReasons}
             selectedCount={selectedCount}
+            destinationBaseUrl={destinationBaseUrl}
+            savedServers={savedServers}
             isSubmitting={isSubmitting}
             onTitleChange={setTitle}
             onStatusChange={setStatus}
             onAuthorChange={setAuthorId}
             onCustodianChange={setCustodianId}
+            onDestinationServerChange={setDestinationBaseUrl}
             onSectionSelectionChange={setSectionSelection}
             onEmptyReasonChange={(key, reason) => setEmptyReasons((current) => ({
               ...current,
