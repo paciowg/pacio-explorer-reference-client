@@ -1,9 +1,6 @@
 /** Orchestrates construction and posting of an ADI PMO Bundle and its companion DocumentReference. */
 import type { CodeableConcept, Patient, Practitioner, PractitionerRole, Reference } from 'fhir/r4'
-import { withUrnUuidBundleReferences } from '../../lib/fhir/bundleReferences'
-import { closeBundleReferences } from '../../lib/fhir/closedBundle'
-import { createBundle, createDocumentReference } from '../../lib/fhir/client'
-import { normalizeBaseUrl } from '../../lib/fhir/url'
+import { publishDocument } from '../../lib/fhir/documentPublishing'
 import { buildAdiDocumentReference } from '../../igs/pacioAdi/documentReference'
 import { buildAdiPmoBundle, type PmoAttesterOption, type PmoDataEntererOption, type PmoStatus } from '../../igs/pacioAdi/pmoDocument'
 
@@ -53,29 +50,23 @@ export async function createPmoDocument(input: CreatePmoDocumentInput) {
     documentIdentifierValue,
     compositionFullUrl,
   })
-  // A portable document must carry the resources its internal references depend on.
-  const closedBundle = await closeBundleReferences(input.baseUrl, initialBundle)
-  const bundle = withUrnUuidBundleReferences(closedBundle)
-  const createdBundle = await createBundle(input.baseUrl, bundle)
-
-  if (!createdBundle.id) {
-    throw new Error('The server did not return an id for the created Bundle.')
-  }
-
-  // These are deliberately separate writes. If indexing fails, the posted document remains available.
-  const documentReference = buildAdiDocumentReference({
-    subject: input.subject,
-    author: [input.author],
-    authenticator: input.authenticator,
-    custodian: input.custodian,
-    status: input.status,
-    signedDate: input.signedDate,
-    createdAt: input.createdAt,
-    jurisdiction: input.jurisdiction,
-    contextPeriod: { start: input.signedDate, end: input.contextPeriodEnd },
-    bundleUrl: `${normalizeBaseUrl(input.baseUrl)}/Bundle/${createdBundle.id}`,
-    documentIdentifierValue,
-    setIdentifierValue,
+  return publishDocument({
+    baseUrl: input.baseUrl,
+    bundle: initialBundle,
+    missingBundleIdMessage: 'The server did not return an id for the created Bundle.',
+    buildDocumentReference: (bundleUrl) => buildAdiDocumentReference({
+      subject: input.subject,
+      author: [input.author],
+      authenticator: input.authenticator,
+      custodian: input.custodian,
+      status: input.status,
+      signedDate: input.signedDate,
+      createdAt: input.createdAt,
+      jurisdiction: input.jurisdiction,
+      contextPeriod: { start: input.signedDate, end: input.contextPeriodEnd },
+      bundleUrl,
+      documentIdentifierValue,
+      setIdentifierValue,
+    }),
   })
-  return createDocumentReference(input.baseUrl, documentReference)
 }

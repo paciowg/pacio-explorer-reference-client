@@ -16,6 +16,13 @@ import {
   getDisplayNameFromHumanName,
   getPractitionerRoleDisplayName,
 } from '../../lib/fhir/formatters'
+import {
+  getOrganizationOptions,
+  getPractitionerMap,
+  getPractitionerRoleOptions,
+  type OrganizationOption,
+  type PractitionerRoleOption,
+} from '../../lib/fhir/resourceOptions'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { useSavedServers } from '../servers/useSavedServers'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
@@ -27,16 +34,11 @@ import {
   getAuthenticatorOptions,
   getDataEntererOptions,
   getFacilitatorOptions,
-  getOrganizationOptions,
   getPatientJurisdiction as calculatePatientJurisdiction,
   getPmoSubmissionError,
-  getPractitionerMap,
-  getPractitionerRoleOptions,
   getRelatedPersons,
   toIsoDateTimeLocalValue as formatDateInput,
   toUtcMidnightIso as toUtcMidnight,
-  type OrganizationOption,
-  type PractitionerRoleOption,
 } from './pmoFormModel'
 
 type PatientPmoCreatePageProps = {

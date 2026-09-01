@@ -6,10 +6,9 @@ import {
   getAttesterOptions,
   getDataEntererOptions,
   getPmoSubmissionError,
-  getPractitionerMap,
-  getPractitionerRoleOptions,
   toUtcMidnightIso,
 } from './pmoFormModel'
+import { getPractitionerMap, getPractitionerRoleOptions } from '../../lib/fhir/resourceOptions'
 
 describe('PMO form model', () => {
   it('derives UTC dates and jurisdiction without browser dependencies', () => {

@@ -73,7 +73,7 @@ TOC form -> createTocDocument -> PACIO TOC builders -> shared FHIR helpers -> FH
 - `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
 - `src/features/transitionsOfCare/` owns TOC selection, workflow orchestration, discovery, and display.
 - `src/igs/pacioToc/` owns pure PACIO TOC section definitions and resource construction.
-- `src/lib/fhir/` owns generic URL normalization, transport, document Bundle construction, Bundle indexing, and reference closure.
+- `src/lib/fhir/` owns generic URL normalization, transport, document Bundle construction and publishing, document-detail loading, Bundle indexing, reference closure, and reusable resource option derivation.
 - `src/features/patientSummary/` owns patient-summary composition and demographics.
 - `src/components/` owns reusable presentation components and presentation types.
 

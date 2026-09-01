@@ -1,11 +1,7 @@
 /** Loads and displays an advance directive, enriching generic metadata from its document Bundle when available. */
 import { useEffect, useMemo, useState } from 'react'
 import type { DocumentReference } from 'fhir/r4'
-import {
-  fetchBundleByReference,
-  fetchDocumentReference,
-  fetchPatient,
-} from '../../lib/fhir/client'
+import { loadDocumentDetails } from '../../lib/fhir/documentDetails'
 import {
   formatDate,
   getCodeableConceptText,
@@ -18,7 +14,6 @@ import {
   buildBundleDerivedData,
   buildDocumentDetailsRows,
   getBundleLoadWarning,
-  getReferencedBundleUrl,
   MISSING_COMPOSITION_WARNING,
   type BundleDerivedData,
 } from './advanceDirectiveModel'
@@ -55,33 +50,27 @@ export function AdvanceDirectiveDetailPage({
 
     async function load() {
       try {
-        const [patient, loadedDocumentReference] = await Promise.all([
-          fetchPatient(baseUrl, patientId),
-          fetchDocumentReference(baseUrl, documentReferenceId),
-        ])
+        const loaded = await loadDocumentDetails(baseUrl, patientId, documentReferenceId)
         if (!isMounted) return
 
         setPatientName(
-          getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || placeholderValue(),
+          getDisplayNameFromHumanName(loaded.patient.name?.[0]) ||
+            loaded.patient.id ||
+            placeholderValue(),
         )
-        setDocumentReference(loadedDocumentReference)
+        setDocumentReference(loaded.documentReference)
 
         // Bundle enrichment is optional: generic DocumentReference details remain useful on failure.
-        const bundleReference = getReferencedBundleUrl(loadedDocumentReference, baseUrl)
-        if (!bundleReference) return
-
-        try {
-          const bundle = await fetchBundleByReference(baseUrl, bundleReference)
-          if (!isMounted) return
-          const derivedData = buildBundleDerivedData(bundle, baseUrl)
+        if (!loaded.bundleReference) return
+        if (loaded.bundle) {
+          const derivedData = buildBundleDerivedData(loaded.bundle, baseUrl)
           if (derivedData) {
             setBundleDerivedData(derivedData)
           } else {
             setBundleWarningMessage(MISSING_COMPOSITION_WARNING)
           }
-        } catch (bundleError) {
-          if (!isMounted) return
-          setBundleWarningMessage(getBundleLoadWarning(bundleError))
+        } else {
+          setBundleWarningMessage(getBundleLoadWarning(loaded.bundleError))
         }
       } catch (error) {
         if (!isMounted) return
