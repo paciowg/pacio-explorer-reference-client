@@ -1,7 +1,13 @@
 /** Verifies TOC discovery, section classification, and readable Bundle interpretation. */
-import type { Bundle, Composition, Condition, DocumentReference, Observation, QuestionnaireResponse } from 'fhir/r4'
+import type { Bundle, Composition, Condition, DocumentReference, Observation, Questionnaire, QuestionnaireResponse } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
-import { buildTocSectionOptions, buildTocViewSections, getTocDocuments } from './tocModel'
+import {
+  buildTocSectionOptions,
+  buildTocViewSections,
+  getQuestionnaireDisplay,
+  getQuestionnaireResponseReferences,
+  getTocDocuments,
+} from './tocModel'
 
 const bundle: Bundle = {
   resourceType: 'Bundle', type: 'collection', entry: [
@@ -42,6 +48,36 @@ describe('TOC models', () => {
     }
     const behavioral = buildTocSectionOptions(datedBundle).find((section) => section.key === 'behavioralHealth')
     expect(behavioral?.options.map((option) => option.resource.id)).toEqual(['newer', 'older', 'undated-1', 'undated-2'])
+  })
+
+  it('uses Questionnaire metadata after a response narrative and before its raw canonical', () => {
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse', id: 'qr-1', status: 'completed', questionnaire: 'Questionnaire/gad-7',
+    }
+    const narratedResponse: QuestionnaireResponse = {
+      ...response,
+      id: 'qr-2',
+      text: { status: 'generated', div: '<div>GAD-7 score: 12</div>' },
+    }
+    const responses: Bundle = {
+      resourceType: 'Bundle', type: 'collection', entry: [{ resource: response }, { resource: narratedResponse }],
+    }
+    const labels = new Map([['Questionnaire/gad-7', 'Generalized Anxiety Disorder 7-item scale']])
+
+    expect(buildTocSectionOptions(responses, labels).find((section) => section.key === 'behavioralHealth')?.options
+      .map((option) => option.title)).toEqual(['Generalized Anxiety Disorder 7-item scale', 'GAD-7 score: 12'])
+    expect(getQuestionnaireResponseReferences(responses)).toEqual(['Questionnaire/gad-7'])
+  })
+
+  it('uses Questionnaire title then the first coding display, without exposing coding values', () => {
+    const titled: Questionnaire = {
+      resourceType: 'Questionnaire', status: 'active', title: 'Falls Risk Assessment', code: [{ code: 'fall-risk', display: 'Falls assessment' }],
+    }
+    const coded: Questionnaire = {
+      resourceType: 'Questionnaire', status: 'active', code: [{ code: 'no-display' }, { code: 'gad-7', display: 'GAD-7' }],
+    }
+    expect(getQuestionnaireDisplay(titled)).toBe('Falls Risk Assessment')
+    expect(getQuestionnaireDisplay(coded)).toBe('GAD-7')
   })
 
   it('resolves and summarizes Composition section entries', () => {

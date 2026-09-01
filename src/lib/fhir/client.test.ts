@@ -6,10 +6,12 @@ import {
   createPatient,
   fetchBundleByReference,
   fetchPatientEverything,
+  fetchQuestionnaire,
+  getServerLocalQuestionnaireId,
   searchPatients,
   validateFhirServer,
 } from './client'
-import type { Bundle, DocumentReference, Patient } from 'fhir/r4'
+import type { Bundle, DocumentReference, Patient, Questionnaire } from 'fhir/r4'
 
 function response(body: unknown, options: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
@@ -134,5 +136,20 @@ describe('FHIR transport', () => {
     await expect(createPatient('https://example.test/fhir', {
       resourceType: 'Patient', name: [{ text: 'Ada Lovelace' }],
     })).rejects.toThrow('The server did not return an id for the created Patient.')
+  })
+
+  it('reads only server-local Questionnaire canonicals', async () => {
+    expect(getServerLocalQuestionnaireId('https://example.test/fhir/', 'Questionnaire/gad-7')).toBe('gad-7')
+    expect(getServerLocalQuestionnaireId('https://example.test/fhir', 'https://example.test/fhir/Questionnaire/gad-7|2.0')).toBe('gad-7')
+    expect(getServerLocalQuestionnaireId('https://example.test/fhir', 'https://other.test/Questionnaire/gad-7')).toBeNull()
+    expect(getServerLocalQuestionnaireId('https://example.test/fhir', 'https://example.test/Questionnaire/gad-7')).toBeNull()
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      resourceType: 'Questionnaire', id: 'gad-7', status: 'active', title: 'GAD-7',
+    } satisfies Questionnaire)))
+    await expect(fetchQuestionnaire('https://example.test/fhir', 'gad-7')).resolves.toMatchObject({ id: 'gad-7' })
+    expect(fetch).toHaveBeenCalledWith('https://example.test/fhir/Questionnaire/gad-7', expect.objectContaining({
+      cache: 'no-store',
+    }))
   })
 })

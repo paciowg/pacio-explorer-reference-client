@@ -9,6 +9,7 @@ import type {
   Patient,
   Practitioner,
   PractitionerRole,
+  Questionnaire,
   RelatedPerson,
   Resource,
 } from 'fhir/r4'
@@ -22,6 +23,7 @@ type FhirJson =
   | Patient
   | Practitioner
   | PractitionerRole
+  | Questionnaire
   | RelatedPerson
   | Resource
 
@@ -201,6 +203,42 @@ export async function fetchPatient(baseUrl: string, patientId: string) {
   }
 
   return patient
+}
+
+/** Returns a Questionnaire only when a TOC response refers to a resource on the active server. */
+export function getServerLocalQuestionnaireId(baseUrl: string, reference: string) {
+  const canonical = reference.trim().split('|', 1)[0]
+  if (!canonical) return null
+
+  const relativeMatch = canonical.match(/^\/?Questionnaire\/([^/?#]+)$/)
+  if (relativeMatch) return decodeURIComponent(relativeMatch[1])
+
+  try {
+    const serverUrl = new URL(normalizeBaseUrl(baseUrl))
+    const questionnaireUrl = new URL(canonical)
+    const expectedPrefix = `${serverUrl.pathname.replace(/\/$/, '')}/Questionnaire/`
+    if (questionnaireUrl.origin !== serverUrl.origin || !questionnaireUrl.pathname.startsWith(expectedPrefix)) {
+      return null
+    }
+
+    const questionnaireId = questionnaireUrl.pathname.slice(expectedPrefix.length)
+    return questionnaireId && !questionnaireId.includes('/') ? decodeURIComponent(questionnaireId) : null
+  } catch {
+    return null
+  }
+}
+
+export async function fetchQuestionnaire(baseUrl: string, questionnaireId: string) {
+  const questionnaire = await fhirGet<Questionnaire>(
+    baseUrl,
+    `/Questionnaire/${encodeURIComponent(questionnaireId)}`,
+  )
+
+  if (questionnaire.resourceType !== 'Questionnaire') {
+    throw new Error('The server did not return a Questionnaire resource.')
+  }
+
+  return questionnaire
 }
 
 export async function fetchDocumentReference(baseUrl: string, documentReferenceId: string) {

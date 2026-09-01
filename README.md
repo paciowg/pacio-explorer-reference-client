@@ -37,6 +37,7 @@ The app uses these endpoints relative to the configured server URL:
 - `GET /Patient?identifier={system|value}` and `GET /Patient?family={family}&given={given}` while matching a patient on a destination server
 - `GET /Patient/{id}`
 - `GET /Patient/{id}/$everything` with `_count`, `_include`, `_revinclude`, and `_include:iterate`
+- `GET /Questionnaire/{id}` for server-local QuestionnaireResponse labels in TOC creation
 - `GET /DocumentReference/{id}`
 - `GET /Bundle/{id}` and same-server Bundle references
 - `GET /PractitionerRole?_count=200&_include=PractitionerRole:practitioner`

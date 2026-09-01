@@ -16,6 +16,7 @@ import type {
   MedicationStatement,
   Observation,
   Procedure,
+  Questionnaire,
   QuestionnaireResponse,
   Resource,
   ServiceRequest,
@@ -47,8 +48,24 @@ export type TocSectionOptions = {
   options: TocResourceOption[]
 }
 
+/** Returns the form label preferred for QuestionnaireResponse selection when its response narrative is absent. */
+export function getQuestionnaireDisplay(questionnaire: Questionnaire) {
+  return questionnaire.title?.trim() || questionnaire.code
+    ?.map((coding) => coding.display?.trim())
+    .find(Boolean) || ''
+}
+
 function resources(bundle: Bundle | null) {
   return bundle?.entry?.flatMap((entry) => entry.resource ? [entry.resource] : []) ?? []
+}
+
+/** Finds distinct Questionnaire canonicals used by responses in a patient Bundle. */
+export function getQuestionnaireResponseReferences(bundle: Bundle | null) {
+  return [...new Set(resources(bundle)
+    .filter((resource): resource is QuestionnaireResponse => resource.resourceType === 'QuestionnaireResponse')
+    .filter((response) => !getNarrativeText(response.text))
+    .map((response) => response.questionnaire?.trim())
+    .filter((reference): reference is string => Boolean(reference)))]
 }
 
 function hasCode(concepts: { coding?: { code?: string }[] }[] | undefined, code: string) {
@@ -125,10 +142,19 @@ function sortResourcesByDate(resourcesToSort: Resource[]) {
     .map(({ resource }) => resource)
 }
 
-export function summarizeTocResource(resource: Resource): TocResourceOption | null {
+export function summarizeTocResource(
+  resource: Resource,
+  questionnaireLabels: ReadonlyMap<string, string> = new Map(),
+): TocResourceOption | null {
   if (!resource.id) return null
   let secondaryText: string | undefined
-  const title = getSimpleResourceDisplay(resource)
+  const response = resource.resourceType === 'QuestionnaireResponse'
+    ? resource as QuestionnaireResponse
+    : undefined
+  const questionnaireLabel = response && !getNarrativeText(response.text)
+    ? questionnaireLabels.get(response.questionnaire || '')
+    : undefined
+  const title = questionnaireLabel || getSimpleResourceDisplay(resource)
   if (resource.resourceType === 'DocumentReference') {
     const description = (resource as DocumentReference).description
     secondaryText = description && description !== title ? description : undefined
@@ -143,13 +169,17 @@ export function summarizeTocResource(resource: Resource): TocResourceOption | nu
   }
 }
 
-export function buildTocSectionOptions(bundle: Bundle | null): TocSectionOptions[] {
+export function buildTocSectionOptions(
+  bundle: Bundle | null,
+  questionnaireLabels: ReadonlyMap<string, string> = new Map(),
+): TocSectionOptions[] {
   const available = resources(bundle)
   return TOC_SECTION_DEFINITIONS.map((definition) => ({
     key: definition.key,
     title: definition.title,
     options: sortResourcesByDate(available.filter((resource) => eligibleForSection(resource, definition.key)))
-      .map(summarizeTocResource).filter((option): option is TocResourceOption => Boolean(option)),
+      .map((resource) => summarizeTocResource(resource, questionnaireLabels))
+      .filter((option): option is TocResourceOption => Boolean(option)),
   }))
 }
 

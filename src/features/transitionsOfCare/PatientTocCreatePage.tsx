@@ -1,8 +1,15 @@
 /** Coordinates review, validation, and submission of a PACIO TOC document. */
-import { useEffect, useMemo, useState } from 'react'
-import type { Bundle, Patient } from 'fhir/r4'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Bundle, Patient, Questionnaire } from 'fhir/r4'
 import { TOC_SECTION_DEFINITIONS, type TocSectionKey, type TocStatus } from '../../igs/pacioToc/tocDocument'
-import { fetchOrganizations, fetchPatient, fetchPatientEverything, fetchPractitionerRoles } from '../../lib/fhir/client'
+import {
+  fetchOrganizations,
+  fetchPatient,
+  fetchPatientEverything,
+  fetchPractitionerRoles,
+  fetchQuestionnaire,
+  getServerLocalQuestionnaireId,
+} from '../../lib/fhir/client'
 import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import { getOrganizationOptions, getPractitionerMap, getPractitionerRoleOptions } from '../../lib/fhir/resourceOptions'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
@@ -10,7 +17,11 @@ import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { useSavedServers } from '../servers/useSavedServers'
 import { createTocDocument } from './createTocDocument'
 import { TocCreateForm } from './TocCreateForm'
-import { buildTocSectionOptions } from './tocModel'
+import {
+  buildTocSectionOptions,
+  getQuestionnaireDisplay,
+  getQuestionnaireResponseReferences,
+} from './tocModel'
 
 type PatientTocCreatePageProps = { patientId: string }
 
@@ -50,6 +61,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
   const { activeServer, savedServers } = useSavedServers()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [patientBundle, setPatientBundle] = useState<Bundle | null>(null)
+  const [questionnaireLabels, setQuestionnaireLabels] = useState<Map<string, string>>(new Map())
   const [authorOptions, setAuthorOptions] = useState<ReturnType<typeof getPractitionerRoleOptions>>([])
   const [custodianOptions, setCustodianOptions] = useState<ReturnType<typeof getOrganizationOptions>>([])
   const [title, setTitle] = useState('')
@@ -63,6 +75,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const questionnaireRequests = useRef(new Map<string, Promise<Questionnaire | null>>())
 
   useEffect(() => {
     if (activeServer) setDestinationBaseUrl(activeServer.baseUrl)
@@ -105,7 +118,53 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
     return () => { mounted = false }
   }, [activeServer, patientId])
 
-  const sections = useMemo(() => buildTocSectionOptions(patientBundle), [patientBundle])
+  useEffect(() => {
+    if (!activeServer || !patientBundle) return
+    let mounted = true
+    const bundledQuestionnaires = new Map<string, Questionnaire>()
+    for (const entry of patientBundle.entry ?? []) {
+      const resource = entry.resource
+      if (resource?.resourceType === 'Questionnaire' && resource.id) {
+        bundledQuestionnaires.set(resource.id, resource as Questionnaire)
+      }
+    }
+    const referencesByQuestionnaireId = new Map<string, string[]>()
+    for (const reference of getQuestionnaireResponseReferences(patientBundle)) {
+      const questionnaireId = getServerLocalQuestionnaireId(activeServer.baseUrl, reference)
+      if (!questionnaireId) continue
+      const references = referencesByQuestionnaireId.get(questionnaireId) || []
+      references.push(reference)
+      referencesByQuestionnaireId.set(questionnaireId, references)
+    }
+
+    setQuestionnaireLabels(new Map())
+    for (const [questionnaireId, references] of referencesByQuestionnaireId) {
+      const bundled = bundledQuestionnaires.get(questionnaireId)
+      const requestKey = `${activeServer.baseUrl}|${questionnaireId}`
+      const questionnairePromise = bundled
+        ? Promise.resolve(bundled)
+        : questionnaireRequests.current.get(requestKey) || fetchQuestionnaire(activeServer.baseUrl, questionnaireId)
+          .catch(() => null)
+      if (!bundled) questionnaireRequests.current.set(requestKey, questionnairePromise)
+
+      void questionnairePromise.then((questionnaire) => {
+        const label = questionnaire ? getQuestionnaireDisplay(questionnaire) : ''
+        if (!mounted || !label) return
+        setQuestionnaireLabels((current) => {
+          const next = new Map(current)
+          for (const reference of references) next.set(reference, label)
+          return next
+        })
+      })
+    }
+
+    return () => { mounted = false }
+  }, [activeServer, patientBundle])
+
+  const sections = useMemo(
+    () => buildTocSectionOptions(patientBundle, questionnaireLabels),
+    [patientBundle, questionnaireLabels],
+  )
   const selectedCount = Object.values(selected).reduce((count, values) => count + values.length, 0)
 
   function setSectionSelection(key: TocSectionKey, references: string[]) {
