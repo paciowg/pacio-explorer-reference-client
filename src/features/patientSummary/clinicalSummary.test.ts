@@ -1,7 +1,12 @@
 /** Verifies clinical-summary filtering, ordering, formatting, and list limits. */
 import { describe, expect, it } from 'vitest'
 import type { Bundle } from 'fhir/r4'
+import type { ClinicalListItem } from '../../components/clinicalTypes'
 import { buildClinicalSummary } from './clinicalSummary'
+
+function presentationOnly(items: ClinicalListItem[]) {
+  return items.map(({ resource: _resource, details: _details, ...item }) => item)
+}
 
 describe('buildClinicalSummary', () => {
   it('extracts medications, allergies, and latest vital signs', () => {
@@ -21,10 +26,10 @@ describe('buildClinicalSummary', () => {
     } as unknown as Bundle
 
     const model = buildClinicalSummary(bundle)
-    expect(model.currentMedications).toEqual([
+    expect(presentationOnly(model.currentMedications)).toEqual([
       { title: 'Aspirin', dateLabel: 'Recorded', dateValue: '2025-01-02' },
     ])
-    expect(model.knownAllergies).toEqual([{
+    expect(presentationOnly(model.knownAllergies)).toEqual([{
       title: 'Peanuts', secondaryText: 'Food allergy',
       dateLabel: 'Last occurrence', dateValue: '2025-01-03',
     }])
@@ -32,6 +37,9 @@ describe('buildClinicalSummary', () => {
       ['Blood pressure', '120/80 mmHg'],
       ['Heart rate', '72 /min'],
     ])
+    expect(model.mostRecentVitals[0].resource?.id).toBe('blood-pressure')
+    expect(model.mostRecentVitals[0].details?.groups.map((group) => group.title))
+      .toEqual([undefined, '8480-6', '8462-4'])
   })
 
   it('sorts and limits clinical lists and truncates directive descriptions', () => {
@@ -68,14 +76,62 @@ describe('buildClinicalSummary', () => {
       ],
     } as unknown as Bundle)
 
-    expect(model.activeProblems).toEqual([{
+    expect(presentationOnly(model.activeProblems)).toEqual([{
       title: 'Condition/condition-without-code', dateLabel: 'Onset', dateValue: '2025-02-01',
     }])
-    expect(model.currentMedications).toEqual([{
+    expect(presentationOnly(model.currentMedications)).toEqual([{
       title: 'Aspirin tablet', dateLabel: 'Recorded', dateValue: '2025-02-02',
     }])
-    expect(model.knownAllergies).toEqual([{
+    expect(presentationOnly(model.knownAllergies)).toEqual([{
       title: 'AllergyIntolerance/allergy-without-code', dateLabel: 'Recorded', dateValue: '2025-02-03',
     }])
+    expect(model.activeProblems[0].details).toBeNull()
+  })
+
+  it('attaches shared expansion details to Patient clinical resources but not document links', () => {
+    const note = 'The ulcer has erythema, edema, drainage, and a foul odor.'
+    const model = buildClinicalSummary({
+      resourceType: 'Bundle', type: 'searchset', entry: [
+        { resource: {
+          resourceType: 'Condition', id: 'ulcer', clinicalStatus: { coding: [{ code: 'active' }] },
+          code: { text: 'Infected ulcer of skin' }, bodySite: [{ text: 'Right hip' }],
+          recordedDate: '2026-07-14', note: [{ text: note }],
+        } },
+        { resource: {
+          resourceType: 'DocumentReference', id: 'directive', status: 'current',
+          category: [{ coding: [{ code: '42348-3' }] }], type: { text: 'Directive' }, content: [],
+        } },
+        { resource: {
+          resourceType: 'DocumentReference', id: 'toc', status: 'current',
+          type: { coding: [{ code: '18761-7' }] }, content: [],
+        } },
+      ],
+    } as unknown as Bundle)
+
+    const fields = model.activeProblems[0].details?.groups.flatMap((group) => group.fields)
+    expect(model.activeProblems[0].resource?.id).toBe('ulcer')
+    expect(fields?.find((field) => field.label === 'Body site')?.values).toEqual(['Right hip'])
+    expect(fields?.find((field) => field.label === 'Notes')?.values).toEqual([note])
+    expect(model.advanceDirectives[0].resource).toBeUndefined()
+    expect(model.transitionOfCares[0].resource).toBeUndefined()
+  })
+
+  it('resolves Patient detail references against the loaded Bundle', () => {
+    const model = buildClinicalSummary({
+      resourceType: 'Bundle', type: 'searchset', entry: [
+        { resource: {
+          resourceType: 'MedicationStatement', id: 'statement', status: 'active',
+          medicationReference: { reference: 'Medication/aspirin' },
+        } },
+        { resource: {
+          resourceType: 'Medication', id: 'aspirin', code: { text: 'Aspirin tablet' },
+        } },
+      ],
+    } as unknown as Bundle)
+
+    const medication = model.currentMedications[0].details?.groups
+      .flatMap((group) => group.fields)
+      .find((field) => field.label === 'Medication')
+    expect(medication?.values).toEqual(['Aspirin tablet'])
   })
 })

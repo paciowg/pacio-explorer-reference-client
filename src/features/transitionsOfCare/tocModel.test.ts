@@ -13,7 +13,7 @@ const bundle: Bundle = {
   resourceType: 'Bundle', type: 'collection', entry: [
     { resource: { resourceType: 'DocumentReference', id: 'toc-1', status: 'current', date: '2026-01-01', type: { coding: [{ system: 'http://loinc.org', code: '18761-7' }] }, content: [] } as DocumentReference },
     { resource: { resourceType: 'Observation', id: 'vital-1', status: 'final', category: [{ coding: [{ code: 'vital-signs' }] }], code: { text: 'Heart rate' }, subject: { reference: 'Patient/patient-1' } } as Observation },
-    { resource: { resourceType: 'Condition', id: 'condition-1', subject: { reference: 'Patient/patient-1' }, code: { text: 'Diabetes' } } as Condition },
+    { resource: { resourceType: 'Condition', id: 'condition-1', subject: { reference: 'Patient/patient-1' }, code: { text: 'Diabetes' }, bodySite: [{ text: 'Foot' }] } as Condition },
   ],
 }
 
@@ -88,6 +88,8 @@ describe('TOC models', () => {
     const model = buildTocViewSections(documentBundle, 'https://example.test/fhir')
     expect(model?.sections[0].summary).toBe('1 entry')
     expect(model?.sections[0].entries[0].title).toBe('Diabetes')
+    expect(model?.sections[0].entries[0].details?.groups[0].fields
+      .find((detailField) => detailField.label === 'Body site')?.values).toEqual(['Foot'])
     expect(model?.sections[1].summary).toBe('No entries — unavailable')
   })
 })

@@ -1,6 +1,6 @@
-/** Renders loaded TOC document metadata and section summaries without owning transport state. */
+/** Renders loaded TOC metadata, section summaries, and expandable resource details without owning transport state. */
 import type { DocumentReference } from 'fhir/r4'
-import { FhirResourceTypeBadge } from '../../components/FhirResourceTypeBadge'
+import { ExpandableFhirResource } from '../../components/FhirResourceDetails'
 import { formatDate, getCodeableConceptText, placeholderValue } from '../../lib/fhir/formatters'
 import type { TocViewSection } from './tocModel'
 
@@ -59,21 +59,15 @@ function TocSectionView({ section }: { section: TocViewSection }) {
       {section.entries.length ? (
         <ul className="clinical-list">
           {section.entries.map((entry) => (
-            <li key={entry.reference} className="clinical-list-item">
-              <div className="clinical-list-main">
-                <div className="toc-option-title-row">
-                  <p className="clinical-item-title">{entry.title}</p>
-                  <FhirResourceTypeBadge resourceType={entry.resource.resourceType} />
-                </div>
-                {entry.secondaryText ? (
-                  <p className="clinical-item-secondary">{entry.secondaryText}</p>
-                ) : null}
-              </div>
-              <div className="clinical-item-meta">
-                <span className="clinical-item-date-label">Date</span>
-                <span className="clinical-item-date-value">{entry.dateValue || '--'}</span>
-              </div>
-            </li>
+            <ExpandableFhirResource
+              key={entry.reference}
+              title={entry.title}
+              resource={entry.resource}
+              details={entry.details ?? null}
+              secondaryText={entry.secondaryText}
+              dateLabel="Date"
+              dateValue={entry.dateValue}
+            />
           ))}
         </ul>
       ) : null}

@@ -1,4 +1,4 @@
-/** Selects a small, readable clinical summary from resources returned by Patient/$everything. */
+/** Selects readable Patient/$everything summaries and enriches clinical entries for shared expansion. */
 import type {
   AllergyIntolerance,
   Bundle,
@@ -11,11 +11,13 @@ import type {
   Resource,
 } from 'fhir/r4'
 import type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
+import { createBundleIndex } from '../../lib/fhir/bundleIndex'
 import {
   formatDate,
   getCodeableConceptText,
   placeholderValue,
 } from '../../lib/fhir/formatters'
+import { buildResourceDetailModel, type ResolveResourceReference } from '../../lib/fhir/resourceDetails'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 import { getTocDocuments } from '../transitionsOfCare/tocModel'
 
@@ -42,14 +44,28 @@ export type ClinicalSummary = {
 }
 
 export function buildClinicalSummary(bundle: Bundle | null): ClinicalSummary {
+  const resolve = bundle ? createBundleIndex(bundle).resolve : undefined
   return {
-    activeProblems: getActiveProblems(bundle),
-    currentMedications: getCurrentMedications(bundle),
-    knownAllergies: getKnownAllergies(bundle),
-    mostRecentVitals: getMostRecentVitals(bundle),
+    activeProblems: getActiveProblems(bundle, resolve),
+    currentMedications: getCurrentMedications(bundle, resolve),
+    knownAllergies: getKnownAllergies(bundle, resolve),
+    mostRecentVitals: getMostRecentVitals(bundle, resolve),
     advanceDirectives: getAdvanceDirectives(bundle),
     transitionOfCares: getTocDocuments(bundle),
   }
+}
+
+function withDetails(
+  item: ClinicalListItem,
+  resource: Resource,
+  resolve?: ResolveResourceReference,
+): ClinicalListItem {
+  const details = buildResourceDetailModel(resource, resolve)
+  const collapsedValues = new Set([item.title, item.secondaryText, item.dateValue].filter(Boolean))
+  const hasAdditionalDetails = details?.groups.some((detailGroup) =>
+    detailGroup.fields.some((detailField) =>
+      detailField.values.some((value) => !collapsedValues.has(value)))) ?? false
+  return { ...item, resource, details: hasAdditionalDetails ? details : null }
 }
 
 function getBundleResources<T extends Resource>(
@@ -63,7 +79,7 @@ function getBundleResources<T extends Resource>(
   )
 }
 
-function getActiveProblems(bundle: Bundle | null): ClinicalListItem[] {
+function getActiveProblems(bundle: Bundle | null, resolve?: ResolveResourceReference): ClinicalListItem[] {
   return getBundleResources<Condition>(bundle, 'Condition')
     .filter((condition) => {
       const status = condition.clinicalStatus?.coding?.[0]?.code
@@ -79,16 +95,16 @@ function getActiveProblems(bundle: Bundle | null): ClinicalListItem[] {
     .map((condition) => {
       const rawDateValue = condition.onsetDateTime || condition.recordedDate
 
-      return {
+      return withDetails({
         title: getSimpleResourceDisplay(condition),
         dateLabel: condition.onsetDateTime ? 'Onset' : condition.recordedDate ? 'Recorded' : undefined,
         dateValue: rawDateValue ? formatDate(rawDateValue) : undefined,
-      }
+      }, condition, resolve)
     })
     .slice(0, CLINICAL_LIST_LIMIT)
 }
 
-function getCurrentMedications(bundle: Bundle | null): ClinicalListItem[] {
+function getCurrentMedications(bundle: Bundle | null, resolve?: ResolveResourceReference): ClinicalListItem[] {
   return getBundleResources<MedicationStatement>(bundle, 'MedicationStatement')
     .filter((statement) => {
       const status = statement.status
@@ -106,16 +122,16 @@ function getCurrentMedications(bundle: Bundle | null): ClinicalListItem[] {
         statement.effectiveDateTime ||
         statement.effectivePeriod?.start
 
-      return {
+      return withDetails({
         title: getSimpleResourceDisplay(statement),
         dateLabel: rawDateValue ? 'Recorded' : undefined,
         dateValue: rawDateValue ? formatDate(rawDateValue) : undefined,
-      }
+      }, statement, resolve)
     })
     .slice(0, CLINICAL_LIST_LIMIT)
 }
 
-function getKnownAllergies(bundle: Bundle | null): ClinicalListItem[] {
+function getKnownAllergies(bundle: Bundle | null, resolve?: ResolveResourceReference): ClinicalListItem[] {
   return getBundleResources<AllergyIntolerance>(bundle, 'AllergyIntolerance')
     .filter((allergy) => allergy.verificationStatus?.coding?.[0]?.code !== 'entered-in-error')
     .sort((a, b) =>
@@ -128,7 +144,7 @@ function getKnownAllergies(bundle: Bundle | null): ClinicalListItem[] {
       const hasLastOccurrence = Boolean(allergy.lastOccurrence)
       const rawDateValue = allergy.lastOccurrence || allergy.recordedDate
 
-      return {
+      return withDetails({
         title: getSimpleResourceDisplay(allergy),
         dateLabel: rawDateValue
           ? hasLastOccurrence
@@ -142,12 +158,12 @@ function getKnownAllergies(bundle: Bundle | null): ClinicalListItem[] {
             : allergy.type
               ? capitalize(allergy.type)
               : undefined,
-      }
+      }, allergy, resolve)
     })
     .slice(0, CLINICAL_LIST_LIMIT)
 }
 
-function getMostRecentVitals(bundle: Bundle | null): ClinicalListItem[] {
+function getMostRecentVitals(bundle: Bundle | null, resolve?: ResolveResourceReference): ClinicalListItem[] {
   const observations = getBundleResources<Observation>(bundle, 'Observation').filter(
     (observation) => {
       const status = observation.status
@@ -156,7 +172,7 @@ function getMostRecentVitals(bundle: Bundle | null): ClinicalListItem[] {
   )
 
   // Select one latest usable Observation per supported vital, not simply the latest panel.
-  const latestBloodPressure = getLatestBloodPressure(observations)
+  const latestBloodPressure = getLatestBloodPressure(observations, resolve)
   const latestHeartRate = getLatestQuantityObservation(observations, HEART_RATE_CODES)
   const latestRespiratoryRate = getLatestQuantityObservation(
     observations,
@@ -174,16 +190,16 @@ function getMostRecentVitals(bundle: Bundle | null): ClinicalListItem[] {
   return [
     latestBloodPressure,
     latestHeartRate
-      ? quantityObservationToItem('Heart rate', latestHeartRate)
+      ? quantityObservationToItem('Heart rate', latestHeartRate, resolve)
       : null,
     latestRespiratoryRate
-      ? quantityObservationToItem('Respiratory rate', latestRespiratoryRate)
+      ? quantityObservationToItem('Respiratory rate', latestRespiratoryRate, resolve)
       : null,
     latestTemperature
-      ? quantityObservationToItem('Body temperature', latestTemperature)
+      ? quantityObservationToItem('Body temperature', latestTemperature, resolve)
       : null,
     latestOxygenSaturation
-      ? quantityObservationToItem('Oxygen saturation', latestOxygenSaturation)
+      ? quantityObservationToItem('Oxygen saturation', latestOxygenSaturation, resolve)
       : null,
   ].filter((item): item is ClinicalListItem => Boolean(item))
 }
@@ -210,7 +226,10 @@ function getAdvanceDirectives(bundle: Bundle | null): SelectableClinicalListItem
     .slice(0, CLINICAL_LIST_LIMIT)
 }
 
-function getLatestBloodPressure(observations: Observation[]): ClinicalListItem | null {
+function getLatestBloodPressure(
+  observations: Observation[],
+  resolve?: ResolveResourceReference,
+): ClinicalListItem | null {
   const candidates = observations
     .filter((observation) => hasCoding(observation.code?.coding, BLOOD_PRESSURE_PANEL_CODES))
     .sort(sortByObservationDateDesc)
@@ -224,12 +243,12 @@ function getLatestBloodPressure(observations: Observation[]): ClinicalListItem |
     )?.valueQuantity
 
     if (systolic?.value != null && diastolic?.value != null) {
-      return {
+      return withDetails({
         title: 'Blood pressure',
         secondaryText: `${systolic.value}/${diastolic.value} ${systolic.unit || 'mmHg'}`,
         dateLabel: 'Observed',
         dateValue: formatDate(getObservationDate(observation)),
-      }
+      }, observation, resolve)
     }
   }
 
@@ -249,13 +268,14 @@ function getLatestQuantityObservation(
 function quantityObservationToItem(
   title: string,
   observation: Observation,
+  resolve?: ResolveResourceReference,
 ): ClinicalListItem {
-  return {
+  return withDetails({
     title,
     secondaryText: formatQuantity(observation.valueQuantity),
     dateLabel: 'Observed',
     dateValue: formatDate(getObservationDate(observation)),
-  }
+  }, observation, resolve)
 }
 
 function formatQuantity(quantity: Quantity | undefined) {

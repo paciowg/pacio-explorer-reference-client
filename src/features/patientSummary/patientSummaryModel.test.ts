@@ -32,7 +32,9 @@ describe('buildPatientSummaryModel', () => {
     })
 
     expect(model.bundleStatusText).toBe('')
-    expect(model.activeProblems).toEqual([{ title: 'Current condition', dateLabel: 'Onset', dateValue: '2025-01-02' }])
+    expect(model.activeProblems).toMatchObject([{ title: 'Current condition', dateLabel: 'Onset', dateValue: '2025-01-02' }])
+    expect(model.activeProblems[0].resource?.id).toBe('active')
+    expect(model.activeProblems[0].details).not.toBeNull()
     expect(model.advanceDirectives).toEqual([{
       id: 'adi', title: 'Portable medical order form', dateLabel: 'Date', dateValue: '2025-01-03', secondaryText: 'Advance directive',
     }])

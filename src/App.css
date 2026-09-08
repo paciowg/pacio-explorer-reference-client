@@ -279,6 +279,110 @@
   color: #475569;
 }
 
+.clinical-list-expandable-item {
+  display: block;
+  padding: 0;
+}
+
+.clinical-entry-disclosure {
+  width: 100%;
+}
+
+.clinical-entry-disclosure > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.clinical-entry-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.clinical-entry-disclosure > summary:hover {
+  background: #eef2ff;
+}
+
+.clinical-entry-disclosure > summary:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+.clinical-entry-chevron {
+  display: inline-block;
+  align-self: start;
+  color: #4f46e5;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 150ms ease;
+}
+
+.clinical-entry-disclosure[open] .clinical-entry-chevron {
+  transform: rotate(90deg);
+}
+
+.fhir-resource-details {
+  display: grid;
+  gap: 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem;
+  background: #fff;
+}
+
+.fhir-detail-group {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.fhir-detail-group h4 {
+  color: #334155;
+}
+
+.fhir-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 1rem;
+  margin: 0;
+}
+
+.fhir-detail-grid > div {
+  min-width: 0;
+}
+
+.fhir-detail-grid dt {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fhir-detail-grid dd {
+  margin: 0.2rem 0 0;
+  color: #0f172a;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.fhir-detail-grid ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.fhir-detail-field-multiline {
+  grid-column: 1 / -1;
+}
+
+.fhir-detail-field-multiline dd,
+.fhir-detail-field-multiline li {
+  white-space: pre-wrap;
+}
+
 .saved-server-panel h3 {
   margin-bottom: 1rem;
 }
@@ -910,6 +1014,7 @@ dd {
   .notes-grid,
   .summary-grid,
   .detail-grid,
+  .fhir-detail-grid,
   .toc-metadata-grid,
   .toc-section-grid,
   .toc-view-grid {
@@ -930,6 +1035,14 @@ dd {
   .clinical-list-item,
   .clinical-select-button {
     grid-template-columns: 1fr;
+  }
+
+  .clinical-entry-disclosure > summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .clinical-entry-disclosure > summary .clinical-item-meta {
+    grid-column: 2;
   }
 }
 

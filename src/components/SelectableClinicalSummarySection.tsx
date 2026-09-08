@@ -1,6 +1,7 @@
 /** Renders clinical-summary items that can navigate to a resource-specific detail view. */
 import type { ReactNode } from 'react'
 import type { SelectableClinicalListItem } from './clinicalTypes'
+import { ClinicalEntrySummary } from './ClinicalEntrySummary'
 
 type SelectableClinicalSummarySectionProps = {
   title: string
@@ -33,27 +34,12 @@ export function SelectableClinicalSummarySection({
                 className="clinical-select-button"
                 onClick={() => onSelect(item)}
               >
-                <div className="clinical-list-main">
-                  <p className="clinical-item-title">{item.title}</p>
-                  {item.secondaryText ? (
-                    <p className="clinical-item-secondary">{item.secondaryText}</p>
-                  ) : null}
-                </div>
-
-                <div className="clinical-item-meta">
-                  {item.dateLabel && item.dateValue ? (
-                    <>
-                      <span className="clinical-item-date-label">
-                        {item.dateLabel}
-                      </span>
-                      <span className="clinical-item-date-value">
-                        {item.dateValue}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="clinical-item-date-value">--</span>
-                  )}
-                </div>
+                <ClinicalEntrySummary
+                  title={item.title}
+                  secondaryText={item.secondaryText}
+                  dateLabel={item.dateLabel}
+                  dateValue={item.dateValue}
+                />
               </button>
             </li>
           ))}

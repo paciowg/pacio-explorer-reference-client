@@ -30,6 +30,7 @@ import {
 } from '../../igs/pacioToc/tocDocument'
 import { createBundleIndex } from '../../lib/fhir/bundleIndex'
 import { formatDate, getCodeableConceptText, getNarrativeText } from '../../lib/fhir/formatters'
+import { buildResourceDetailModel, type ResourceDetailModel } from '../../lib/fhir/resourceDetails'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 
 const ADI_DOCUMENT_REFERENCE_PROFILE = 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
@@ -40,6 +41,7 @@ export type TocResourceOption = {
   title: string
   secondaryText?: string
   dateValue?: string
+  details?: ResourceDetailModel | null
 }
 
 export type TocSectionOptions = {
@@ -220,7 +222,9 @@ export function buildTocViewSections(bundle: Bundle, baseUrl: string): { composi
       const entries = (section.entry ?? []).flatMap((entry) => {
         const resolved = index.resolve(entry.reference, composition)
         const summary = resolved ? summarizeTocResource(resolved) : null
-        return summary ? [summary] : []
+        return summary && resolved
+          ? [{ ...summary, details: buildResourceDetailModel(resolved, index.resolve) }]
+          : []
       })
       const emptyReason = getCodeableConceptText(section.emptyReason)
       return {

@@ -1,6 +1,8 @@
 /** Renders a read-only clinical-summary list with consistent empty and unavailable states. */
 import type { ReactNode } from 'react'
 import type { ClinicalListItem } from './clinicalTypes'
+import { ClinicalEntrySummary } from './ClinicalEntrySummary'
+import { ExpandableFhirResource } from './FhirResourceDetails'
 
 type ClinicalSummarySectionProps = {
   title: string
@@ -25,32 +27,30 @@ export function ClinicalSummarySection({
       {items.length > 0 ? (
         <ul className="clinical-list">
           {items.map((item) => (
-            <li
-              key={`${title}-${item.title}-${item.dateValue ?? ''}-${item.secondaryText ?? ''}`}
-              className="clinical-list-item"
-            >
-              <div className="clinical-list-main">
-                <p className="clinical-item-title">{item.title}</p>
-                {item.secondaryText ? (
-                  <p className="clinical-item-secondary">{item.secondaryText}</p>
-                ) : null}
-              </div>
-
-              <div className="clinical-item-meta">
-                {item.dateLabel && item.dateValue ? (
-                  <>
-                    <span className="clinical-item-date-label">
-                      {item.dateLabel}
-                    </span>
-                    <span className="clinical-item-date-value">
-                      {item.dateValue}
-                    </span>
-                  </>
-                ) : (
-                  <span className="clinical-item-date-value">--</span>
-                )}
-              </div>
-            </li>
+            item.resource && item.details ? (
+              <ExpandableFhirResource
+                key={`${item.resource.resourceType}-${item.resource.id || item.title}`}
+                title={item.title}
+                secondaryText={item.secondaryText}
+                dateLabel={item.dateLabel}
+                dateValue={item.dateValue}
+                resource={item.resource}
+                details={item.details}
+                showResourceType={false}
+              />
+            ) : (
+              <li
+                key={`${title}-${item.title}-${item.dateValue ?? ''}-${item.secondaryText ?? ''}`}
+                className="clinical-list-item"
+              >
+                <ClinicalEntrySummary
+                  title={item.title}
+                  secondaryText={item.secondaryText}
+                  dateLabel={item.dateLabel}
+                  dateValue={item.dateValue}
+                />
+              </li>
+            )
           ))}
         </ul>
       ) : (
