@@ -80,13 +80,14 @@ describe('TOC models', () => {
     expect(getQuestionnaireDisplay(coded)).toBe('GAD-7')
   })
 
-  it('resolves and summarizes Composition section entries', () => {
+  it('resolves Composition section entries and derives structural display summaries', () => {
     const documentBundle: Bundle = { ...bundle, type: 'document', entry: [
-      { fullUrl: 'urn:uuid:composition', resource: { resourceType: 'Composition', status: 'final', type: { text: 'Transfer Summary Note' }, date: '2026-01-01', author: [], title: 'Transfer Summary', section: [{ title: 'Problems', text: { status: 'generated', div: '<div><p>Selected problems</p></div>' }, entry: [{ reference: 'urn:uuid:condition' }] }] } as Composition },
+      { fullUrl: 'urn:uuid:composition', resource: { resourceType: 'Composition', status: 'final', type: { text: 'Transfer Summary Note' }, date: '2026-01-01', author: [], title: 'Transfer Summary', section: [{ title: 'Problems', text: { status: 'generated', div: '<div><p>Selected problems</p></div>' }, entry: [{ reference: 'urn:uuid:condition' }] }, { title: 'Allergies', text: { status: 'generated', div: '<div><p>No known allergies</p></div>' }, emptyReason: { coding: [{ code: 'unavailable' }] } }] } as Composition },
       { fullUrl: 'urn:uuid:condition', resource: bundle.entry?.[2].resource },
     ] }
     const model = buildTocViewSections(documentBundle, 'https://example.test/fhir')
-    expect(model?.sections[0].narrative).toBe('Selected problems')
+    expect(model?.sections[0].summary).toBe('1 entry')
     expect(model?.sections[0].entries[0].title).toBe('Diabetes')
+    expect(model?.sections[1].summary).toBe('No entries — unavailable')
   })
 })

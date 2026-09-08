@@ -11,6 +11,7 @@ import type {
   Resource,
 } from 'fhir/r4'
 import { createDocumentBundle } from '../../lib/fhir/documents'
+import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 
 export const TOC_BUNDLE_PROFILE = 'http://hl7.org/fhir/us/pacio-toc/StructureDefinition/TOC-Bundle'
 export const TOC_COMPOSITION_PROFILE = 'http://hl7.org/fhir/us/pacio-toc/StructureDefinition/TOC-Composition'
@@ -84,12 +85,14 @@ function tocType(): CodeableConcept {
 function buildSection(definition: TocSectionDefinition, selection: TocSectionSelection | undefined) {
   const entries = selection?.entries.filter((resource) => Boolean(resource.id)) ?? []
   const narrative = entries.length
-    ? `${entries.length} selected ${entries.length === 1 ? 'entry' : 'entries'}.`
-    : `No entries: ${selection?.emptyReason || 'unavailable'}.`
+    ? `<p>${escapeHtml(definition.title)}</p><ul>${entries
+      .map((resource) => `<li>${escapeHtml(getSimpleResourceDisplay(resource))}</li>`)
+      .join('')}</ul>`
+    : `<p>No entries are recorded because ${escapeHtml(selection?.emptyReason || 'unavailable')}.</p>`
   return {
     title: definition.title,
     code: { coding: [{ system: definition.system, code: definition.code, display: definition.display }], text: definition.display },
-    text: { status: 'generated' as const, div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${escapeHtml(narrative)}</p></div>` },
+    text: { status: 'generated' as const, div: `<div xmlns="http://www.w3.org/1999/xhtml">${narrative}</div>` },
     ...(entries.length
       ? { entry: entries.map((resource) => ({ reference: `${resource.resourceType}/${resource.id}` })) }
       : { emptyReason: { coding: [{ system: EMPTY_REASON_SYSTEM, code: selection?.emptyReason || 'unavailable' }] } }),

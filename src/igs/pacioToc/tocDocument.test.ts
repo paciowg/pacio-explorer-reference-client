@@ -2,6 +2,7 @@
 import type { Composition, Patient } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { buildTocBundle, buildTocDocumentReference, TOC_SECTION_DEFINITIONS } from './tocDocument'
+import { getNarrativeText } from '../../lib/fhir/formatters'
 
 const patient: Patient = { resourceType: 'Patient', id: 'patient-1', name: [{ text: 'Ada Lovelace' }] }
 const identifier = { system: 'urn:ietf:rfc:3986', value: 'urn:uuid:document-1' }
@@ -24,7 +25,9 @@ describe('PACIO TOC builders', () => {
     if (!composition) throw new Error('Missing Composition')
     expect(composition.section).toHaveLength(15)
     expect(composition.section?.find((section) => section.code?.coding?.[0].code === '11450-4')?.entry?.[0].reference).toBe('Condition/condition-1')
+    expect(getNarrativeText(composition.section?.find((section) => section.code?.coding?.[0].code === '11450-4')?.text)).toBe('Problems Diabetes')
     expect(composition.section?.find((section) => section.code?.coding?.[0].code === '48765-2')?.emptyReason?.coding?.[0].code).toBe('unavailable')
+    expect(getNarrativeText(composition.section?.find((section) => section.code?.coding?.[0].code === '48765-2')?.text)).toBe('No entries are recorded because unavailable.')
   })
 
   it('builds the companion indexed document', () => {

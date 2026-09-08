@@ -205,7 +205,7 @@ export function getTocDocuments(bundle: Bundle | null): SelectableClinicalListIt
 
 export type TocViewSection = {
   title: string
-  narrative: string
+  summary: string
   emptyReason: string
   entries: TocResourceOption[]
 }
@@ -216,15 +216,21 @@ export function buildTocViewSections(bundle: Bundle, baseUrl: string): { composi
   const index = createBundleIndex(bundle, baseUrl)
   return {
     composition,
-    sections: (composition.section ?? []).map((section) => ({
-      title: section.title || getCodeableConceptText(section.code) || 'Untitled section',
-      narrative: getNarrativeText(section.text),
-      emptyReason: getCodeableConceptText(section.emptyReason),
-      entries: (section.entry ?? []).flatMap((entry) => {
+    sections: (composition.section ?? []).map((section) => {
+      const entries = (section.entry ?? []).flatMap((entry) => {
         const resolved = index.resolve(entry.reference, composition)
         const summary = resolved ? summarizeTocResource(resolved) : null
         return summary ? [summary] : []
-      }),
-    })),
+      })
+      const emptyReason = getCodeableConceptText(section.emptyReason)
+      return {
+        title: section.title || getCodeableConceptText(section.code) || 'Untitled section',
+        summary: entries.length
+          ? `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`
+          : emptyReason ? `No entries — ${emptyReason}` : 'No entries recorded',
+        emptyReason,
+        entries,
+      }
+    }),
   }
 }

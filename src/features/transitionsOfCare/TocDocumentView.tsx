@@ -55,7 +55,7 @@ function TocSectionView({ section }: { section: TocViewSection }) {
   return (
     <section className="summary-card toc-view-section">
       <h3>{section.title}</h3>
-      {section.narrative ? <p className="toc-narrative">{section.narrative}</p> : null}
+      <p className="toc-narrative">{section.summary}</p>
       {section.entries.length ? (
         <ul className="clinical-list">
           {section.entries.map((entry) => (
@@ -76,9 +76,7 @@ function TocSectionView({ section }: { section: TocViewSection }) {
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="empty-state">{section.emptyReason || 'No entries recorded'}</p>
-      )}
+      ) : null}
     </section>
   )
 }
