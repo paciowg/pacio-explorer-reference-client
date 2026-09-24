@@ -14,6 +14,7 @@ describe('PMO form model', () => {
   it('derives UTC dates and jurisdiction without browser dependencies', () => {
     expect(toUtcMidnightIso('2025-01-02')).toBe('2025-01-02T00:00:00.000Z')
     expect(addOneYearToDateValue('2024-02-29')).toBe('2025-02-28')
+    expect(addOneYearToDateValue('2025-01-02')).toBe('2026-01-02')
     expect(getPatientJurisdiction({
       resourceType: 'Patient', address: [{ country: ' us ', state: ' ma ' }],
     })).toEqual({

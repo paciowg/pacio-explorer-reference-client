@@ -35,8 +35,10 @@ export function toUtcMidnightIso(dateValue: string) {
 
 export function addOneYearToDateValue(dateValue: string) {
   const date = new Date(`${dateValue}T00:00:00Z`)
+  // Preserve the calendar day when the following year has no February 29.
+  if (date.getUTCMonth() === 1 && date.getUTCDate() === 29) date.setUTCDate(28)
   date.setUTCFullYear(date.getUTCFullYear() + 1)
-  return toIsoDateTimeLocalValue(date)
+  return date.toISOString().slice(0, 10)
 }
 
 export function getPatientJurisdiction(patient: Patient): CodeableConcept | undefined {
