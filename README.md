@@ -1,8 +1,10 @@
-# PACIO Explorer
+# PACIO Explorer Reference Client
 
-PACIO Explorer is a standalone React browser client for open FHIR R4 servers. It has no backend: the browser stores saved server settings locally and makes FHIR requests directly to the selected server. The server must permit the required requests with CORS.
+The PACIO Explorer Reference Client is a standalone browser client that demonstrates [PACIO Project](https://pacioproject.org/) capabilities and use cases using open FHIR R4 servers. The application stores saved server settings locally in the user's browser and makes FHIR requests directly to the selected server. The server must permit the required requests with CORS.
 
 ## Workflows
+
+This application currently supports a handful of PACIO workflows in addition to basic FHIR server interaction:
 
 ### Read patient data
 
@@ -14,7 +16,7 @@ PACIO Explorer is a standalone React browser client for open FHIR R4 servers. It
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
-### Create an ADI PMO
+### Create an ADI PMO document
 
 From a patient summary, select the PMO creation flow and provide the required author, attester, authenticator, signed date, PDF source form, and destination FHIR server. The active server remains the source of the document data. The client matches or creates the patient on the destination, posts a PACIO ADI PMO document Bundle there, then posts the companion ADI `DocumentReference` pointing to that Bundle and destination Patient. The writes are intentionally separate: if a later write fails, resources already created on the destination remain there and the page reports the error.
 
@@ -28,27 +30,9 @@ For same-server publication, the companion `DocumentReference` retains its autho
 
 Selected advance directives are included as ADI `DocumentReference` entries. Their existing attachment links continue to identify the separate ADI document Bundles; those Bundles are not flattened into the TOC document.
 
-## FHIR requests
+## Developer notes
 
-The app uses these endpoints relative to the configured server URL:
-
-- `GET /metadata`
-- `GET /Patient?_count=100`
-- `GET /Patient?identifier={system|value}` and `GET /Patient?family={family}&given={given}` while matching a patient on a destination server
-- `GET /Patient/{id}`
-- `GET /Patient/{id}/$everything` with `_count`, `_include`, `_revinclude`, and `_include:iterate`
-- `GET /Questionnaire/{id}` for server-local QuestionnaireResponse labels in TOC creation
-- `GET /DocumentReference/{id}`
-- `GET /Bundle/{id}` and same-server Bundle references
-- `GET /PractitionerRole?_count=200&_include=PractitionerRole:practitioner`
-- `GET /Organization?_count=200`
-- `GET /RelatedPerson?patient={id}&_count=200`
-- `GET /{resourceType}/{id}` while closing PMO Bundle references
-- `POST /Bundle`
-- `POST /DocumentReference`
-- `POST /Patient` when no destination patient matches
-
-## Run and verify
+## Run and verify the application locally
 
 Run commands from the repository root:
 
