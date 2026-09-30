@@ -2,6 +2,10 @@
 
 The PACIO Explorer Reference Client is a standalone browser client that demonstrates [PACIO Project](https://pacioproject.org/) capabilities and use cases using open FHIR R4 servers. The application stores saved server settings locally in the user's browser and makes FHIR requests directly to the selected server. The server must permit the required requests with CORS.
 
+## Try it out online
+
+You can try out the latest version of the PACIO Explorer Reference Client directly on its [GitHub Page](https://paciowg.github.io/pacio-explorer-reference-client/).
+
 ## Workflows
 
 This application currently supports a handful of PACIO workflows in addition to basic FHIR server interaction:
