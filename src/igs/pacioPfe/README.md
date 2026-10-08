@@ -1,4 +1,4 @@
-# PFE device reference implementation
+# PFE reference implementation
 
 These pure FHIR R4 builders and interpreters target PACIO PFE `3.0.0-ballot`, source commit `bb71c56087d0c8686d41178b07367386370d79fe` (2026-10-06), and its US Core `9.0.0` dependency. Profile rules, extension URLs, and demo terminology belong here; React, transport, destination matching, and browser behavior belong outside this directory.
 
@@ -11,3 +11,13 @@ Builder inputs use FHIR types and validate key presence and choice constraints. 
 The browser form exposes a subset of allowed value representations and reference targets, including text or coded locations and basic repeating schedules. Further representations can be added without moving profile rules into the UI.
 
 Creation uses separate Device and DeviceRequest writes, consistent with existing document creation. A rejected request leaves its Device on the destination and supports reuse for in-session retry. Transaction publication is a future enhancement.
+
+## Nutrition orders
+
+`buildPfeNutritionOrder` constructs the PFE NutritionOrder profile, which directly inherits FHIR R4 NutritionOrder. It supports the Required and Must Support fields for oral diets, supplements, and enteral formulas. Components can be combined; at least one must contain data. PFE additionally requires one or more `allergyIntolerance` references. The builder validates these requirements and administration rate choice exclusivity, then removes empty optional FHIR structures recursively. It does not perform full profile or terminology validation.
+
+`nutritionTerminology.ts` provides small coded demo subsets. Diet, supplement, and thin-fluid choices come from the confirmed PFE example. Nutrient, texture, food, formula, additive, preference, and route choices use the corresponding [FHIR R4 NutritionOrder terminology](https://hl7.org/fhir/R4/nutritionorder.html#terminology); these subsets are not complete value-set expansions. Quantities emitted by the form use UCUM codes and basic repeat schedules.
+
+The browser exposes two explicit allergy modes: existing destination-patient AllergyIntolerance records, or no known food allergies. In the second mode, it reuses the newest active destination record with SNOMED CT `429625007` and a verification status other than refuted or entered-in-error. If no eligible record exists, it creates a standalone AllergyIntolerance before posting NutritionOrder. The negative statement is never inferred from missing data. Its generic builder and eligibility checks live in `src/lib/fhir/allergies.ts`.
+
+Destination Patient matching, reference loading, writes, and retry progress remain outside this IG directory. Writes are separate; a created Patient or allergy remains if NutritionOrder creation fails and is reused for an in-session retry. No contained allergy is emitted by creation, although viewing resolves contained references in existing orders. Patient allergy searches use their own endpoint rather than depending on `$everything`; a failed or incomplete search cannot be treated as absence.

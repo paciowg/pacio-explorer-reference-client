@@ -3,6 +3,7 @@ import type { Bundle, Patient } from 'fhir/r4'
 import type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
 import { buildClinicalSummary } from './clinicalSummary'
 import { getPatientDevices, type DeviceEntry } from '../devices/deviceModel'
+import { getPatientNutritionOrders } from '../nutritionOrders/nutritionModel'
 import { buildPatientDemographics, type EmergencyContact } from './patientDemographics'
 
 export type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
@@ -40,6 +41,7 @@ export type PatientSummaryModel = {
   advanceDirectives: SelectableClinicalListItem[]
   transitionOfCares: SelectableClinicalListItem[]
   devices: DeviceEntry[]
+  nutritionOrders: ClinicalListItem[]
   clinicalSectionEmptyMessage: string
 }
 
@@ -59,6 +61,7 @@ export function buildPatientSummaryModel(input: {
     bundleStatusTone: bundleAvailable ? 'success' : 'warning',
     ...clinicalSummary,
     devices: getPatientDevices(bundleAvailable ? bundle : null, patient.id || '', input.baseUrl || ''),
+    nutritionOrders: getPatientNutritionOrders(bundleAvailable ? bundle : null, patient.id || '', input.baseUrl || ''),
     clinicalSectionEmptyMessage: bundleAvailable ? 'None recorded' : 'Unavailable',
   }
 }

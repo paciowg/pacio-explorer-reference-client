@@ -21,6 +21,7 @@ import type {
   Medication,
   MedicationRequest,
   MedicationStatement,
+  NutritionOrder,
   Observation,
   Procedure,
   QuestionnaireResponse,
@@ -70,6 +71,16 @@ export function getSimpleResourceDisplay(resource: Resource) {
       break
     }
     case 'Observation': display = getCodeableConceptText((resource as Observation).code); break
+    case 'NutritionOrder': {
+      const order = resource as NutritionOrder
+      display = [
+        ...(order.oralDiet?.type ?? []).map(getCodeableConceptText),
+        ...(order.supplement ?? []).map((item) => item.productName || getCodeableConceptText(item.type)),
+        order.enteralFormula?.baseFormulaProductName || getCodeableConceptText(order.enteralFormula?.baseFormulaType),
+      ].filter(Boolean).join(' · ')
+      if (!display) display = [order.oralDiet ? 'Oral diet' : '', order.supplement?.length ? 'Supplements' : '', order.enteralFormula ? 'Enteral formula' : ''].filter(Boolean).join(' · ')
+      break
+    }
     case 'Organization': display = (resource as Organization).name || ''; break
     case 'Patient': display = getDisplayNameFromHumanName((resource as Patient).name?.[0]); break
     case 'Practitioner': display = getDisplayNameFromHumanName((resource as Practitioner).name?.[0]); break

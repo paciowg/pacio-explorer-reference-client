@@ -49,6 +49,16 @@ The destination defaults to the active server. Reference choices come from the d
 
 The pure [PFE reference implementation](src/igs/pacioPfe/README.md) targets the October 6, 2026 PFE source revision and US Core 9.0.0. It owns profile construction, validation, terminology, and extension interpretation independently of React and transport.
 
+### View and create PFE nutrition orders
+
+The patient **Nutrition Orders** section displays oral diet, supplement, and enteral formula orders, including historical and generic FHIR NutritionOrders. Expand an order to view its components, quantities, schedules, administration rates, instructions, and references.
+
+Choose **Create Nutrition Order** to enter Required and Must Support PFE fields using small demo terminology subsets. Oral diet, supplements, and enteral formula can be selected individually or combined. At least one component must contain data. The destination defaults to the active server, and orderer, encounter, and allergy choices come from that destination.
+
+The allergy choice is explicit: select existing patient AllergyIntolerance records, or assert **No known food allergies**. The latter reuses an eligible active record or creates a standalone no-known-food-allergy record before posting NutritionOrder. It does not infer a negative statement from an empty search or embed an allergy inside the order. Patient matching/copying follows existing workflows. Destination-patient allergies are searched directly, including a recheck on submission.
+
+Writes remain separate. If the order is rejected, any created Patient or AllergyIntolerance remains on the destination and is reused for retry within that form session. An uncertain write outcome blocks automatic retry pending destination verification. Creation does not edit existing orders or fulfill them; IV nutrition and vitamin/mineral prescribing are outside this workflow.
+
 ## Developer notes
 
 ### Run and verify the application locally
@@ -83,8 +93,9 @@ TOC form -> createTocDocument -> PACIO TOC builders -> destination patient + pub
 - `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
 - `src/features/transitionsOfCare/` owns TOC selection, workflow orchestration, discovery, and display.
 - `src/igs/pacioToc/` owns pure PACIO TOC section definitions and resource construction.
-- `src/igs/pacioPfe/` owns pure PFE Device and DeviceRequest construction, profile-specific validation, demo terminology, and extension interpretation.
+- `src/igs/pacioPfe/` owns pure PFE Device, DeviceRequest, and NutritionOrder construction, profile-specific validation, demo terminology, and device extension interpretation.
 - `src/features/devices/` owns patient device viewing, destination reference choices, creation forms, and sequential publication.
+- `src/features/nutritionOrders/` owns patient nutrition viewing, destination choices, forms, and order/allergy publication.
 - `src/lib/fhir/` owns generic URL normalization, transport, destination Patient matching and creation, document Bundle construction and publishing, document-detail loading, Bundle indexing, reference closure, and reusable resource option derivation.
 - `src/features/patientSummary/` owns patient-summary composition and demographics.
 - `src/components/` owns reusable presentation components and presentation types.
@@ -128,5 +139,6 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/patients/:id/transitions-of-care/new` — create a Transition of Care document
 - `#/patients/:id/transitions-of-care/:documentReferenceId` — Transition of Care detail
 - `#/patients/:id/device-requests/new` — create a PFE Device and DeviceRequest
+- `#/patients/:id/nutrition-orders/new` — create a PFE NutritionOrder and a standalone allergy statement when needed
 
 Saved and active server settings are stored only in browser local storage.
