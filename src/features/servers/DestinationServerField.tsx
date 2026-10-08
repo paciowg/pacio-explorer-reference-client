@@ -7,6 +7,7 @@ type DestinationServerFieldProps = {
   value: string
   disabled: boolean
   onChange: (baseUrl: string) => void
+  resourceDescription?: string
 }
 
 export function DestinationServerField(props: DestinationServerFieldProps) {
@@ -28,7 +29,7 @@ export function DestinationServerField(props: DestinationServerFieldProps) {
         ))}
       </select>
       <small className="helper-text">
-        The Bundle and DocumentReference will be written here. The patient will be copied if no
+        The {props.resourceDescription ?? 'Bundle and DocumentReference'} will be written here. The patient will be copied if no
         match is found.
       </small>
     </div>

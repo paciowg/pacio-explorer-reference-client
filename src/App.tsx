@@ -11,6 +11,7 @@ import { PatientPmoCreatePage } from './features/advanceDirectives/PatientPmoCre
 import { AdvanceDirectiveDetailPage } from './features/advanceDirectives/AdvanceDirectiveDetailPage'
 import { PatientTocCreatePage } from './features/transitionsOfCare/PatientTocCreatePage'
 import { TocDetailPage } from './features/transitionsOfCare/TocDetailPage'
+import { PatientDeviceRequestCreatePage } from './features/devices/PatientDeviceRequestCreatePage'
 import { useSavedServers } from './features/servers/useSavedServers'
 import {
   clearRouteNotification,
@@ -69,6 +70,7 @@ function App() {
       {route.name === 'patientTocCreate' ? (
         <PatientTocCreatePage patientId={route.patientId} />
       ) : null}
+      {route.name === 'patientDeviceRequestCreate' ? <PatientDeviceRequestCreatePage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} /> : null}
       {route.name === 'tocDetail' ? (
         <TocDetailPage patientId={route.patientId} documentReferenceId={route.documentReferenceId} />
       ) : null}

@@ -8,6 +8,7 @@ import type {
   Condition,
   Device,
   DeviceRequest,
+  DeviceUseStatement,
   DiagnosticReport,
   DocumentReference,
   Dosage,
@@ -450,13 +451,15 @@ function goalDetails(resource: Goal, resolve?: ResolveResourceReference) {
 
 function deviceDetails(resource: Device, resolve?: ResolveResourceReference) {
   return model(group([
+    field('Type', getCodeableConceptText(resource.type)),
     field('Status', humanize(resource.status)),
     field('Status reason', concepts(resource.statusReason)),
     field('Names', resource.deviceName?.map((name) => `${name.name}${name.type ? ` (${humanize(name.type)})` : ''}`)),
     field('Manufacturer', resource.manufacturer),
     field('Model number', resource.modelNumber),
     field('Version', resource.version?.map((version) => compact([version.value, getCodeableConceptText(version.type)]).join(' · '))),
-    field('UDI', resource.udiCarrier?.map((udi) => udi.carrierHRF || udi.deviceIdentifier || udi.jurisdiction)),
+    field('UDI', resource.udiCarrier?.map((udi) => udi.carrierHRF)),
+    field('UDI device identifier', resource.udiCarrier?.map((udi) => udi.deviceIdentifier)),
     field('Serial number', resource.serialNumber),
     field('Lot number', resource.lotNumber),
     field('Manufacture date', resource.manufactureDate ? formatDate(resource.manufactureDate) : undefined),
@@ -473,9 +476,13 @@ function deviceRequestDetails(resource: DeviceRequest, resolve?: ResolveResource
     field('Status', humanize(resource.status)),
     field('Intent', humanize(resource.intent)),
     field('Priority', humanize(resource.priority)),
+    field('Group identifier', resource.groupIdentifier?.value),
+    field('Encounter', reference(resource.encounter, resource, resolve)),
+    field('Prior requests', references(resource.priorRequest, resource, resolve)),
+    field('Insurance', references(resource.insurance, resource, resolve)),
     field('Device', getCodeableConceptText(resource.codeCodeableConcept) || reference(resource.codeReference, resource, resolve)),
     field('Authored date', resource.authoredOn ? formatDate(resource.authoredOn) : undefined),
-    field('Occurrence', choice(resource.occurrenceDateTime, resource.occurrencePeriod)),
+    field('Occurrence', choice(resource.occurrenceDateTime, resource.occurrencePeriod) || timing(resource.occurrenceTiming)),
     field('Requester', reference(resource.requester, resource, resolve)),
     field('Performer', reference(resource.performer, resource, resolve)),
     field('Reason', [...concepts(resource.reasonCode), ...references(resource.reasonReference, resource, resolve)]),
@@ -485,6 +492,30 @@ function deviceRequestDetails(resource: DeviceRequest, resolve?: ResolveResource
       getCodeableConceptText(parameter.valueCodeableConcept) || quantity(parameter.valueQuantity) || range(parameter.valueRange) ||
         (parameter.valueBoolean != null ? (parameter.valueBoolean ? 'Yes' : 'No') : ''),
     ]).join(': '))),
+    field('Notes', notes(resource.note), true),
+  ]))
+}
+
+function timing(value: import('fhir/r4').Timing | undefined) {
+  if (!value) return ''
+  const repeat = value.repeat
+  return compact([getCodeableConceptText(value.code), value.event?.map(formatDate).join(', '),
+    repeat ? `${repeat.frequency ?? 1} time(s) every ${repeat.period ?? 1} ${repeat.periodUnit ?? ''}` : '',
+    period(repeat?.boundsPeriod)]).join(' · ')
+}
+
+function deviceUseDetails(resource: DeviceUseStatement, resolve?: ResolveResourceReference) {
+  return model(group([
+    field('Status', humanize(resource.status)),
+    field('Device', reference(resource.device, resource, resolve)),
+    field('Patient', reference(resource.subject, resource, resolve)),
+    field('Usage', choice(resource.timingDateTime, resource.timingPeriod) || timing(resource.timingTiming)),
+    field('Recorded', resource.recordedOn ? formatDate(resource.recordedOn) : undefined),
+    field('Source', reference(resource.source, resource, resolve)),
+    field('Based on', references(resource.basedOn, resource, resolve)),
+    field('Derived from', references(resource.derivedFrom, resource, resolve)),
+    field('Reason', [...concepts(resource.reasonCode), ...references(resource.reasonReference, resource, resolve)]),
+    field('Body site', getCodeableConceptText(resource.bodySite)),
     field('Notes', notes(resource.note), true),
   ]))
 }
@@ -608,6 +639,7 @@ export function buildResourceDetailModel(
     case 'Goal': return goalDetails(resource as Goal, resolve)
     case 'Device': return deviceDetails(resource as Device, resolve)
     case 'DeviceRequest': return deviceRequestDetails(resource as DeviceRequest, resolve)
+    case 'DeviceUseStatement': return deviceUseDetails(resource as DeviceUseStatement, resolve)
     case 'Encounter': return encounterDetails(resource as Encounter, resolve)
     case 'QuestionnaireResponse': return questionnaireResponseDetails(resource as QuestionnaireResponse, resolve)
     case 'DocumentReference': return documentReferenceDetails(resource as DocumentReference, resolve)

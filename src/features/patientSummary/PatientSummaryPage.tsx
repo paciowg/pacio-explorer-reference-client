@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { BundleEntry, Patient, Resource } from 'fhir/r4'
 import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
+import { DevicesSection } from '../devices/DevicesSection'
 import { SelectableClinicalSummarySection } from '../../components/SelectableClinicalSummarySection'
 import { fetchPatient, fetchPatientEverything } from '../../lib/fhir/client'
 import { navigateTo } from '../../lib/routing/routes'
@@ -82,6 +83,7 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
             patient,
             bundle,
             bundleAvailable: true,
+            baseUrl,
           }),
         )
       } catch (everythingError) {
@@ -284,6 +286,7 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
                 items={summary.currentMedications}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
+              <DevicesSection entries={summary.devices} baseUrl={activeServer.baseUrl} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} />
               <ClinicalSummarySection
                 title="Known Allergies"
                 items={summary.knownAllergies}

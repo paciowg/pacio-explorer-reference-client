@@ -2,6 +2,7 @@
 import type { Bundle, Patient } from 'fhir/r4'
 import type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
 import { buildClinicalSummary } from './clinicalSummary'
+import { getPatientDevices, type DeviceEntry } from '../devices/deviceModel'
 import { buildPatientDemographics, type EmergencyContact } from './patientDemographics'
 
 export type { ClinicalListItem, SelectableClinicalListItem } from '../../components/clinicalTypes'
@@ -38,6 +39,7 @@ export type PatientSummaryModel = {
   mostRecentVitals: ClinicalListItem[]
   advanceDirectives: SelectableClinicalListItem[]
   transitionOfCares: SelectableClinicalListItem[]
+  devices: DeviceEntry[]
   clinicalSectionEmptyMessage: string
 }
 
@@ -45,6 +47,7 @@ export function buildPatientSummaryModel(input: {
   patient: Patient
   bundle: Bundle | null
   bundleAvailable: boolean
+  baseUrl?: string
 }): PatientSummaryModel {
   const { patient, bundle, bundleAvailable } = input
   const demographicModel = buildPatientDemographics(patient)
@@ -55,6 +58,7 @@ export function buildPatientSummaryModel(input: {
     bundleStatusText: bundleAvailable ? '' : 'Showing patient-only fallback data',
     bundleStatusTone: bundleAvailable ? 'success' : 'warning',
     ...clinicalSummary,
+    devices: getPatientDevices(bundleAvailable ? bundle : null, patient.id || '', input.baseUrl || ''),
     clinicalSectionEmptyMessage: bundleAvailable ? 'None recorded' : 'Unavailable',
   }
 }
