@@ -39,6 +39,16 @@ Destination selection and patient matching work as described in [Create a Transi
 
 The client posts a PACIO ADI PMO document Bundle to the destination, then posts the companion ADI `DocumentReference` pointing to that Bundle and destination Patient. The writes are intentionally separate: if a later write fails, resources already created on the destination remain there and the page reports the error.
 
+### View devices and create a PFE DeviceRequest
+
+The patient Devices section shows typed DeviceRequest, DeviceUseStatement, and Device entries. Devices linked from a request or usage record appear inside its expansion rather than as duplicate standalone rows. Missing linked Devices are read from the active server when expanded; unavailable references leave the event readable.
+
+Choose **Create Device Request** to enter Required and Must Support PFE fields, select one of five assistive device types, and optionally provide UDI and the Organization responsible for the Device. Advanced groups include scheduling, parameters, device users, preferred locations, clinical justification, prior requests, insurance, and notes.
+
+The destination defaults to the active server. Reference choices come from the destination, and Patient matching follows the existing document workflows. Patient lookup and reference loading are read-only until submission. Creation writes Device first, then DeviceRequest. If the request is rejected, the created Device remains and is reused for retry within that form session; an uncertain write outcome requires destination verification before another submission. Transaction support is deferred.
+
+The pure [PFE reference implementation](src/igs/pacioPfe/README.md) targets the October 6, 2026 PFE source revision and US Core 9.0.0. It owns profile construction, validation, terminology, and extension interpretation independently of React and transport.
+
 ## Developer notes
 
 ### Run and verify the application locally
@@ -73,6 +83,8 @@ TOC form -> createTocDocument -> PACIO TOC builders -> destination patient + pub
 - `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
 - `src/features/transitionsOfCare/` owns TOC selection, workflow orchestration, discovery, and display.
 - `src/igs/pacioToc/` owns pure PACIO TOC section definitions and resource construction.
+- `src/igs/pacioPfe/` owns pure PFE Device and DeviceRequest construction, profile-specific validation, demo terminology, and extension interpretation.
+- `src/features/devices/` owns patient device viewing, destination reference choices, creation forms, and sequential publication.
 - `src/lib/fhir/` owns generic URL normalization, transport, destination Patient matching and creation, document Bundle construction and publishing, document-detail loading, Bundle indexing, reference closure, and reusable resource option derivation.
 - `src/features/patientSummary/` owns patient-summary composition and demographics.
 - `src/components/` owns reusable presentation components and presentation types.
@@ -115,5 +127,6 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
 - `#/patients/:id/transitions-of-care/new` — create a Transition of Care document
 - `#/patients/:id/transitions-of-care/:documentReferenceId` — Transition of Care detail
+- `#/patients/:id/device-requests/new` — create a PFE Device and DeviceRequest
 
 Saved and active server settings are stored only in browser local storage.

@@ -6,6 +6,7 @@ export type AppRoute =
   | { name: 'patientPmoCreate'; patientId: string }
   | { name: 'advanceDirectiveDetail'; patientId: string; documentReferenceId: string }
   | { name: 'patientTocCreate'; patientId: string }
+  | { name: 'patientDeviceRequestCreate'; patientId: string }
   | { name: 'tocDetail'; patientId: string; documentReferenceId: string }
 
 export function parseHashRoute(hash: string): AppRoute {
@@ -16,6 +17,9 @@ export function parseHashRoute(hash: string): AppRoute {
 
   if (segments.length === 0) {
     return { name: 'home' }
+  }
+  if (segments.length === 4 && segments[0] === 'patients' && segments[2] === 'device-requests' && segments[3] === 'new') {
+    return { name: 'patientDeviceRequestCreate', patientId: decodeURIComponent(segments[1]) }
   }
 
   if (segments.length === 1 && segments[0] === 'patients') {

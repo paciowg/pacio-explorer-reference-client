@@ -6,6 +6,12 @@ import type {
   Condition,
   Device,
   DeviceRequest,
+  DeviceUseStatement,
+  Organization,
+  Patient,
+  Practitioner,
+  PractitionerRole,
+  RelatedPerson,
   DiagnosticReport,
   DocumentReference,
   Encounter,
@@ -21,7 +27,7 @@ import type {
   Resource,
   ServiceRequest,
 } from 'fhir/r4'
-import { getCodeableConceptText, getNarrativeText } from './formatters'
+import { getCodeableConceptText, getNarrativeText, getDisplayNameFromHumanName } from './formatters'
 
 function referenceDisplay(display: string | undefined, reference: string | undefined) {
   return display?.trim() || reference?.trim() || ''
@@ -41,6 +47,7 @@ export function getSimpleResourceDisplay(resource: Resource) {
       display = getCodeableConceptText(request.codeCodeableConcept) || referenceDisplay(request.codeReference?.display, request.codeReference?.reference)
       break
     }
+    case 'DeviceUseStatement': display = referenceDisplay((resource as DeviceUseStatement).device.display, (resource as DeviceUseStatement).device.reference); break
     case 'DiagnosticReport': display = getCodeableConceptText((resource as DiagnosticReport).code); break
     case 'DocumentReference': display = (resource as DocumentReference).description || getCodeableConceptText((resource as DocumentReference).type); break
     case 'Encounter': {
@@ -63,6 +70,15 @@ export function getSimpleResourceDisplay(resource: Resource) {
       break
     }
     case 'Observation': display = getCodeableConceptText((resource as Observation).code); break
+    case 'Organization': display = (resource as Organization).name || ''; break
+    case 'Patient': display = getDisplayNameFromHumanName((resource as Patient).name?.[0]); break
+    case 'Practitioner': display = getDisplayNameFromHumanName((resource as Practitioner).name?.[0]); break
+    case 'RelatedPerson': display = getDisplayNameFromHumanName((resource as RelatedPerson).name?.[0]); break
+    case 'PractitionerRole': {
+      const role = resource as PractitionerRole
+      display = [role.practitioner?.display || role.practitioner?.reference, getCodeableConceptText(role.code?.[0])].filter(Boolean).join(' · ')
+      break
+    }
     case 'Procedure': display = getCodeableConceptText((resource as Procedure).code); break
     case 'QuestionnaireResponse': {
       const response = resource as QuestionnaireResponse
