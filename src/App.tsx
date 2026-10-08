@@ -12,6 +12,7 @@ import { AdvanceDirectiveDetailPage } from './features/advanceDirectives/Advance
 import { PatientTocCreatePage } from './features/transitionsOfCare/PatientTocCreatePage'
 import { TocDetailPage } from './features/transitionsOfCare/TocDetailPage'
 import { PatientDeviceRequestCreatePage } from './features/devices/PatientDeviceRequestCreatePage'
+import { PatientNutritionOrderCreatePage } from './features/nutritionOrders/PatientNutritionOrderCreatePage'
 import { useSavedServers } from './features/servers/useSavedServers'
 import {
   clearRouteNotification,
@@ -71,6 +72,7 @@ function App() {
         <PatientTocCreatePage patientId={route.patientId} />
       ) : null}
       {route.name === 'patientDeviceRequestCreate' ? <PatientDeviceRequestCreatePage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} /> : null}
+      {route.name === 'patientNutritionOrderCreate' ? <PatientNutritionOrderCreatePage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} /> : null}
       {route.name === 'tocDetail' ? (
         <TocDetailPage patientId={route.patientId} documentReferenceId={route.documentReferenceId} />
       ) : null}

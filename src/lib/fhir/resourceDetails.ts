@@ -19,6 +19,7 @@ import type {
   Medication,
   MedicationRequest,
   MedicationStatement,
+  NutritionOrder,
   Observation,
   Period,
   Procedure,
@@ -499,9 +500,14 @@ function deviceRequestDetails(resource: DeviceRequest, resolve?: ResolveResource
 function timing(value: import('fhir/r4').Timing | undefined) {
   if (!value) return ''
   const repeat = value.repeat
+  const bounds = (low: number | undefined, high: number | undefined) => low === undefined ? '' : high === undefined ? `${low}` : `${low}–${high}`
   return compact([getCodeableConceptText(value.code), value.event?.map(formatDate).join(', '),
-    repeat ? `${repeat.frequency ?? 1} time(s) every ${repeat.period ?? 1} ${repeat.periodUnit ?? ''}` : '',
-    period(repeat?.boundsPeriod)]).join(' · ')
+    repeat?.frequency !== undefined ? `${bounds(repeat.frequency, repeat.frequencyMax)} time(s)` : '',
+    repeat?.period !== undefined ? `Every ${bounds(repeat.period, repeat.periodMax)} ${repeat.periodUnit || ''}` : '',
+    repeat?.duration !== undefined ? `Duration ${bounds(repeat.duration, repeat.durationMax)} ${repeat.durationUnit || ''}` : '',
+    repeat?.count !== undefined ? `${bounds(repeat.count, repeat.countMax)} total occurrence(s)` : '',
+    repeat?.dayOfWeek?.join(', '), repeat?.timeOfDay?.join(', '), repeat?.when?.map(humanize).join(', '),
+    period(repeat?.boundsPeriod) || quantity(repeat?.boundsDuration) || range(repeat?.boundsRange)]).join(' · ')
 }
 
 function deviceUseDetails(resource: DeviceUseStatement, resolve?: ResolveResourceReference) {
@@ -518,6 +524,34 @@ function deviceUseDetails(resource: DeviceUseStatement, resolve?: ResolveResourc
     field('Body site', getCodeableConceptText(resource.bodySite)),
     field('Notes', notes(resource.note), true),
   ]))
+}
+
+function nutritionOrderDetails(resource: NutritionOrder, resolve?: ResolveResourceReference) {
+  const diet = resource.oralDiet
+  const formula = resource.enteralFormula
+  const supplements = (resource.supplement ?? []).map((supplement, index) => group([
+    field('Type', getCodeableConceptText(supplement.type)), field('Product', supplement.productName),
+    field('Schedule', supplement.schedule?.map(timing)), field('Quantity', quantity(supplement.quantity)), field('Instructions', supplement.instruction, true),
+  ], `Supplement ${index + 1}`))
+  const administrations = (formula?.administration ?? []).map((administration, index) => group([
+    field('Schedule', timing(administration.schedule)), field('Quantity', quantity(administration.quantity)),
+    field('Rate', quantity(administration.rateQuantity) || (administration.rateRatio ? `${quantity(administration.rateRatio.numerator)} / ${quantity(administration.rateRatio.denominator)}` : '')),
+  ], `Enteral administration ${index + 1}`))
+  return model(
+    group([field('Status', humanize(resource.status)), field('Intent', humanize(resource.intent)), field('Patient', reference(resource.patient, resource, resolve)),
+      field('Order date', formatDate(resource.dateTime)), field('Encounter', reference(resource.encounter, resource, resolve)), field('Orderer', reference(resource.orderer, resource, resolve)),
+      field('Identifiers', resource.identifier?.map((identifier) => compact([identifier.system, identifier.value]).join(' · '))), field('Notes', notes(resource.note), true)], 'Order'),
+    group([field('Allergies and intolerances', references(resource.allergyIntolerance, resource, resolve)), field('Food preferences', concepts(resource.foodPreferenceModifier)), field('Excluded foods', concepts(resource.excludeFoodModifier))], 'Allergies and preferences'),
+    diet ? group([field('Diet types', concepts(diet.type)), field('Schedule', diet.schedule?.map(timing)),
+      field('Nutrients', diet.nutrient?.map((item) => compact([getCodeableConceptText(item.modifier), quantity(item.amount)]).join(' · '))),
+      field('Textures', diet.texture?.map((item) => compact([getCodeableConceptText(item.modifier), getCodeableConceptText(item.foodType)]).join(' · '))),
+      field('Fluid consistency', concepts(diet.fluidConsistencyType)), field('Instructions', diet.instruction, true)], 'Oral diet') : null,
+    ...supplements,
+    formula ? group([field('Formula type', getCodeableConceptText(formula.baseFormulaType)), field('Product', formula.baseFormulaProductName),
+      field('Additive', getCodeableConceptText(formula.additiveType)), field('Additive product', formula.additiveProductName), field('Caloric density', quantity(formula.caloricDensity)),
+      field('Route', getCodeableConceptText(formula.routeofAdministration)), field('Maximum volume', quantity(formula.maxVolumeToDeliver)), field('Instructions', formula.administrationInstruction, true)], 'Enteral formula') : null,
+    ...administrations,
+  )
 }
 
 function encounterDetails(resource: Encounter, resolve?: ResolveResourceReference) {
@@ -640,6 +674,7 @@ export function buildResourceDetailModel(
     case 'Device': return deviceDetails(resource as Device, resolve)
     case 'DeviceRequest': return deviceRequestDetails(resource as DeviceRequest, resolve)
     case 'DeviceUseStatement': return deviceUseDetails(resource as DeviceUseStatement, resolve)
+    case 'NutritionOrder': return nutritionOrderDetails(resource as NutritionOrder, resolve)
     case 'Encounter': return encounterDetails(resource as Encounter, resolve)
     case 'QuestionnaireResponse': return questionnaireResponseDetails(resource as QuestionnaireResponse, resolve)
     case 'DocumentReference': return documentReferenceDetails(resource as DocumentReference, resolve)
