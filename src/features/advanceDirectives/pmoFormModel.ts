@@ -1,4 +1,4 @@
-/** Converts FHIR people and organizations into PMO form options and submission values. */
+/** Converts FHIR participants into PMO form options and submission values using shared practitioner choice derivation. */
 import type {
   Bundle,
   CodeableConcept,
@@ -6,14 +6,14 @@ import type {
   Practitioner,
   Reference,
   RelatedPerson,
+  Resource,
 } from 'fhir/r4'
-import {
-  getCodeableConceptText,
-  getDisplayNameFromHumanName,
-  getPractitionerDisplayName,
-} from '../../lib/fhir/formatters'
-import type { PractitionerRoleOption } from '../../lib/fhir/resourceOptions'
+import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
+import { formatResourceSelectionLabel, getResourceSelectionDisplay, type PractitionerRoleOption } from '../../lib/fhir/resourceOptions'
 import type { PmoAttesterOption, PmoDataEntererOption } from '../../igs/pacioAdi/pmoDocument'
+
+export type PmoAttesterChoice = PmoAttesterOption & { label: string }
+export type PmoDataEntererChoice = PmoDataEntererOption & { label: string }
 
 export type FacilitatorOption = {
   value: string
@@ -95,13 +95,9 @@ export function getRelatedPersons(bundle: Bundle): RelatedPerson[] {
     })
 }
 
-function getRelatedPersonDisplayName(relatedPerson: RelatedPerson) {
-  const name = getDisplayNameFromHumanName(relatedPerson.name?.[0]) ||
-    relatedPerson.patient?.display || relatedPerson.id || 'Related person'
-  const relationship = relatedPerson.relationship?.length
-    ? getCodeableConceptText(relatedPerson.relationship[0])
-    : ''
-  return relationship ? `${name} — RelatedPerson (${relationship})` : `${name} — RelatedPerson`
+function participantChoice(resource: Resource, display = getResourceSelectionDisplay(resource)): PmoAttesterChoice {
+  return { reference: `${resource.resourceType}/${resource.id}`, display,
+    label: formatResourceSelectionLabel(resource.resourceType, display) }
 }
 
 export function getAttesterOptions(
@@ -109,25 +105,16 @@ export function getAttesterOptions(
   roleOptions: PractitionerRoleOption[],
   relatedPersons: RelatedPerson[],
 ) {
-  const options: PmoAttesterOption[] = []
+  const options: PmoAttesterChoice[] = []
   if (patient?.id) {
-    options.push({
-      reference: `Patient/${patient.id}`,
-      display: `${getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || 'Patient'} — Patient`,
-    })
+    options.push(participantChoice(patient))
   }
   for (const relatedPerson of relatedPersons) {
     if (!relatedPerson.id) continue
-    options.push({
-      reference: `RelatedPerson/${relatedPerson.id}`,
-      display: getRelatedPersonDisplayName(relatedPerson),
-    })
+    options.push(participantChoice(relatedPerson))
   }
   for (const roleOption of roleOptions) {
-    options.push({
-      reference: `PractitionerRole/${roleOption.role.id}`,
-      display: roleOption.label,
-    })
+    options.push(participantChoice(roleOption.role, roleOption.label))
   }
   return options
 }
@@ -135,39 +122,12 @@ export function getAttesterOptions(
 export function getDataEntererOptions(
   patient: Patient | null,
   roleOptions: PractitionerRoleOption[],
-  practitionerByReference: Map<string, Practitioner>,
+  unpairedPractitioners: Map<string, Practitioner>,
   relatedPersons: RelatedPerson[],
-): PmoDataEntererOption[] {
-  const options: PmoDataEntererOption[] = []
-  // Prefer role references and add a bare Practitioner only when no fetched role represents it.
-  const practitionerReferencesCoveredByRole = new Set<string>()
-  if (patient?.id) {
-    options.push({
-      reference: `Patient/${patient.id}`,
-      display: `${getDisplayNameFromHumanName(patient.name?.[0]) || patient.id || 'Patient'} — Patient`,
-    })
-  }
-  for (const relatedPerson of relatedPersons) {
-    if (!relatedPerson.id) continue
-    options.push({
-      reference: `RelatedPerson/${relatedPerson.id}`,
-      display: getRelatedPersonDisplayName(relatedPerson),
-    })
-  }
-  for (const roleOption of roleOptions) {
-    options.push({
-      reference: `PractitionerRole/${roleOption.role.id}`,
-      display: roleOption.label,
-    })
-    const practitionerReference = roleOption.role.practitioner?.reference
-    if (practitionerReference) practitionerReferencesCoveredByRole.add(practitionerReference)
-  }
-  for (const [practitionerReference, practitioner] of practitionerByReference.entries()) {
-    if (practitionerReferencesCoveredByRole.has(practitionerReference)) continue
-    options.push({
-      reference: practitionerReference,
-      display: `${getPractitionerDisplayName(practitioner) || practitioner.id || practitionerReference} — Practitioner`,
-    })
+): PmoDataEntererChoice[] {
+  const options = getAttesterOptions(patient, roleOptions, relatedPersons)
+  for (const practitioner of unpairedPractitioners.values()) {
+    options.push(participantChoice(practitioner))
   }
   return options
 }

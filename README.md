@@ -102,6 +102,16 @@ TOC form -> createTocDocument -> PACIO TOC builders -> destination patient + pub
 
 Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance-directive display remains available for non-ADI `DocumentReference` resources; PACIO ADI enrichment is optional.
 
+### Practitioner reference choices
+
+Mixed-resource selection fields use `ResourceType: Display name — Optional detail`, for example `PractitionerRole: Anita Chu — Primary Care Provider`, `Patient: Betsy Johnson`, or `RelatedPerson: Charles Johnson — son`. Single-type fields use an unprefixed display. The field's supported types determine this, even when only one type currently has choices. Rich selection cards place their resource-type badge before the title.
+
+Use the shared `formatResourceSelectionLabel`, `getResourceSelectionDisplay`, and `getResourceReferenceChoices` helpers in `src/lib/fhir/resourceOptions.ts`. Keep UI labels separate from submitted FHIR reference displays; never extract display text by parsing a label. Missing names fall back to resource IDs. General resource-detail displays are independent of this selection convention.
+
+Every field accepting both PractitionerRole and Practitioner must prefer roles: omit a bare Practitioner when an available PractitionerRole references it, retain unpaired practitioners, and keep each distinct role selectable. Role labels should include the practitioner's name and role when available; submissions retain the selected PractitionerRole reference. Match relative, same-server absolute, and versioned references without treating an external-server practitioner as a local match. Unresolved roles remain selectable.
+
+Use `getPractitionerChoices` in `src/lib/fhir/resourceOptions.ts` for shared role matching, labels, and unpaired-practitioner selection. ADI PMO and TOC creation use its role options; PMO data-enterer choices also use its unpaired practitioners. The complete practitioner map includes reference aliases for resolution and must not be listed as choices. `getRolePreferredReferenceOptions` wraps this helper for resource-backed choices and is shared by DeviceRequest Requester and Device Users and NutritionOrder Orderer. This convention applies to all new and modified fields; it is also recorded in `AGENTS.md` for coding agents.
+
 ### TOC document construction and references
 
 The client builds a profiled PACIO TOC document Bundle, resolves its references against the active source server to include referenced resources, and rewrites its internal references for portability. It then posts the Bundle and companion TOC `DocumentReference` to the destination.

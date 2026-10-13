@@ -147,8 +147,8 @@ function TocSectionCard(props: TocSectionCardProps) {
                 />
                 <span>
                   <span className="toc-option-title-row">
-                    <strong>{option.title}</strong>
                     <FhirResourceTypeBadge resourceType={option.resource.resourceType} />
+                    <strong>{option.title}</strong>
                   </span>
                   {option.secondaryText ? <small>{option.secondaryText}</small> : null}
                   {option.dateValue ? <small>{option.dateValue}</small> : null}

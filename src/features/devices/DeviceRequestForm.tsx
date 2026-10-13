@@ -2,6 +2,7 @@
 import type { DeviceForm, ParameterValue, UserValue } from './deviceFormModel'
 import type { ReferenceOption } from './deviceCreateData'
 import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS } from '../../igs/pacioPfe/deviceRequest'
+import { getResourceReferenceChoices } from '../../lib/fhir/resourceOptions'
 
 type Props = { value: DeviceForm; options: ReferenceOption[]; disabled: boolean; deviceLocked: boolean; onChange: (value: DeviceForm) => void }
 
@@ -27,7 +28,7 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
   const selected = ASSISTIVE_DEVICES.find((device) => device.code === form.type)
   const defaults = selected ? demoDeviceDefaults(selected) : undefined
   const set = <K extends keyof DeviceForm>(key: K, value: DeviceForm[K]) => onChange({ ...form, [key]: value })
-  const choices = (types: string[]) => options.filter((option) => types.includes(option.resource.resourceType)).map((option) => ({ value: option.reference, label: option.label }))
+  const choices = (types: string[]) => getResourceReferenceChoices(options, types)
   const reference = (label: string, key: 'owner' | 'encounter' | 'requester', types: string[]) => <Choice label={label} value={form[key]} onChange={(value) => set(key, value)} choices={choices(types)} />
   const references = (label: string, key: 'priorRequests' | 'insurance' | 'assessments' | 'uses' | 'goals', types: string[]) => <fieldset className="toc-section-card"><legend>{label}</legend>
     <div className="field-group"><label>{label}<select multiple aria-label={label} value={form[key]} onChange={(event) => set(key, Array.from(event.target.selectedOptions, (option) => option.value))}>{choices(types).map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></label></div>

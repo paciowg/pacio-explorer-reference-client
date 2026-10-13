@@ -11,7 +11,7 @@ import {
   getServerLocalQuestionnaireId,
 } from '../../lib/fhir/client'
 import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
-import { getOrganizationOptions, getPractitionerMap, getPractitionerRoleOptions } from '../../lib/fhir/resourceOptions'
+import { getOrganizationOptions, getPractitionerChoices } from '../../lib/fhir/resourceOptions'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { useSavedServers } from '../servers/useSavedServers'
@@ -47,12 +47,12 @@ async function loadTocCreateData(baseUrl: string, patientId: string) {
         warning: '$everything was unavailable, so patient resources cannot be selected and TOC creation cannot be completed.',
       })),
   ])
-  const practitionerMap = getPractitionerMap(roleBundle)
+  const { roleOptions } = getPractitionerChoices(roleBundle, baseUrl)
   return {
     patient,
     patientBundle: everythingResult.bundle,
     warning: everythingResult.warning,
-    authorOptions: getPractitionerRoleOptions(roleBundle, practitionerMap),
+    authorOptions: roleOptions,
     custodianOptions: getOrganizationOptions(organizationBundle),
   }
 }
@@ -62,7 +62,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
   const [patient, setPatient] = useState<Patient | null>(null)
   const [patientBundle, setPatientBundle] = useState<Bundle | null>(null)
   const [questionnaireLabels, setQuestionnaireLabels] = useState<Map<string, string>>(new Map())
-  const [authorOptions, setAuthorOptions] = useState<ReturnType<typeof getPractitionerRoleOptions>>([])
+  const [authorOptions, setAuthorOptions] = useState<ReturnType<typeof getPractitionerChoices>['roleOptions']>([])
   const [custodianOptions, setCustodianOptions] = useState<ReturnType<typeof getOrganizationOptions>>([])
   const [title, setTitle] = useState('')
   const [status, setStatus] = useState<TocStatus>('final')

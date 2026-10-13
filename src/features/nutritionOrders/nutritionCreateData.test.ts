@@ -29,6 +29,7 @@ describe('nutrition destination choices', () => {
     expect(options.find((option) => option.reference === 'PractitionerRole/dietitian')?.label).toBe('PractitionerRole: Alex Smith — Dietitian')
     expect(options.find((option) => option.reference === 'PractitionerRole/physician')?.label).toBe('PractitionerRole: Alex Smith — Physician')
     expect(nutritionReference(options, 'PractitionerRole/dietitian', ['Practitioner', 'PractitionerRole'])).toEqual({ reference: 'PractitionerRole/dietitian', display: 'Alex Smith — Dietitian' })
+    expect(nutritionReference(options.map((option) => ({ ...option, label: 'Changed UI label' })), 'PractitionerRole/dietitian', ['Practitioner', 'PractitionerRole'])?.display).toBe('Alex Smith — Dietitian')
     expect(nutritionReference(options, 'Practitioner/standalone', ['Practitioner', 'PractitionerRole'])?.reference).toBe('Practitioner/standalone')
   })
   it('loads allergies directly for the matched Patient, filtering other-patient results', async () => {

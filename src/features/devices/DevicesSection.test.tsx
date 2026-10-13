@@ -1,14 +1,35 @@
 /** Verifies device summaries, accessible PFE form controls, and read-only demo details matching submitted data. */
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { DeviceRequest } from 'fhir/r4'
+import type { DeviceRequest, Practitioner, PractitionerRole } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { DevicesSection } from './DevicesSection'
 import { getPatientDevices } from './deviceModel'
 import { DeviceRequestForm } from './DeviceRequestForm'
 import { deviceFormInputs, initialDeviceForm } from './deviceFormModel'
 import { ASSISTIVE_DEVICES } from '../../igs/pacioPfe/deviceRequest'
+import { getRolePreferredReferenceOptions } from '../../lib/fhir/resourceOptions'
 
 describe('device UI markup', () => {
+  it('offers roles instead of paired practitioners in both Requester and Device Users', () => {
+    const resources = new Map<string, Practitioner | PractitionerRole>([
+      ['Practitioner/paired', { resourceType: 'Practitioner', id: 'paired', name: [{ text: 'Alex Smith' }] }],
+      ['Practitioner/standalone', { resourceType: 'Practitioner', id: 'standalone', name: [{ text: 'Jamie Jones' }] }],
+      ['PractitionerRole/physician', { resourceType: 'PractitionerRole', id: 'physician', practitioner: { reference: 'Practitioner/paired' }, code: [{ text: 'Physician' }] }],
+    ])
+    const options = getRolePreferredReferenceOptions(resources, 'https://destination.test/fhir')
+    const form = { ...initialDeviceForm(), requester: 'PractitionerRole/physician', users: [{ reference: 'PractitionerRole/physician', relationship: '' }] }
+    const html = renderToStaticMarkup(<DeviceRequestForm value={form} options={options} disabled={false} deviceLocked={false} onChange={() => {}} />)
+    for (const label of ['Requester', 'User 1']) {
+      const select = html.slice(html.indexOf(`<label>${label}<select`)).split('</select>')[0]
+      expect(select).toContain('value="PractitionerRole/physician"')
+      expect(select).toContain('Alex Smith — Physician')
+      expect(select).toContain('value="Practitioner/standalone"')
+      expect(select).not.toContain('value="Practitioner/paired"')
+    }
+    const input = deviceFormInputs(form, options)
+    expect(input.request.requester?.reference).toBe('PractitionerRole/physician')
+    expect(input.request.users?.[0].user.reference).toBe('PractitionerRole/physician')
+  })
   it('renders resource type inside collapsed summaries and includes the creation action', () => {
     const request: DeviceRequest = { resourceType: 'DeviceRequest', id: 'r', intent: 'order', status: 'draft', subject: { reference: 'Patient/p' }, codeCodeableConcept: { text: 'Walker' } }
     const entries = getPatientDevices({ resourceType: 'Bundle', type: 'collection', entry: [{ resource: request }] }, 'p', 'https://example.test')

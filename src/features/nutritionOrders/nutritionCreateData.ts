@@ -1,12 +1,11 @@
 /** Loads destination-local nutrition choices using explicit patient allergy searches rather than relying on $everything. */
-import type { AllergyIntolerance, Bundle, Patient, PractitionerRole, Reference, Resource } from 'fhir/r4'
+import type { AllergyIntolerance, Bundle, Patient, Reference, Resource } from 'fhir/r4'
 import { findDestinationPatient } from '../../lib/fhir/destinationPatient'
 import { allergyBelongsToPatient } from '../../lib/fhir/allergies'
-import { searchResources, serverResourceUrl } from '../../lib/fhir/resourceTransport'
-import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
-import { getPractitionerMap, getPractitionerRoleOptions } from '../../lib/fhir/resourceOptions'
+import { searchResources } from '../../lib/fhir/resourceTransport'
+import { getRolePreferredReferenceOptions, type ResourceReferenceOption } from '../../lib/fhir/resourceOptions'
 
-export type NutritionReferenceOption = { reference: string; label: string; resource: Resource }
+export type NutritionReferenceOption = ResourceReferenceOption
 export type NutritionCreateData = { patient: Patient | null; options: NutritionReferenceOption[]; warning: string }
 
 export async function searchPatientAllergies(baseUrl: string, patientId: string): Promise<Bundle> {
@@ -29,28 +28,7 @@ export async function loadNutritionCreateData(sourceBaseUrl: string, destination
     const resource = entry.resource
     if (resource?.id) resources.set(`${resource.resourceType}/${resource.id}`, resource)
   }
-  const bundle: Bundle = { resourceType: 'Bundle', type: 'collection', entry: [...resources.values()].map((resource) => ({ resource })) }
-  const practitioners = getPractitionerMap(bundle)
-  const coveredPractitioners = new Set<string>()
-  // Prefer destination roles over duplicate bare practitioners, including absolute and versioned references.
-  for (const resource of resources.values()) {
-    if (resource.resourceType !== 'PractitionerRole') continue
-    const reference = (resource as PractitionerRole).practitioner?.reference
-    if (!reference) continue
-    try {
-      const id = serverResourceUrl(destinationBaseUrl, reference).match(/\/Practitioner\/([^/]+)(?:\/_history\/[^/]+)?$/)?.[1]
-      const practitioner = id ? practitioners.get(`Practitioner/${id}`) : undefined
-      if (practitioner) {
-        practitioners.set(reference, practitioner)
-        coveredPractitioners.add(`Practitioner/${id}`)
-      }
-    } catch { /* References outside the destination cannot represent its practitioners. */ }
-  }
-  const roles = new Map(getPractitionerRoleOptions(bundle, practitioners).map((option) => [`PractitionerRole/${option.role.id}`, option.label]))
-  const options = [...resources].filter(([reference]) => !coveredPractitioners.has(reference)).map(([reference, resource]) => {
-    const label = roles.get(reference) || getSimpleResourceDisplay(resource)
-    return { reference, resource, label: `${resource.resourceType}: ${label}` }
-  }).sort((a, b) => a.label.localeCompare(b.label))
+  const options = getRolePreferredReferenceOptions(resources, destinationBaseUrl)
   return { patient: destinationPatient, options, warning }
 }
 
@@ -58,5 +36,5 @@ export function nutritionReference(options: NutritionReferenceOption[], value: s
   if (!value) return undefined
   const option = options.find((option) => option.reference === value && types.includes(option.resource.resourceType))
   if (!option) throw new Error('A selected reference is no longer available on the destination.')
-  return { reference: option.reference, display: option.label.replace(/^[^:]+: /, '') }
+  return { reference: option.reference, display: option.display }
 }
