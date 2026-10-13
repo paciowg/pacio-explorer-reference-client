@@ -3,9 +3,9 @@ import type { Patient, Resource, Reference } from 'fhir/r4'
 import { findDestinationPatient } from '../../lib/fhir/destinationPatient'
 import { fetchPatientEverything } from '../../lib/fhir/client'
 import { searchResources } from '../../lib/fhir/deviceTransport'
-import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
+import { getRolePreferredReferenceOptions, type ResourceReferenceOption } from '../../lib/fhir/resourceOptions'
 
-export type ReferenceOption = { reference: string; label: string; resource: Resource }
+export type ReferenceOption = ResourceReferenceOption
 export type DeviceCreateData = { patient: Patient | null; options: ReferenceOption[]; warning: string }
 
 export async function loadDeviceCreateData(sourceBaseUrl: string, destinationBaseUrl: string, patient: Patient): Promise<DeviceCreateData> {
@@ -25,12 +25,12 @@ export async function loadDeviceCreateData(sourceBaseUrl: string, destinationBas
   }
   if (destinationPatient?.id) resources.set(`Patient/${destinationPatient.id}`, destinationPatient)
   else resources.set('Patient/pending', { ...patient, id: 'pending' })
-  return { patient: destinationPatient, warning, options: [...resources].map(([reference, resource]) => ({ reference, resource, label: `${resource.resourceType}: ${getSimpleResourceDisplay(resource)}` })).sort((a, b) => a.label.localeCompare(b.label)) }
+  return { patient: destinationPatient, warning, options: getRolePreferredReferenceOptions(resources, destinationBaseUrl) }
 }
 
 export function optionReference(options: ReferenceOption[], value: string): Reference | undefined {
   if (!value) return undefined
   const option = options.find((item) => item.reference === value)
   if (!option) throw new Error('A selected reference is no longer available on the destination.')
-  return { reference: option.reference, display: option.label.replace(/^[^:]+: /, '') }
+  return { reference: option.reference, display: option.display }
 }

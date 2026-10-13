@@ -8,7 +8,7 @@ import {
   getPmoSubmissionError,
   toUtcMidnightIso,
 } from './pmoFormModel'
-import { getPractitionerMap, getPractitionerRoleOptions } from '../../lib/fhir/resourceOptions'
+import { getPractitionerChoices } from '../../lib/fhir/resourceOptions'
 
 describe('PMO form model', () => {
   it('derives UTC dates and jurisdiction without browser dependencies', () => {
@@ -37,8 +37,7 @@ describe('PMO form model', () => {
         { resource: { resourceType: 'PractitionerRole' as const, id: 'role-1', practitioner: { reference: 'Practitioner/practitioner-1' }, code: [{ text: 'Physician' }] } },
       ],
     }
-    const practitioners = getPractitionerMap(bundle)
-    const roles = getPractitionerRoleOptions(bundle, practitioners)
+    const { roleOptions: roles, unpairedPractitioners } = getPractitionerChoices(bundle, 'https://source.test/fhir')
     const patient = { resourceType: 'Patient' as const, id: 'patient-1', name: [{ text: 'Patient Person' }] }
     const relatedPersons = [{ resourceType: 'RelatedPerson' as const, id: 'related-1', patient: { reference: 'Patient/patient-1' }, name: [{ text: 'Related Person' }] }]
 
@@ -46,8 +45,38 @@ describe('PMO form model', () => {
     expect(getAttesterOptions(patient, roles, relatedPersons).map((option) => option.reference)).toEqual([
       'Patient/patient-1', 'RelatedPerson/related-1', 'PractitionerRole/role-1',
     ])
-    expect(getDataEntererOptions(patient, roles, practitioners, relatedPersons).map((option) => option.reference)).toEqual([
+    expect(getAttesterOptions(patient, roles, relatedPersons).map((option) => [option.label, option.display])).toEqual([
+      ['Patient: Patient Person', 'Patient Person'],
+      ['RelatedPerson: Related Person', 'Related Person'],
+      ['PractitionerRole: Dr. Author — Physician', 'Dr. Author — Physician'],
+    ])
+    expect(getDataEntererOptions(patient, roles, unpairedPractitioners, relatedPersons).map((option) => option.reference)).toEqual([
       'Patient/patient-1', 'RelatedPerson/related-1', 'PractitionerRole/role-1', 'Practitioner/practitioner-2',
+    ])
+  })
+
+  it('uses shared role matching for absolute and versioned PMO data-enterer references', () => {
+    const bundle = {
+      resourceType: 'Bundle' as const, type: 'collection' as const, entry: [
+        { resource: { resourceType: 'Practitioner' as const, id: 'paired', name: [{ text: 'Alex Smith' }] } },
+        { resource: { resourceType: 'Practitioner' as const, id: 'standalone', name: [{ text: 'Jamie Jones' }] } },
+        { resource: { resourceType: 'PractitionerRole' as const, id: 'physician', practitioner: { reference: 'https://source.test/fhir/Practitioner/paired/_history/2' }, code: [{ text: 'Physician' }] } },
+      ],
+    }
+    const { roleOptions, unpairedPractitioners } = getPractitionerChoices(bundle, 'https://source.test/fhir')
+    expect(getDataEntererOptions(null, roleOptions, unpairedPractitioners, [])).toEqual([
+      { reference: 'PractitionerRole/physician', label: 'PractitionerRole: Alex Smith — Physician', display: 'Alex Smith — Physician' },
+      { reference: 'Practitioner/standalone', label: 'Practitioner: Jamie Jones', display: 'Jamie Jones' },
+    ])
+  })
+  it('separates related-person labels from reference displays and does not substitute the patient name', () => {
+    const persons = [
+      { resourceType: 'RelatedPerson' as const, id: 'son', patient: { reference: 'Patient/p', display: 'Betsy Johnson' }, name: [{ text: 'Charles Johnson' }], relationship: [{ text: 'son' }] },
+      { resourceType: 'RelatedPerson' as const, id: 'unnamed', patient: { reference: 'Patient/p', display: 'Betsy Johnson' } },
+    ]
+    expect(getAttesterOptions(null, [], persons)).toEqual([
+      { reference: 'RelatedPerson/son', label: 'RelatedPerson: Charles Johnson — son', display: 'Charles Johnson — son' },
+      { reference: 'RelatedPerson/unnamed', label: 'RelatedPerson: unnamed', display: 'unnamed' },
     ])
   })
 })

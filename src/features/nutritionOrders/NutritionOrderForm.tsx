@@ -1,6 +1,7 @@
 /** Presents repeatable nutrition components and explicit allergy choices using small PFE demo terminology subsets. */
 import type { NutritionChoice } from '../../igs/pacioPfe/nutritionTerminology'
 import { NUTRITION_CHOICES } from '../../igs/pacioPfe/nutritionTerminology'
+import { getResourceReferenceChoices } from '../../lib/fhir/resourceOptions'
 import type { NutritionReferenceOption } from './nutritionCreateData'
 import { emptyQuantity, newAdministration, newSchedule, newSupplement, type NutritionForm, type QuantityValue, type ScheduleValue } from './nutritionFormModel'
 
@@ -34,7 +35,7 @@ function Schedules({ values, onChange, single = false }: { values: ScheduleValue
 
 export function NutritionOrderForm({ value: form, options, disabled, allergyLocked, onChange }: Props) {
   const set = <K extends keyof NutritionForm>(key: K, value: NutritionForm[K]) => onChange({ ...form, [key]: value })
-  const references = (types: string[]) => options.filter((option) => types.includes(option.resource.resourceType)).map((option) => ({ value: option.reference, label: option.label }))
+  const references = (types: string[]) => getResourceReferenceChoices(options, types)
   const code = (label: string, value: string, group: keyof typeof NUTRITION_CHOICES, onChange: (value: string) => void) => <Select label={label} value={value} options={terminology(NUTRITION_CHOICES[group])} onChange={onChange} />
   const codes = (label: string, values: string[], group: keyof typeof NUTRITION_CHOICES, onChange: (values: string[]) => void) => <Multi label={label} values={values} options={terminology(NUTRITION_CHOICES[group])} onChange={onChange} />
   return <fieldset disabled={disabled} className="nutrition-form-fields">

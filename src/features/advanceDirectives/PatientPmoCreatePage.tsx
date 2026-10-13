@@ -18,8 +18,7 @@ import {
 } from '../../lib/fhir/formatters'
 import {
   getOrganizationOptions,
-  getPractitionerMap,
-  getPractitionerRoleOptions,
+  getPractitionerChoices,
   type OrganizationOption,
   type PractitionerRoleOption,
 } from '../../lib/fhir/resourceOptions'
@@ -55,6 +54,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
   const [practitionerByReference, setPractitionerByReference] = useState<
     Map<string, Practitioner>
   >(new Map())
+  const [unpairedPractitioners, setUnpairedPractitioners] = useState<Map<string, Practitioner>>(new Map())
   const [relatedPersons, setRelatedPersons] = useState<RelatedPerson[]>([])
   const [custodianOptions, setCustodianOptions] = useState<OrganizationOption[]>([])
   const [custodianReference, setCustodianReference] = useState('')
@@ -114,13 +114,13 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
         if (!isMounted) return
 
-        const practitionerMap = getPractitionerMap(practitionerRoleBundle)
-        const roleOptions = getPractitionerRoleOptions(practitionerRoleBundle, practitionerMap)
+        const { practitionerByReference: practitionerMap, roleOptions, unpairedPractitioners } = getPractitionerChoices(practitionerRoleBundle, baseUrl)
         const organizations = getOrganizationOptions(organizationBundle)
         const relatedPersonOptions = getRelatedPersons(relatedPersonBundle)
 
         setPatient(patientResult)
         setPractitionerByReference(practitionerMap)
+        setUnpairedPractitioners(unpairedPractitioners)
         setPractitionerRoles(roleOptions)
         setRelatedPersons(relatedPersonOptions)
         setCustodianOptions(organizations)
@@ -170,10 +170,10 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
       getDataEntererOptions(
         patient,
         practitionerRoles,
-        practitionerByReference,
+        unpairedPractitioners,
         relatedPersons,
       ),
-    [patient, practitionerRoles, practitionerByReference, relatedPersons],
+    [patient, practitionerRoles, unpairedPractitioners, relatedPersons],
   )
 
   useEffect(() => {
@@ -287,10 +287,10 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
           reference: `PractitionerRole/${authorRole.id}`,
           display: getPractitionerRoleDisplayName(authorRole, practitionerByReference),
         },
-        attester,
+        attester: { reference: attester.reference, display: attester.display },
         authenticator,
         facilitator,
-        dataEnterer,
+        dataEnterer: dataEnterer ? { reference: dataEnterer.reference, display: dataEnterer.display } : undefined,
         custodian,
         status,
         signedDate: signingTime,
@@ -416,7 +416,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 <option value="">None</option>
                 {dataEntererOptions.map((option) => (
                   <option key={option.reference} value={option.reference}>
-                    {option.display}
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -433,7 +433,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 <option value="">Select an attester</option>
                 {attesterOptions.map((option) => (
                   <option key={option.reference} value={option.reference}>
-                    {option.display}
+                    {option.label}
                   </option>
                 ))}
               </select>
