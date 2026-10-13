@@ -10,7 +10,7 @@ export type LocationValue = { kind: 'text' | 'coded'; value: string }
 export type DeviceForm = {
   type: string; owner: string
   status: NonNullable<DeviceRequest['status']>; intent: DeviceRequest['intent']; priority: string
-  groupSystem: string; groupValue: string; encounter: string; authoredOn: string
+  encounter: string; authoredOn: string
   occurrence: '' | 'date' | 'period' | 'timing'; start: string; end: string
   frequency: string; period: string; periodUnit: NonNullable<TimingRepeat['periodUnit']>
   requester: string; priorRequests: string[]; insurance: string[]; notes: string[]
@@ -20,7 +20,7 @@ export type DeviceForm = {
 
 export function initialDeviceForm(): DeviceForm {
   return { type: ASSISTIVE_DEVICES[0].code, owner: '', status: 'draft', intent: 'order', priority: '',
-    groupSystem: '', groupValue: '', encounter: '', authoredOn: new Date().toISOString().slice(0, 16),
+    encounter: '', authoredOn: new Date().toISOString().slice(0, 16),
     occurrence: '', start: '', end: '', frequency: '1', period: '1', periodUnit: 'd',
     requester: '', priorRequests: [], insurance: [], notes: [], parameters: [], locations: [], users: [],
     justificationNotes: [], assessments: [], uses: [], goals: [] }
@@ -40,13 +40,11 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
   const selected = ASSISTIVE_DEVICES.find((device) => device.code === form.type)
   if (!selected) throw new Error('Select a supported device type.')
   if (form.users.some((user) => !user.reference)) throw new Error('Select a reference for each device user.')
-  if (form.groupSystem && !form.groupValue.trim()) throw new Error('Enter a group identifier value when specifying its system.')
   const refs = (values: string[]) => values.filter(Boolean).map((value) => optionReference(options, value)!)
   const strings = (values: string[]) => values.map((value) => value.trim()).filter(Boolean)
   const request: Omit<PFEDeviceRequestInput, 'subject' | 'device'> = {
     status: form.status, intent: form.intent,
     ...(form.priority ? { priority: form.priority as DeviceRequest['priority'] } : {}),
-    ...(form.groupValue.trim() ? { groupIdentifier: { ...(form.groupSystem.trim() ? { system: form.groupSystem.trim() } : {}), value: form.groupValue.trim() } } : {}),
     encounter: optionReference(options, form.encounter), requester: optionReference(options, form.requester),
     ...(form.authoredOn ? { authoredOn: new Date(`${form.authoredOn}Z`).toISOString() } : {}),
     priorRequest: refs(form.priorRequests), insurance: refs(form.insurance),

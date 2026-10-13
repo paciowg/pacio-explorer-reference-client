@@ -54,8 +54,6 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
       <Choice label="Intent" value={form.intent} optional={false} choices={codes(['proposal', 'plan', 'directive', 'order', 'original-order', 'reflex-order', 'filler-order', 'instance-order', 'option'])} onChange={(value) => set('intent', value as DeviceForm['intent'])} />
       <Choice label="Priority" value={form.priority} choices={codes(['routine', 'urgent', 'asap', 'stat'])} onChange={(value) => set('priority', value)} />
       <TextField label="Authored date and time (UTC)" type="datetime-local" value={form.authoredOn} onChange={(value) => set('authoredOn', value)} />
-      <TextField label="Group identifier system" type="url" value={form.groupSystem} onChange={(value) => set('groupSystem', value)} />
-      <TextField label="Group identifier value" value={form.groupValue} onChange={(value) => set('groupValue', value)} />
       {reference('Encounter', 'encounter', ['Encounter'])}{reference('Requester', 'requester', ['PractitionerRole', 'Practitioner', 'Organization', 'Device'])}
     </div></fieldset>
     <details><summary>Scheduling and device parameters</summary><div className="device-form-fields">
