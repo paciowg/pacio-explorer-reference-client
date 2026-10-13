@@ -1,5 +1,11 @@
 # Repository instructions
 
+## Multi-selection controls
+
+- Prefer the shared `TransferList` in `src/components/TransferList.tsx` for fields selecting multiple items from an available set. Show available items on the left and selected items on the right; adding or removing an item moves it immediately between lists. Stack the panes on narrow screens.
+- Use controlled values and preserve existing resource label and reference conventions. Provide keyboard-accessible Add/Remove actions, maintain focus after transfers, show empty states, and honor disabled form state. Avoid native `<select multiple>` controls requiring Ctrl/Command selection for similar new or modified fields.
+- DeviceRequest Supporting assessments, Supporting device usage, Supporting goals, Prior requests, and Insurance use this pattern. Do not migrate unrelated existing controls unless requested.
+
 ## Resource selection labels
 
 - Fields supporting multiple resource types must use `ResourceType: Display name — Optional detail`. Use exact FHIR resource-type names; role or relationship details follow the name. Fields supporting only one resource type use an unprefixed display.
