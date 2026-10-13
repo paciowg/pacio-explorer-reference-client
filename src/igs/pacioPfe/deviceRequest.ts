@@ -37,6 +37,17 @@ export const DEVICE_PARAMETERS = [
   { code: '762636008', display: 'Duration' },
 ] as const
 
+// Small coded-reason subset from the targeted PFE profile's examples, not a value-set expansion.
+export const DEVICE_REASON_CODES = [
+  { system: 'http://snomed.info/sct', code: '8510008', display: 'Reduced mobility' },
+  { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I69.320', display: 'Aphasia following cerebral infarction' },
+  { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'J96.11', display: 'Chronic respiratory failure with hypoxia' },
+  { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R63.6', display: 'Underweight' },
+] as const
+
+// FHIR R4 restricts reasonReference targets despite broader examples in the PFE narrative.
+export const DEVICE_REASON_REFERENCE_TYPES = ['Condition', 'Observation', 'DiagnosticReport', 'DocumentReference'] as const
+
 export function snomedConcept(code: string, display: string): CodeableConcept {
   return { coding: [{ system: 'http://snomed.info/sct', code, display }], text: display }
 }
@@ -52,7 +63,7 @@ export type PFEDeviceInput = Pick<Device, 'type' | 'deviceName' | 'udiCarrier' |
 export type PFEDeviceRequestInput = Pick<DeviceRequest,
   'status' | 'intent' | 'priority' | 'groupIdentifier' | 'encounter' | 'authoredOn' |
   'occurrenceDateTime' | 'occurrencePeriod' | 'occurrenceTiming' | 'requester' |
-  'priorRequest' | 'parameter' | 'insurance' | 'note'> & {
+  'priorRequest' | 'parameter' | 'insurance' | 'note' | 'reasonCode' | 'reasonReference'> & {
   subject: Reference
   device: Reference
   locations?: Array<string | CodeableConcept>
@@ -107,7 +118,8 @@ export function buildPfeDeviceRequest(input: PFEDeviceRequestInput): DeviceReque
   const fields = { status: input.status, intent: input.intent, subject: input.subject, priority: input.priority,
     groupIdentifier: input.groupIdentifier, encounter: input.encounter, authoredOn: input.authoredOn,
     occurrenceDateTime: input.occurrenceDateTime, occurrencePeriod: input.occurrencePeriod, occurrenceTiming: input.occurrenceTiming,
-    requester: input.requester, priorRequest: input.priorRequest, parameter: input.parameter, insurance: input.insurance, note: input.note }
+    requester: input.requester, priorRequest: input.priorRequest, parameter: input.parameter, insurance: input.insurance, note: input.note,
+    reasonCode: input.reasonCode, reasonReference: input.reasonReference }
   const extension: Extension[] = [
     ...(locations ?? []).map((location) => typeof location === 'string'
       ? { url: PFE_LOCATION, valueString: location }

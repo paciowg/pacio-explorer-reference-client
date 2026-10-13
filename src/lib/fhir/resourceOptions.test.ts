@@ -1,8 +1,17 @@
 /** Verifies shared practitioner choice matching and labels for mixed and role-only reference fields. */
 import { describe, expect, it } from 'vitest'
-import { formatResourceSelectionLabel, getPractitionerChoices, getResourceReferenceChoices, getResourceSelectionDisplay, getRolePreferredReferenceOptions } from './resourceOptions'
+import { formatResourceSelectionLabel, getPractitionerChoices, getResourceReferenceChoices, getResourceSelectionDisplay, getResourceTransferChoices, getRolePreferredReferenceOptions } from './resourceOptions'
 
 describe('shared practitioner choices', () => {
+  it('adds transfer timestamps without putting them in resource labels or reference displays', () => {
+    const options = [{ reference: 'Observation/assessment', label: 'Observation: Mobility', display: 'Mobility',
+      resource: { resourceType: 'Observation', id: 'assessment', effectiveDateTime: '2026-10-13T12:00:00Z' } }]
+    expect(getResourceTransferChoices(options, ['Observation'])).toEqual([
+      { value: 'Observation/assessment', label: 'Mobility', dateValue: '2026-10-13T12:00:00Z', dateLabel: 'Effective' },
+    ])
+    expect(options[0].display).toBe('Mobility')
+    expect(getResourceReferenceChoices(options, ['Observation'])).toEqual([{ value: 'Observation/assessment', label: 'Mobility' }])
+  })
   it.each([
     [{ resourceType: 'Patient' as const, id: 'p', name: [{ text: 'Betsy Johnson' }] }, 'Patient: Betsy Johnson'],
     [{ resourceType: 'Practitioner' as const, id: 'pr', name: [{ text: 'Anita Chu' }] }, 'Practitioner: Anita Chu'],

@@ -1049,6 +1049,17 @@ dd {
   font-size: 0.85rem;
 }
 
+.transfer-list-description {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.transfer-list-date {
+  color: #64748b;
+  font-weight: 400;
+}
+
 .transfer-list-help,
 .transfer-list-status {
   color: #64748b;

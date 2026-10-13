@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { TransferList } from './TransferList'
-import { transferListSelection } from './transferListModel'
+import { compareTransferListDates, transferListSelection } from './transferListModel'
 
 const options = [
   { value: 'Coverage/a', label: 'Coverage: Health plan' },
@@ -10,6 +10,30 @@ const options = [
 ]
 
 describe('transfer list', () => {
+  it('sorts both resource panes by full timestamp and exposes dates for identical names', () => {
+    const dated = [
+      { value: 'Observation/old', label: 'Assessment', dateValue: '2026-10-13T08:00:00Z', dateLabel: 'Effective' },
+      { value: 'Observation/new', label: 'Assessment', dateValue: '2026-10-13T09:00:00-04:00', dateLabel: 'Effective' },
+      { value: 'Observation/undated', label: 'Undated assessment' },
+    ]
+    const render = (values: string[]) => renderToStaticMarkup(<TransferList label="Assessments" options={dated} values={values} showDates onChange={() => {}} />)
+    for (const values of [[], ['Observation/old', 'Observation/new', 'Observation/undated']]) {
+      const html = render(values)
+      expect(html.indexOf('<time dateTime="2026-10-13T09:00:00-04:00"')).toBeLessThan(html.indexOf('<time dateTime="2026-10-13T08:00:00Z"'))
+      expect(html).toContain('Effective: 2026-10-13 09:00:00-04:00')
+      expect(html.indexOf('Undated assessment')).toBeGreaterThan(html.indexOf('<time dateTime="2026-10-13T08:00:00Z"'))
+      expect(html).toContain('Date unavailable')
+    }
+    expect(dated.map((option) => option.value)).toEqual(['Observation/old', 'Observation/new', 'Observation/undated'])
+  })
+
+  it('retains input order for tied dates and puts missing or invalid dates last', () => {
+    const items = [
+      { value: 'missing' }, { value: 'first', dateValue: '2026-10-13' },
+      { value: 'invalid', dateValue: 'invalid' }, { value: 'second', dateValue: '2026-10-13' },
+    ]
+    expect([...items].sort(compareTransferListDates).map((item) => item.value)).toEqual(['first', 'second', 'missing', 'invalid'])
+  })
   it('adds without duplicates and removes only the requested value, preserving other references', () => {
     const initial = ['Coverage/a', 'Coverage/unavailable']
     const added = transferListSelection(initial, 'ClaimResponse/b', true)

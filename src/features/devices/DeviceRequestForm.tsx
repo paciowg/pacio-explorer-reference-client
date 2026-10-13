@@ -1,8 +1,8 @@
 /** Presents a small, repeatable PFE creation form using destination-local reference choices and existing form styling. */
 import type { DeviceForm, ParameterValue, UserValue } from './deviceFormModel'
 import type { ReferenceOption } from './deviceCreateData'
-import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS } from '../../igs/pacioPfe/deviceRequest'
-import { getResourceReferenceChoices } from '../../lib/fhir/resourceOptions'
+import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS, DEVICE_REASON_CODES, DEVICE_REASON_REFERENCE_TYPES } from '../../igs/pacioPfe/deviceRequest'
+import { getResourceReferenceChoices, getResourceTransferChoices } from '../../lib/fhir/resourceOptions'
 import { TransferList } from '../../components/TransferList'
 
 type Props = { value: DeviceForm; options: ReferenceOption[]; disabled: boolean; deviceLocked: boolean; onChange: (value: DeviceForm) => void }
@@ -31,8 +31,8 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
   const set = <K extends keyof DeviceForm>(key: K, value: DeviceForm[K]) => onChange({ ...form, [key]: value })
   const choices = (types: string[]) => getResourceReferenceChoices(options, types)
   const reference = (label: string, key: 'owner' | 'encounter' | 'requester', types: string[]) => <Choice label={label} value={form[key]} onChange={(value) => set(key, value)} choices={choices(types)} />
-  const references = (label: string, key: 'priorRequests' | 'insurance' | 'assessments' | 'uses' | 'goals', types: string[]) =>
-    <TransferList label={label} options={choices(types)} values={form[key]} disabled={disabled} onChange={(values) => set(key, values)} />
+  const references = (label: string, key: 'priorRequests' | 'insurance' | 'assessments' | 'uses' | 'goals' | 'reasonReferences', types: string[]) =>
+    <TransferList label={label} options={getResourceTransferChoices(options, types)} values={form[key]} showDates disabled={disabled} onChange={(values) => set(key, values)} />
   const updateParameter = (index: number, patch: Partial<ParameterValue>) => set('parameters', form.parameters.map((value, position) => position === index ? { ...value, ...patch } : value))
   const updateUser = (index: number, patch: Partial<UserValue>) => set('users', form.users.map((value, position) => position === index ? { ...value, ...patch } : value))
   return <fieldset disabled={disabled} className="device-form-fields">
@@ -73,6 +73,12 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
         {parameter.kind === 'range' || parameter.kind === 'quantity' ? <TextField label="Unit" value={parameter.unit} onChange={(unit) => updateParameter(index, { unit })} /> : null}
         <button type="button" className="secondary-button compact" onClick={() => set('parameters', form.parameters.filter((_, position) => position !== index))}>Remove parameter</button>
       </div>)}<button type="button" className="secondary-button compact" onClick={() => set('parameters', [...form.parameters, { code: DEVICE_PARAMETERS[0].code, kind: 'quantity', value: '', unit: '', high: '' }])}>Add parameter</button></fieldset>
+    </div></details>
+    <details><summary>Reasons for this request</summary><div className="device-form-fields">
+      <p className="helper-text">Optional: select coded reasons, supporting records, or both. These selections complement clinical justification.</p>
+      <TransferList label="Coded reasons" options={DEVICE_REASON_CODES.map((reason) => ({ value: reason.code, label: reason.display }))}
+        values={form.reasonCodes} disabled={disabled} onChange={(values) => set('reasonCodes', values)} />
+      {references('Reason references', 'reasonReferences', [...DEVICE_REASON_REFERENCE_TYPES])}
     </div></details>
     <details><summary>PFE users, locations, and clinical justification</summary><div className="device-form-fields">
       <fieldset className="toc-section-card"><legend>Preferred locations</legend>{form.locations.map((location, index) => <div className="device-repeat-row" key={index}>
