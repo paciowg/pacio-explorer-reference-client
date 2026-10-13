@@ -18,6 +18,17 @@ export const ASSISTIVE_DEVICES = [
   { code: '183146002', display: 'Zimmer frame', name: 'Walker' },
   { code: '6012004', display: 'Hearing aid', name: 'Hearing aid' },
 ] as const
+
+/** Supplies synthetic, type-specific demo metadata; these identifiers are not manufacturer-assigned UDIs. */
+export function demoDeviceDefaults(device: typeof ASSISTIVE_DEVICES[number]): {
+  deviceName: NonNullable<Device['deviceName']>
+  udiCarrier: NonNullable<Device['udiCarrier']>
+} {
+  const identifier = `DEMO-PFE-${device.code}`
+  return { deviceName: [{ name: device.name, type: 'user-friendly-name' }],
+    udiCarrier: [{ deviceIdentifier: identifier, carrierHRF: identifier }] }
+}
+
 export const DEVICE_PARAMETERS = [
   { code: '103355008', display: 'Width' },
   { code: '260769002', display: 'Material' },

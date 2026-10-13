@@ -1,6 +1,6 @@
 /** Converts demo form values into typed PFE builder inputs while leaving profile rules in the IG layer. */
-import type { Device, DeviceRequest, TimingRepeat } from 'fhir/r4'
-import { ASSISTIVE_DEVICES, DEVICE_PARAMETERS, RELATIONSHIP_SYSTEM, snomedConcept, type PFEDeviceRequestInput } from '../../igs/pacioPfe/deviceRequest'
+import type { DeviceRequest, TimingRepeat } from 'fhir/r4'
+import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS, RELATIONSHIP_SYSTEM, snomedConcept, type PFEDeviceRequestInput } from '../../igs/pacioPfe/deviceRequest'
 import { optionReference, type ReferenceOption } from './deviceCreateData'
 import type { CreateDeviceRequestInput } from './createDeviceRequest'
 
@@ -8,7 +8,7 @@ export type ParameterValue = { code: string; kind: 'quantity' | 'concept' | 'boo
 export type UserValue = { reference: string; relationship: string }
 export type LocationValue = { kind: 'text' | 'coded'; value: string }
 export type DeviceForm = {
-  type: string; names: NonNullable<Device['deviceName']>; udiIdentifier: string; udiHrf: string; owner: string
+  type: string; owner: string
   status: NonNullable<DeviceRequest['status']>; intent: DeviceRequest['intent']; priority: string
   groupSystem: string; groupValue: string; encounter: string; authoredOn: string
   occurrence: '' | 'date' | 'period' | 'timing'; start: string; end: string
@@ -19,8 +19,7 @@ export type DeviceForm = {
 }
 
 export function initialDeviceForm(): DeviceForm {
-  return { type: ASSISTIVE_DEVICES[0].code, names: [{ name: ASSISTIVE_DEVICES[0].name, type: 'user-friendly-name' }],
-    udiIdentifier: '', udiHrf: '', owner: '', status: 'draft', intent: 'order', priority: '',
+  return { type: ASSISTIVE_DEVICES[0].code, owner: '', status: 'draft', intent: 'order', priority: '',
     groupSystem: '', groupValue: '', encounter: '', authoredOn: new Date().toISOString().slice(0, 16),
     occurrence: '', start: '', end: '', frequency: '1', period: '1', periodUnit: 'd',
     requester: '', priorRequests: [], insurance: [], notes: [], parameters: [], locations: [], users: [],
@@ -82,6 +81,6 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
   }
   const justification = { notes: strings(form.justificationNotes), assessments: refs(form.assessments), uses: refs(form.uses), goals: refs(form.goals) }
   if (Object.values(justification).some((values) => values.length)) request.justifications = [justification]
-  return { device: { type: snomedConcept(selected.code, selected.display), deviceName: form.names.map((name) => ({ ...name, name: name.name.trim() })),
-    owner: optionReference(options, form.owner), ...(form.udiIdentifier || form.udiHrf ? { udiCarrier: [{ deviceIdentifier: form.udiIdentifier.trim(), ...(form.udiHrf.trim() ? { carrierHRF: form.udiHrf.trim() } : {}) }] } : {}) }, request }
+  return { device: { type: snomedConcept(selected.code, selected.display), ...demoDeviceDefaults(selected),
+    owner: optionReference(options, form.owner) }, request }
 }
