@@ -31,7 +31,7 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
   const set = <K extends keyof DeviceForm>(key: K, value: DeviceForm[K]) => onChange({ ...form, [key]: value })
   const choices = (types: string[]) => getResourceReferenceChoices(options, types)
   const reference = (label: string, key: 'owner' | 'encounter' | 'requester', types: string[]) => <Choice label={label} value={form[key]} onChange={(value) => set(key, value)} choices={choices(types)} />
-  const references = (label: string, key: 'priorRequests' | 'insurance' | 'assessments' | 'uses' | 'goals' | 'reasonReferences', types: string[]) =>
+  const references = (label: string, key: 'priorRequests' | 'insurance' | 'assessments' | 'goals' | 'reasonReferences', types: string[]) =>
     <TransferList label={label} options={getResourceTransferChoices(options, types)} values={form[key]} showDates disabled={disabled} onChange={(values) => set(key, values)} />
   const updateParameter = (index: number, patch: Partial<ParameterValue>) => set('parameters', form.parameters.map((value, position) => position === index ? { ...value, ...patch } : value))
   const updateUser = (index: number, patch: Partial<UserValue>) => set('users', form.users.map((value, position) => position === index ? { ...value, ...patch } : value))
@@ -92,7 +92,7 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
         <button type="button" className="secondary-button compact" onClick={() => set('users', form.users.filter((_, position) => position !== index))}>Remove user</button>
       </div>)}<button type="button" className="secondary-button compact" onClick={() => set('users', [...form.users, { reference: choices(['Patient'])[0]?.value || '', relationship: 'patient' }])}>Add user</button></fieldset>
       <RepeatedText label="Justification notes" values={form.justificationNotes} onChange={(value) => set('justificationNotes', value)} />
-      {references('Supporting assessments', 'assessments', ['Observation'])}{references('Supporting device usage', 'uses', ['DeviceUseStatement'])}{references('Supporting goals', 'goals', ['Goal'])}
+      {references('Supporting assessments', 'assessments', ['Observation'])}{references('Supporting goals', 'goals', ['Goal'])}
     </div></details>
     <details><summary>Prior requests, insurance, and notes</summary><div className="device-form-fields">
       {references('Prior requests', 'priorRequests', ['DeviceRequest'])}{references('Insurance', 'insurance', ['Coverage', 'ClaimResponse'])}

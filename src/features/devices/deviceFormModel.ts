@@ -15,7 +15,7 @@ export type DeviceForm = {
   frequency: string; period: string; periodUnit: NonNullable<TimingRepeat['periodUnit']>
   requester: string; priorRequests: string[]; insurance: string[]; notes: string[]
   parameters: ParameterValue[]; locations: LocationValue[]; users: UserValue[]
-  justificationNotes: string[]; assessments: string[]; uses: string[]; goals: string[]
+  justificationNotes: string[]; assessments: string[]; goals: string[]
   reasonCodes: string[]; reasonReferences: string[]
 }
 
@@ -24,7 +24,7 @@ export function initialDeviceForm(): DeviceForm {
     encounter: '', authoredOn: new Date().toISOString().slice(0, 16),
     occurrence: '', start: '', end: '', frequency: '1', period: '1', periodUnit: 'd',
     requester: '', priorRequests: [], insurance: [], notes: [], parameters: [], locations: [], users: [],
-    justificationNotes: [], assessments: [], uses: [], goals: [], reasonCodes: [], reasonReferences: [] }
+    justificationNotes: [], assessments: [], goals: [], reasonCodes: [], reasonReferences: [] }
 }
 
 function positiveNumber(value: string, label: string) {
@@ -85,7 +85,7 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
         ...(form.start || form.end ? { boundsPeriod: period } : {}) } }
     }
   }
-  const justification = { notes: strings(form.justificationNotes), assessments: refs(form.assessments), uses: refs(form.uses), goals: refs(form.goals) }
+  const justification = { notes: strings(form.justificationNotes), assessments: refs(form.assessments), goals: refs(form.goals) }
   if (Object.values(justification).some((values) => values.length)) request.justifications = [justification]
   return { device: { type: snomedConcept(selected.code, selected.display), ...demoDeviceDefaults(selected),
     owner: optionReference(options, form.owner) }, request }

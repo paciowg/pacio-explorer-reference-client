@@ -14,6 +14,8 @@ Builder inputs use FHIR types and validate key presence and choice constraints. 
 
 The browser form exposes a subset of allowed value representations and reference targets, including text or coded locations and basic repeating schedules. Further representations can be added without moving profile rules into the UI.
 
+The demo form omits supporting device-usage selections from clinical justification. The general-purpose builder and viewer continue to support existing `use-of-device` justification extensions.
+
 For device details, the browser asks only for a device type and displays generated defaults as read-only text. `demoDeviceDefaults` uses the existing demo name, the `user-friendly-name` name type, and `DEMO-PFE-<device code>` for both the UDI device identifier and human-readable carrier. These synthetic identifiers are shared by device type and are not manufacturer-assigned UDIs. The general-purpose builder continues to accept caller-provided names and optional UDI; it does not generate demo values itself.
 
 Creation uses separate Device and DeviceRequest writes, consistent with existing document creation. A rejected request leaves its Device on the destination and supports reuse for in-session retry. Transaction publication is a future enhancement.
