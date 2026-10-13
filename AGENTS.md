@@ -5,7 +5,7 @@
 - Prefer the shared `TransferList` in `src/components/TransferList.tsx` for fields selecting multiple items from an available set. Show available items on the left and selected items on the right; adding or removing an item moves it immediately between lists. Stack the panes on narrow screens.
 - Use controlled values and preserve existing resource label and reference conventions. Provide keyboard-accessible Add/Remove actions, maintain focus after transfers, show empty states, and honor disabled form state. Avoid native `<select multiple>` controls requiring Ctrl/Command selection for similar new or modified fields.
 - Resource transfer lists must use `getResourceTransferChoices` and `TransferList` with `showDates`. Display resource-specific clinical/authored dates (including time and timezone when present), with labelled `meta.lastUpdated` fallback; show Date unavailable when no valid date exists. Sort both panes newest first, with undated entries last and ties retaining their existing order. Keep timestamp metadata out of submitted FHIR reference displays. Terminology-only transfer lists retain their original order without timestamps.
-- DeviceRequest Supporting assessments, Supporting device usage, Supporting goals, Prior requests, and Insurance use this pattern. Do not migrate unrelated existing controls unless requested.
+- DeviceRequest Supporting assessments, Supporting goals, Prior requests, Insurance, Coded reasons, and Reason references use this pattern. Do not migrate unrelated existing controls unless requested.
 
 ## Resource selection labels
 
