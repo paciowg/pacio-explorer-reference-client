@@ -1,7 +1,7 @@
 /** Presents a small, repeatable PFE creation form using destination-local reference choices and existing form styling. */
 import type { DeviceForm, ParameterValue, UserValue } from './deviceFormModel'
 import type { ReferenceOption } from './deviceCreateData'
-import { ASSISTIVE_DEVICES, DEVICE_PARAMETERS } from '../../igs/pacioPfe/deviceRequest'
+import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS } from '../../igs/pacioPfe/deviceRequest'
 
 type Props = { value: DeviceForm; options: ReferenceOption[]; disabled: boolean; deviceLocked: boolean; onChange: (value: DeviceForm) => void }
 
@@ -24,6 +24,8 @@ function RepeatedText({ label, values, onChange }: { label: string; values: stri
 }
 
 export function DeviceRequestForm({ value: form, options, disabled, deviceLocked, onChange }: Props) {
+  const selected = ASSISTIVE_DEVICES.find((device) => device.code === form.type)
+  const defaults = selected ? demoDeviceDefaults(selected) : undefined
   const set = <K extends keyof DeviceForm>(key: K, value: DeviceForm[K]) => onChange({ ...form, [key]: value })
   const choices = (types: string[]) => options.filter((option) => types.includes(option.resource.resourceType)).map((option) => ({ value: option.reference, label: option.label }))
   const reference = (label: string, key: 'owner' | 'encounter' | 'requester', types: string[]) => <Choice label={label} value={form[key]} onChange={(value) => set(key, value)} choices={choices(types)} />
@@ -36,17 +38,14 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
   return <fieldset disabled={disabled} className="device-form-fields">
     <fieldset disabled={deviceLocked} className="toc-section-card"><legend>Device</legend>
       {deviceLocked ? <p className="helper-text">The Device has been created. Its fields are preserved for request retry.</p> : null}
-      <Choice label="Device type" value={form.type} optional={false} choices={ASSISTIVE_DEVICES.map((device) => ({ value: device.code, label: device.display }))} onChange={(type) => {
-        const device = ASSISTIVE_DEVICES.find((device) => device.code === type)!
-        onChange({ ...form, type, names: form.names.map((name, index) => index === 0 ? { ...name, name: device.name } : name) })
-      }} />
-      {form.names.map((name, index) => <div className="device-repeat-row" key={index}>
-        <TextField label={`Device name ${index + 1}`} value={name.name} required onChange={(value) => set('names', form.names.map((old, position) => position === index ? { ...old, name: value } : old))} />
-        <Choice label="Name type" value={name.type} optional={false} choices={codes(['udi-label-name', 'user-friendly-name', 'patient-reported-name', 'manufacturer-name', 'model-name', 'other'])} onChange={(type) => set('names', form.names.map((old, position) => position === index ? { ...old, type: type as typeof old.type } : old))} />
-        <button type="button" className="secondary-button compact" onClick={() => set('names', form.names.filter((_, position) => position !== index))}>Remove name</button>
-      </div>)}
-      <button type="button" className="secondary-button compact" onClick={() => set('names', [...form.names, { name: '', type: 'user-friendly-name' }])}>Add name</button>
-      <div className="toc-metadata-grid"><TextField label="UDI device identifier" value={form.udiIdentifier} onChange={(value) => set('udiIdentifier', value)} /><TextField label="UDI human-readable carrier" value={form.udiHrf} onChange={(value) => set('udiHrf', value)} /></div>
+      <Choice label="Device type" value={form.type} optional={false} choices={ASSISTIVE_DEVICES.map((device) => ({ value: device.code, label: device.display }))} onChange={(type) => set('type', type)} />
+      {defaults ? <dl className="fhir-detail-grid">
+        <div><dt>Device name</dt><dd>{defaults.deviceName[0].name}</dd></div>
+        <div><dt>Name type</dt><dd>{defaults.deviceName[0].type}</dd></div>
+        <div><dt>UDI device identifier</dt><dd>{defaults.udiCarrier[0].deviceIdentifier}</dd></div>
+        <div><dt>UDI human-readable carrier</dt><dd>{defaults.udiCarrier[0].carrierHRF}</dd></div>
+      </dl> : null}
+      <p className="helper-text">Device details are set automatically. UDI values are synthetic demonstration identifiers shared by device type.</p>
       {reference('Organization responsible for device', 'owner', ['Organization'])}
       <p className="helper-text">The Device and request will be associated with this patient on the destination.</p>
     </fieldset>
