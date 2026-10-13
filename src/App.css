@@ -1001,6 +1001,74 @@ dd {
 
 /* Responsive rules */
 
+.transfer-list-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.transfer-list-pane {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+}
+
+.transfer-list-pane h4 {
+  margin: 0 0 0.75rem;
+}
+
+.transfer-list-items {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.transfer-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.transfer-list-item:focus-visible {
+  outline: 3px solid #4338ca;
+  outline-offset: -3px;
+}
+
+.transfer-list-action {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.transfer-list-help,
+.transfer-list-status {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.transfer-list-help {
+  margin: 0 0 0.75rem;
+}
+
+.transfer-list-status {
+  margin: 0.75rem 0 0;
+}
+
+@media (max-width: 640px) {
+  .transfer-list-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .device-form-fields,
 .nutrition-form-fields {
   display: grid;

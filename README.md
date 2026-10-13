@@ -102,6 +102,12 @@ TOC form -> createTocDocument -> PACIO TOC builders -> destination patient + pub
 
 Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance-directive display remains available for non-ADI `DocumentReference` resources; PACIO ADI enrichment is optional.
 
+### Multi-selection controls
+
+Use the shared `TransferList` in `src/components/TransferList.tsx` for fields selecting multiple items from an available set. Available items appear on the left and selected items on the right; Add and Remove actions move items immediately between lists. The panes stack on narrow screens. Actions support keyboard use, preserve focus after a transfer, show empty states, and respect disabled forms. Controlled values remain the underlying resource references, and the existing selection-label convention applies.
+
+DeviceRequest Supporting assessments, Supporting device usage, Supporting goals, Prior requests, and Insurance use this pattern. Prefer it over native multi-selects requiring Ctrl/Command selection in similar future work. Existing controls elsewhere are migrated only when requested. These instructions are also in `AGENTS.md` for coding agents.
+
 ### Practitioner reference choices
 
 Mixed-resource selection fields use `ResourceType: Display name — Optional detail`, for example `PractitionerRole: Anita Chu — Primary Care Provider`, `Patient: Betsy Johnson`, or `RelatedPerson: Charles Johnson — son`. Single-type fields use an unprefixed display. The field's supported types determine this, even when only one type currently has choices. Rich selection cards place their resource-type badge before the title.

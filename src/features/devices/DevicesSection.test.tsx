@@ -42,6 +42,14 @@ describe('device UI markup', () => {
     expect(renderToStaticMarkup(<DevicesSection entries={[]} baseUrl="https://example.test" patientId="p" emptyMessage="Unavailable" />)).toContain('Unavailable')
     const html = renderToStaticMarkup(<DeviceRequestForm value={initialDeviceForm()} options={[]} disabled={false} deviceLocked={false} onChange={() => {}} />)
     for (const label of ['UDI device identifier', 'Organization responsible', 'Requester', 'Occurrence', 'Parameters', 'Device users', 'Supporting assessments', 'Prior requests', 'Insurance']) expect(html).toContain(label)
+    expect(html.match(/class="toc-section-card transfer-list"/g)).toHaveLength(5)
+    expect(html).not.toContain('<select multiple')
+    expect(html).not.toContain('Ctrl or Command')
+    for (const label of ['Supporting assessments', 'Supporting device usage', 'Supporting goals', 'Prior requests', 'Insurance']) {
+      const group = html.slice(html.indexOf(`<legend>${label}</legend>`)).split('</fieldset>')[0]
+      expect(group).toContain('Available (0)')
+      expect(group).toContain('Selected (0)')
+    }
   })
   it.each(ASSISTIVE_DEVICES)('displays submitted demo details for $display without editable name or UDI controls', (device) => {
     const form = { ...initialDeviceForm(), type: device.code }
