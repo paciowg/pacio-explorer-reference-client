@@ -45,6 +45,8 @@ The patient Devices section shows typed DeviceRequest, DeviceUseStatement, and D
 
 Choose **Create Device Request** to enter Required and Must Support PFE fields, select one of five assistive device types, and optionally provide the Organization responsible for the Device. The device name, name type, and UDI values are set automatically and displayed as read-only details. The synthetic UDI identifier and human-readable carrier use `DEMO-PFE-<device code>` and are shared by device type for demonstration purposes. Advanced groups include scheduling, parameters, device users, preferred locations, clinical justification, prior requests, insurance, and notes.
 
+Optional **Reasons for this request** controls provide transfer lists for coded reasons and existing clinical records. Both start unselected and can be combined with clinical justification. The demo reason codes are a small SNOMED CT/ICD-10-CM subset; reason references support destination-patient Condition, Observation, DiagnosticReport, and DocumentReference records.
+
 The destination defaults to the active server. Reference choices come from the destination, and Patient matching follows the existing document workflows. Patient lookup and reference loading are read-only until submission. Creation writes Device first, then DeviceRequest. If the request is rejected, the created Device remains and is reused for retry within that form session; an uncertain write outcome requires destination verification before another submission. Transaction support is deferred.
 
 The pure [PFE reference implementation](src/igs/pacioPfe/README.md) targets the October 6, 2026 PFE source revision and US Core 9.0.0. It owns profile construction, validation, terminology, and extension interpretation independently of React and transport.
@@ -107,6 +109,8 @@ Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance
 Use the shared `TransferList` in `src/components/TransferList.tsx` for fields selecting multiple items from an available set. Available items appear on the left and selected items on the right; Add and Remove actions move items immediately between lists. The panes stack on narrow screens. Actions support keyboard use, preserve focus after a transfer, show empty states, and respect disabled forms. Controlled values remain the underlying resource references, and the existing selection-label convention applies.
 
 DeviceRequest Supporting assessments, Supporting device usage, Supporting goals, Prior requests, and Insurance use this pattern. Prefer it over native multi-selects requiring Ctrl/Command selection in similar future work. Existing controls elsewhere are migrated only when requested. These instructions are also in `AGENTS.md` for coding agents.
+
+Resource transfer lists, including DeviceRequest Reason references, display timestamps beneath names and sort both panes newest first. Use `getResourceTransferChoices` and `TransferList` with `showDates`: resource-specific clinical/authored dates take precedence over a labelled Last updated fallback from `meta.lastUpdated`. Available time and timezone are preserved; missing or unusable dates show Date unavailable and sort last. Equal dates retain their existing order. These dates are presentation metadata and are not added to submitted reference displays. Coded-reason lists retain their terminology order and omit timestamps.
 
 ### Practitioner reference choices
 

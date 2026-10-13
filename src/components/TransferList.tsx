@@ -1,11 +1,11 @@
 /** Presents controlled multi-selection as available and selected lists without owning option loading or validation. */
 import { useId, useLayoutEffect, useRef } from 'react'
-import { transferListSelection } from './transferListModel'
+import { compareTransferListDates, transferListSelection } from './transferListModel'
 
-type Option = { value: string; label: string }
-type Props = { label: string; options: Option[]; values: string[]; disabled?: boolean; onChange: (values: string[]) => void }
+type Option = { value: string; label: string; dateValue?: string; dateLabel?: string }
+type Props = { label: string; options: Option[]; values: string[]; disabled?: boolean; showDates?: boolean; onChange: (values: string[]) => void }
 
-export function TransferList({ label, options, values, disabled = false, onChange }: Props) {
+export function TransferList({ label, options, values, disabled = false, showDates = false, onChange }: Props) {
   const id = useId()
   const buttons = useRef(new Map<string, HTMLButtonElement>())
   const pendingFocus = useRef<string | null>(null)
@@ -14,6 +14,13 @@ export function TransferList({ label, options, values, disabled = false, onChang
   const available = options.filter((option) => !selectedValues.has(option.value))
   // Keep stale selections visible and removable; callers still own reference validation.
   const selected = [...selectedValues].map((value) => optionsByValue.get(value) || { value, label: `${value} (Unavailable)` })
+  if (showDates) {
+    available.sort(compareTransferListDates)
+    selected.sort(compareTransferListDates)
+  }
+
+  const dateText = (option: Option) => option.dateValue && Number.isFinite(Date.parse(option.dateValue))
+    ? `${option.dateLabel || 'Date'}: ${option.dateValue.replace('T', ' ')}` : 'Date unavailable'
 
   useLayoutEffect(() => {
     if (pendingFocus.current !== null) {
@@ -38,10 +45,13 @@ export function TransferList({ label, options, values, disabled = false, onChang
       <h4 id={headingId}>{title} ({items.length})</h4>
       {items.length ? <ul className="transfer-list-items">{items.map((option) => <li key={option.value}>
         <button type="button" className="secondary-button transfer-list-item" disabled={disabled}
-          aria-label={`${adding ? 'Add' : 'Remove'} ${option.label} ${adding ? 'to' : 'from'} ${label}`}
+          aria-label={`${adding ? 'Add' : 'Remove'} ${option.label}${showDates ? ` (${dateText(option)})` : ''} ${adding ? 'to' : 'from'} ${label}`}
           ref={(button) => { if (button) buttons.current.set(option.value, button); else buttons.current.delete(option.value) }}
           onClick={() => move(option, adding)}>
-          <span>{option.label}</span><span className="transfer-list-action" aria-hidden="true">{adding ? 'Add →' : '← Remove'}</span>
+          <span className="transfer-list-description"><span>{option.label}</span>
+            {showDates ? <small className="transfer-list-date">{option.dateValue && Number.isFinite(Date.parse(option.dateValue))
+              ? <time dateTime={option.dateValue}>{dateText(option)}</time> : 'Date unavailable'}</small> : null}
+          </span><span className="transfer-list-action" aria-hidden="true">{adding ? 'Add →' : '← Remove'}</span>
         </button>
       </li>)}</ul> : <p className="empty-state">{adding ? 'No available options' : 'None selected'}</p>}
     </section>

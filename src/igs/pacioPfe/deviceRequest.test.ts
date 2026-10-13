@@ -27,9 +27,20 @@ describe('PFE device reference implementation', () => {
     expect(() => buildPfeDevice({ patient, type, owner: { reference: 'Patient/patient-1' } })).toThrow('Organization')
   })
   it('omits empty arrays from FHIR JSON while retaining populated values', () => {
-    const built = buildPfeDeviceRequest({ ...request, note: [], insurance: [], parameter: [], priorRequest: [] })
+    const built = buildPfeDeviceRequest({ ...request, note: [], insurance: [], parameter: [], priorRequest: [], reasonCode: [], reasonReference: [] })
     expect(JSON.stringify(built)).not.toContain('[]')
+    expect(built.reasonCode).toBeUndefined()
+    expect(built.reasonReference).toBeUndefined()
     expect(buildPfeDevice({ patient, type, deviceName: [] }).deviceName).toBeUndefined()
+  })
+
+  it.each(['code', 'reference', 'both'])('preserves optional reasons (%s) alongside clinical justification', (kind) => {
+    const reasonCode = kind !== 'reference' ? [{ coding: [{ system: 'http://snomed.info/sct', code: '8510008', display: 'Reduced mobility' }] }] : undefined
+    const reasonReference = kind !== 'code' ? [{ reference: 'Condition/mobility' }, { reference: 'Observation/assessment' }] : undefined
+    const built = buildPfeDeviceRequest({ ...request, reasonCode, reasonReference, justifications: [{ notes: ['Needs mobility support'] }] })
+    expect(built.reasonCode).toEqual(reasonCode)
+    expect(built.reasonReference).toEqual(reasonReference)
+    expect(interpretPfeDeviceRequest(built).justifications[0].notes).toEqual(['Needs mobility support'])
   })
 
   it('enforces occurrence and parameter choice exclusivity, including boolean false', () => {

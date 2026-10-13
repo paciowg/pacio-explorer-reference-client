@@ -19,10 +19,13 @@ beforeEach(() => {
 
 describe('device request creation', () => {
   it('posts linked resources in order with destination Patient and resource references', async () => {
-    const result = await createPatientDeviceRequest(input, {})
+    const reasons = { reasonCode: [snomedConcept('8510008', 'Reduced mobility')], reasonReference: [{ reference: 'Condition/destination-reason', display: 'Reduced mobility' }] }
+    const result = await createPatientDeviceRequest({ ...input, request: { ...input.request, ...reasons } }, {})
     expect(result.subject.reference).toBe('Patient/destination-patient')
     expect(result.codeReference?.reference).toBe('Device/created-device')
     expect(result.requester).toEqual(input.request.requester)
+    expect(result.reasonCode).toEqual(reasons.reasonCode)
+    expect(result.reasonReference).toEqual(reasons.reasonReference)
     expect(result.extension?.[0].extension?.[0].valueReference?.reference).toBe('Patient/destination-patient')
     expect(mocks.createDevice.mock.calls[0][1].patient.reference).toBe('Patient/destination-patient')
     expect(mocks.createDevice.mock.invocationCallOrder[0]).toBeLessThan(mocks.createDeviceRequest.mock.invocationCallOrder[0])

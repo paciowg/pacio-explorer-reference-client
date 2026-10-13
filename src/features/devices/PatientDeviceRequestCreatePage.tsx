@@ -64,7 +64,7 @@ export function PatientDeviceRequestCreatePage({ patientId }: { patientId: strin
       <form noValidate onSubmit={(event) => void submit(event)}>
         <DestinationServerField id="device-destination" servers={savedServers} value={destination} disabled={submitting || Boolean(progress.current.patient) || Boolean(progress.current.uncertain)} resourceDescription="Device and DeviceRequest" onChange={(value) => {
           setDestination(value)
-          setForm((form) => ({ ...form, owner: '', requester: '', encounter: '', users: [], priorRequests: [], insurance: [], assessments: [], uses: [], goals: [] }))
+          setForm((form) => ({ ...form, owner: '', requester: '', encounter: '', users: [], priorRequests: [], insurance: [], assessments: [], uses: [], goals: [], reasonReferences: [] }))
         }} />
         {loading ? <p className="info-banner">Loading destination reference choices...</p> : null}
         {error ? <p className="error-banner" role="alert">{error}</p> : null}

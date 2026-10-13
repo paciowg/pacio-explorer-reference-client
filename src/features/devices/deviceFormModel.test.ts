@@ -1,8 +1,42 @@
 /** Verifies typed form conversion, schedule validation, and destination-only selections before submission. */
 import { describe, expect, it } from 'vitest'
 import { deviceFormInputs, initialDeviceForm } from './deviceFormModel'
+import type { ReferenceOption } from './deviceCreateData'
 
 describe('device form conversion', () => {
+  const reasonOptions: ReferenceOption[] = ['Condition', 'Observation', 'DiagnosticReport', 'DocumentReference', 'CarePlan'].map((type) => ({
+    reference: `${type}/destination`, label: `${type}: Clinical reason`, display: 'Clinical reason', resource: { resourceType: type, id: 'destination' },
+  }))
+
+  it('does not infer reasons from the default device or a device-type change', () => {
+    const form = initialDeviceForm()
+    expect(form.reasonCodes).toEqual([])
+    expect(form.reasonReferences).toEqual([])
+    for (const type of ['58938008', '6012004']) {
+      const input = deviceFormInputs({ ...form, type }, reasonOptions)
+      expect(input.request.reasonCode).toEqual([])
+      expect(input.request.reasonReference).toEqual([])
+    }
+  })
+
+  it('converts multiple explicit reasons and all allowed destination reference types alongside justification', () => {
+    const form = { ...initialDeviceForm(), reasonCodes: ['8510008', 'I69.320'],
+      reasonReferences: reasonOptions.slice(0, 4).map((option) => option.reference), justificationNotes: ['Supports daily activities'] }
+    const { request } = deviceFormInputs(form, reasonOptions)
+    expect(request.reasonCode).toEqual([
+      { coding: [{ system: 'http://snomed.info/sct', code: '8510008', display: 'Reduced mobility' }], text: 'Reduced mobility' },
+      { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I69.320', display: 'Aphasia following cerebral infarction' }], text: 'Aphasia following cerebral infarction' },
+    ])
+    expect(request.reasonReference).toEqual(reasonOptions.slice(0, 4).map((option) => ({ reference: option.reference, display: option.display })))
+    expect(request.justifications?.[0].notes).toEqual(['Supports daily activities'])
+  })
+
+  it('rejects unsupported codes, stale reason references, and reference types outside FHIR R4 targets', () => {
+    const form = initialDeviceForm()
+    expect(() => deviceFormInputs({ ...form, reasonCodes: ['invented'] }, reasonOptions)).toThrow('supported reason code')
+    expect(() => deviceFormInputs({ ...form, reasonReferences: ['Condition/source'] }, reasonOptions)).toThrow('no longer available')
+    expect(() => deviceFormInputs({ ...form, reasonReferences: ['CarePlan/destination'] }, reasonOptions)).toThrow('no longer available')
+  })
   it('uses UTC timestamps and maps the small assistive device subset', () => {
     const form = initialDeviceForm()
     form.authoredOn = '2026-10-08T12:30'

@@ -8,6 +8,7 @@ import { DeviceRequestForm } from './DeviceRequestForm'
 import { deviceFormInputs, initialDeviceForm } from './deviceFormModel'
 import { ASSISTIVE_DEVICES } from '../../igs/pacioPfe/deviceRequest'
 import { getRolePreferredReferenceOptions } from '../../lib/fhir/resourceOptions'
+import type { ReferenceOption } from './deviceCreateData'
 
 describe('device UI markup', () => {
   it('offers roles instead of paired practitioners in both Requester and Device Users', () => {
@@ -42,7 +43,7 @@ describe('device UI markup', () => {
     expect(renderToStaticMarkup(<DevicesSection entries={[]} baseUrl="https://example.test" patientId="p" emptyMessage="Unavailable" />)).toContain('Unavailable')
     const html = renderToStaticMarkup(<DeviceRequestForm value={initialDeviceForm()} options={[]} disabled={false} deviceLocked={false} onChange={() => {}} />)
     for (const label of ['UDI device identifier', 'Organization responsible', 'Requester', 'Occurrence', 'Parameters', 'Device users', 'Supporting assessments', 'Prior requests', 'Insurance']) expect(html).toContain(label)
-    expect(html.match(/class="toc-section-card transfer-list"/g)).toHaveLength(5)
+    expect(html.match(/class="toc-section-card transfer-list"/g)).toHaveLength(7)
     expect(html).not.toContain('<select multiple')
     expect(html).not.toContain('Ctrl or Command')
     for (const label of ['Supporting assessments', 'Supporting device usage', 'Supporting goals', 'Prior requests', 'Insurance']) {
@@ -50,6 +51,20 @@ describe('device UI markup', () => {
       expect(group).toContain('Available (0)')
       expect(group).toContain('Selected (0)')
     }
+  })
+  it('offers reason codes and only permitted reason-reference types with mixed-resource labels', () => {
+    const options: ReferenceOption[] = ['Condition', 'Observation', 'DiagnosticReport', 'DocumentReference', 'CarePlan', 'ServiceRequest', 'NutritionOrder'].map((type) => ({
+      reference: `${type}/destination`, label: `${type}: Clinical reason`, display: 'Clinical reason', resource: { resourceType: type, id: 'destination' },
+    }))
+    const form = { ...initialDeviceForm(), reasonCodes: ['8510008'], reasonReferences: ['Condition/destination'] }
+    const html = renderToStaticMarkup(<DeviceRequestForm value={form} options={options} disabled={false} deviceLocked={false} onChange={() => {}} />)
+    const codes = html.slice(html.indexOf('<legend>Coded reasons</legend>')).split('</fieldset>')[0]
+    expect(codes).toContain('Remove Reduced mobility from Coded reasons')
+    expect(codes).toContain('Available (3)')
+    const references = html.slice(html.indexOf('<legend>Reason references</legend>')).split('</fieldset>')[0]
+    expect(references).toContain('Remove Condition: Clinical reason (Date unavailable) from Reason references')
+    for (const type of ['Observation', 'DiagnosticReport', 'DocumentReference']) expect(references).toContain(`Add ${type}: Clinical reason (Date unavailable) to Reason references`)
+    for (const type of ['CarePlan', 'ServiceRequest', 'NutritionOrder']) expect(references).not.toContain(type)
   })
   it.each(ASSISTIVE_DEVICES)('displays submitted demo details for $display without editable name or UDI controls', (device) => {
     const form = { ...initialDeviceForm(), type: device.code }

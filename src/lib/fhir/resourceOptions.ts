@@ -3,6 +3,7 @@ import type { Bundle, Organization, Practitioner, PractitionerRole, RelatedPerso
 import { getCodeableConceptText, getDisplayNameFromHumanName, getPractitionerRoleDisplayName } from './formatters'
 import { getSimpleResourceDisplay } from './resourceDisplay'
 import { serverResourceUrl } from './resourceTransport'
+import { getResourceTimestamp } from './resourceTimestamp'
 
 export type ResourceReferenceOption = { reference: string; label: string; display: string; resource: Resource }
 
@@ -29,6 +30,12 @@ export function getResourceReferenceChoices(options: ResourceReferenceOption[], 
     value: option.reference,
     label: types.length > 1 ? option.label : option.display,
   }))
+}
+
+/** Adds presentation-only timestamps to resource transfer choices without modifying reference display text. */
+export function getResourceTransferChoices(options: ResourceReferenceOption[], types: string[]) {
+  const resources = new Map(options.map((option) => [option.reference, option.resource]))
+  return getResourceReferenceChoices(options, types).map((choice) => ({ ...choice, ...getResourceTimestamp(resources.get(choice.value)!) }))
 }
 
 export type PractitionerRoleOption = {
