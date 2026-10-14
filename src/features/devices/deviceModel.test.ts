@@ -11,6 +11,24 @@ const use: DeviceUseStatement = { resourceType: 'DeviceUseStatement', id: 'use',
 const bundle = (...resources: Array<Device | DeviceRequest | DeviceUseStatement>): Bundle => ({ resourceType: 'Bundle', type: 'collection', entry: resources.map((resource) => ({ resource })) })
 
 describe('patient devices', () => {
+  it('orders dated requests and usage together, keeping ties stable and undated Devices last', () => {
+    const b = bundle(
+      { ...request, id: 'old', authoredOn: '2026-01-01' },
+      { ...request, id: 'missing' },
+      { ...use, id: 'timed', timingDateTime: '2026-10-14T09:00:00-04:00' },
+      { ...request, id: 'tie', authoredOn: '2026-10-14T13:00:00Z' },
+      { ...request, id: 'invalid', authoredOn: 'not-a-date' },
+      { ...use, id: 'period', timingPeriod: { start: '2026-02-01' } },
+      { ...use, id: 'recorded', recordedOn: '2026-03-01', timingDateTime: '2026-12-01' },
+      { ...device, id: 'standalone', manufactureDate: '2026-12-31' },
+      device,
+    )
+    expect(getPatientDevices(b, 'p', base).map((entry) => entry.resource.id)).toEqual([
+      'timed', 'tie', 'recorded', 'period', 'old', 'missing', 'invalid', 'standalone',
+    ])
+    expect(b.entry?.[0].resource?.id).toBe('old')
+  })
+
   it('keeps request and usage events but suppresses their shared standalone Device', () => {
     const entries = getPatientDevices(bundle(device, request, use, { ...device, id: 'standalone' }, { ...device, id: 'other', patient: { reference: 'Patient/other' } }), 'p', base)
     expect(entries.map((entry) => entry.resource.resourceType)).toEqual(['DeviceRequest', 'DeviceUseStatement', 'Device'])

@@ -9,6 +9,39 @@ function presentationOnly(items: ClinicalListItem[]) {
 }
 
 describe('buildClinicalSummary', () => {
+  it.each([
+    ['activeProblems', 'Condition', 'onsetDateTime'],
+    ['currentMedications', 'MedicationStatement', 'dateAsserted'],
+    ['knownAllergies', 'AllergyIntolerance', 'lastOccurrence'],
+    ['advanceDirectives', 'DocumentReference', 'date'],
+    ['transitionOfCares', 'DocumentReference', 'date'],
+  ] as const)('orders %s by raw dates with stable ties and undated entries last', (section, resourceType, dateField) => {
+    const dates = ['2026-01-01', undefined, 'invalid', '2026-10-14T09:00:00-04:00', '2026-10-14T13:00:00Z']
+    const b = { resourceType: 'Bundle', type: 'collection', entry: dates.map((date, index) => ({ resource: {
+      resourceType, id: String(index), [dateField]: date, status: 'active',
+      ...(resourceType === 'DocumentReference' ? { category: [{ coding: [{ code: '42348-3' }] }], type: { coding: [{ code: '18761-7' }] }, content: [] } : {}),
+    } })) } as unknown as Bundle
+    const items = buildClinicalSummary(b)[section]
+    expect(items.map((item) => 'id' in item ? item.id : item.resource?.id)).toEqual(['3', '4', '0', '1', '2'])
+    expect(b.entry?.[0].resource?.id).toBe('0')
+  })
+
+  it('selects the latest usable reading per vital and orders selected readings by date', () => {
+    const readings = [
+      { id: 'heart-invalid', code: '8867-4', date: 'invalid' },
+      { id: 'heart-old', code: '8867-4', date: '2026-01-01' },
+      { id: 'temperature', code: '8310-5', date: '2026-10-14' },
+      { id: 'heart-new', code: '8867-4', date: '2026-03-01' },
+      { id: 'respiratory', code: '9279-1', date: '2026-03-01' },
+      { id: 'oxygen', code: '2708-6', date: undefined },
+    ]
+    const b = { resourceType: 'Bundle', type: 'collection', entry: readings.map((reading) => ({ resource: {
+      resourceType: 'Observation', id: reading.id, status: 'final', code: { coding: [{ code: reading.code }] },
+      effectiveDateTime: reading.date, valueQuantity: { value: 1 },
+    } })) } as unknown as Bundle
+    expect(buildClinicalSummary(b).mostRecentVitals.map((item) => item.resource?.id)).toEqual(['temperature', 'heart-new', 'respiratory', 'oxygen'])
+  })
+
   it('extracts medications, allergies, and latest vital signs', () => {
     const bundle = {
       resourceType: 'Bundle', type: 'searchset', entry: [

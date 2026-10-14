@@ -6,6 +6,7 @@ import { buildResourceDetailModel, type ResolveResourceReference } from '../../l
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 import { formatDate } from '../../lib/fhir/formatters'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
+import { compareDatesDesc } from '../../lib/dateTime'
 
 export function getPatientNutritionOrders(bundle: Bundle | null, patientId: string, baseUrl: string): ClinicalListItem[] {
   if (!bundle) return []
@@ -20,7 +21,7 @@ export function getPatientNutritionOrders(bundle: Bundle | null, patientId: stri
       if (seen.has(order.id)) return false
       seen.add(order.id)
       return true
-    }).sort((a, b) => (Date.parse(b.dateTime || '') || 0) - (Date.parse(a.dateTime || '') || 0))
+    }).sort((a, b) => compareDatesDesc(a.dateTime, b.dateTime))
     .map((order) => ({ resource: order, title: getSimpleResourceDisplay(order),
       secondaryText: [order.oralDiet ? 'Oral diet' : '', order.supplement?.length ? 'Supplements' : '', order.enteralFormula ? 'Enteral formula' : '', order.status].filter(Boolean).join(' · '),
       dateLabel: order.dateTime ? 'Ordered' : undefined, dateValue: order.dateTime ? formatDate(order.dateTime) : undefined,

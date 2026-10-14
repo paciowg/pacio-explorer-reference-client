@@ -13,6 +13,13 @@ const order: NutritionOrder = { resourceType: 'NutritionOrder', id: 'order', sta
   enteralFormula: { baseFormulaType: { text: 'Formula' }, administration: [{ rateRatio: { numerator: { value: 200, unit: 'mL' }, denominator: { value: 4, unit: 'h' } } }] } }
 
 describe('nutrition order viewing', () => {
+  it('orders valid dates newest first, retaining ties and placing invalid dates after pre-1970 orders', () => {
+    const dates = ['1960-01-01', '', 'not-a-date', '2026-10-14T13:00:00Z', '2026-10-14T09:00:00-04:00']
+    const b: Bundle = { resourceType: 'Bundle', type: 'collection', entry: dates.map((dateTime, index) => ({ resource: { ...order, id: String(index), dateTime } })) }
+    expect(getPatientNutritionOrders(b, 'p', 'https://example.test').map((item) => item.resource?.id)).toEqual(['3', '4', '0', '1', '2'])
+    expect(b.entry?.[0].resource?.id).toBe('0')
+  })
+
   it('retains generic historical orders, resolves contained allergies and scopes the patient', () => {
     const allergy: AllergyIntolerance = { resourceType: 'AllergyIntolerance', id: 'local', patient: order.patient, code: { text: 'No known food allergies' } }
     const bundle: Bundle = { resourceType: 'Bundle', type: 'collection', entry: [
