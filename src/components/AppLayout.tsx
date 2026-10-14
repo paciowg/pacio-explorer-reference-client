@@ -20,8 +20,9 @@ export function AppLayout({ children, notification = null }: AppLayoutProps) {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
+        <div className="app-title">
           <h1>PACIO Explorer Reference Client</h1>
+          <span className="development-tag">In development</span>
         </div>
 
         {activeServer ? (
