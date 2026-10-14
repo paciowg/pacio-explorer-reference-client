@@ -28,6 +28,7 @@ import { DestinationServerField } from '../servers/DestinationServerField'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { readFileAsBase64 } from './browserFiles'
 import { createPmoDocument } from './createPmoDocument'
+import { calendarDateValue, localDateInputValue as formatDateInput } from '../../lib/dateTime'
 import {
   addOneYearToDateValue as calculateContextPeriodEnd,
   getAttesterOptions,
@@ -37,8 +38,6 @@ import {
   getPatientJurisdiction as calculatePatientJurisdiction,
   getPmoSubmissionError,
   getRelatedPersons,
-  toIsoDateTimeLocalValue as formatDateInput,
-  toUtcMidnightIso as toUtcMidnight,
 } from './pmoFormModel'
 
 type PatientPmoCreatePageProps = {
@@ -251,10 +250,11 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
     try {
       // Convert browser-only form values before handing the workflow domain-ready FHIR data.
+      // Preserve date-only precision in FHIR dateTime fields rather than inventing midnight.
+      const signingTime = calendarDateValue(signedDate, 'signing date')
+      const contextPeriodEndTime = calendarDateValue(contextPeriodEnd, 'relevant-through date')
       const pdfBase64 = await readFileAsBase64(pdfFile)
       const now = new Date().toISOString()
-      const signingTime = toUtcMidnight(signedDate)
-      const contextPeriodEndTime = toUtcMidnight(contextPeriodEnd)
 
       console.log(
         [
@@ -271,8 +271,6 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
           `- Custodian (Organization): ${custodian?.display || custodian?.reference || 'None'}`,
           `- Date signed: ${signedDate}`,
           `- Relevant through: ${contextPeriodEnd}`,
-          `- Signing time (UTC): ${signingTime}`,
-          `- Context period end (UTC): ${contextPeriodEndTime}`,
           `- Source form PDF: ${pdfFile.name}`,
         ].join('\n'),
       )

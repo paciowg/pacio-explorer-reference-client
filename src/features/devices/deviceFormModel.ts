@@ -1,5 +1,6 @@
 /** Converts demo form values into typed PFE builder inputs while leaving profile rules in the IG layer. */
 import type { DeviceRequest, TimingRepeat } from 'fhir/r4'
+import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
 import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS, DEVICE_REASON_CODES, DEVICE_REASON_REFERENCE_TYPES, RELATIONSHIP_SYSTEM, snomedConcept, type PFEDeviceRequestInput } from '../../igs/pacioPfe/deviceRequest'
 import { optionReference, type ReferenceOption } from './deviceCreateData'
 import type { CreateDeviceRequestInput } from './createDeviceRequest'
@@ -21,7 +22,7 @@ export type DeviceForm = {
 
 export function initialDeviceForm(): DeviceForm {
   return { type: ASSISTIVE_DEVICES[0].code, owner: '', status: 'draft', intent: 'order', priority: '',
-    encounter: '', authoredOn: new Date().toISOString().slice(0, 16),
+    encounter: '', authoredOn: localDateInputValue(),
     occurrence: '', start: '', end: '', frequency: '1', period: '1', periodUnit: 'd',
     requester: '', priorRequests: [], insurance: [], notes: [], parameters: [], locations: [], users: [],
     justificationNotes: [], assessments: [], goals: [], reasonCodes: [], reasonReferences: [] }
@@ -48,7 +49,7 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
     status: form.status, intent: form.intent,
     ...(form.priority ? { priority: form.priority as DeviceRequest['priority'] } : {}),
     encounter: optionReference(options, form.encounter), requester: optionReference(options, form.requester),
-    ...(form.authoredOn ? { authoredOn: new Date(`${form.authoredOn}Z`).toISOString() } : {}),
+    ...(form.authoredOn ? { authoredOn: calendarDateValue(form.authoredOn, 'authored date') } : {}),
     priorRequest: refs(form.priorRequests), insurance: refs(form.insurance),
     reasonCode: form.reasonCodes.map((code) => {
       const reason = DEVICE_REASON_CODES.find((reason) => reason.code === code)

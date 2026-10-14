@@ -1,6 +1,7 @@
 /** Supports validating, saving, selecting, and removing browser-local FHIR server connections. */
 import { useMemo, useState } from 'react'
 import { validateFhirServer } from '../../lib/fhir/client'
+import { formatDate } from '../../lib/fhir/formatters'
 import { navigateTo } from '../../lib/routing/routes'
 import { useSavedServers } from './useSavedServers'
 
@@ -136,7 +137,7 @@ export function ServerConnectPage() {
                         <span className="saved-server-url">{server.baseUrl}</span>
                       </span>
                       <span className="saved-server-last-used">
-                        Last used {new Date(server.lastUsedAt).toLocaleString()}
+                        Last used {formatDate(server.lastUsedAt)}
                       </span>
                     </span>
                   </button>

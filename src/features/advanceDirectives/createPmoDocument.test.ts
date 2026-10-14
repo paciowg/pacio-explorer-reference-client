@@ -61,6 +61,19 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('createPmoDocument', () => {
+  it('preserves date-only signing and relevance without changing creation instants', async () => {
+    await createPmoDocument({ ...input, signedDate: '2026-10-13', contextPeriodEnd: '2027-10-13' })
+    const bundle = mocks.createBundle.mock.calls[0][1] as Bundle
+    const composition = bundle.entry?.[0].resource as Composition
+    const document = mocks.createDocumentReference.mock.calls[0][1] as DocumentReference
+    expect(composition.attester?.[0].time).toBe('2026-10-13')
+    expect(document.extension?.find((extension) => extension.valueDateTime)?.valueDateTime).toBe('2026-10-13')
+    expect(document.context?.period).toEqual({ start: '2026-10-13', end: '2027-10-13' })
+    expect(composition.date).toBe(FIXED_CREATED_AT)
+    expect(document.date).toBe(FIXED_CREATED_AT)
+    expect(bundle.timestamp).toBe(FIXED_CREATED_AT)
+  })
+
   it('closes and posts the Bundle before posting the companion DocumentReference', async () => {
     const order: string[] = []
     mocks.createBundle.mockImplementation(async (_baseUrl, bundle: Bundle) => {

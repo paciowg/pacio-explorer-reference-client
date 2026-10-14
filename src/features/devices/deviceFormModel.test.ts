@@ -1,9 +1,22 @@
 /** Verifies typed form conversion, schedule validation, and destination-only selections before submission. */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { deviceFormInputs, initialDeviceForm } from './deviceFormModel'
 import type { ReferenceOption } from './deviceCreateData'
 
 describe('device form conversion', () => {
+  it('defaults authored date to the local calendar and omits an optional blank date', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date(2026, 9, 13, 12, 30, 45))
+      expect(initialDeviceForm().authoredOn).toBe('2026-10-13')
+      expect(deviceFormInputs({ ...initialDeviceForm(), authoredOn: '' }, []).request.authoredOn).toBeUndefined()
+      expect(() => deviceFormInputs({ ...initialDeviceForm(), authoredOn: '2026-02-30' }, [])).toThrow('valid authored date')
+      expect(deviceFormInputs({ ...initialDeviceForm(), authoredOn: '2024-02-29' }, []).request.authoredOn).toBe('2024-02-29')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   const reasonOptions: ReferenceOption[] = ['Condition', 'Observation', 'DiagnosticReport', 'DocumentReference', 'CarePlan'].map((type) => ({
     reference: `${type}/destination`, label: `${type}: Clinical reason`, display: 'Clinical reason', resource: { resourceType: type, id: 'destination' },
   }))
@@ -37,11 +50,11 @@ describe('device form conversion', () => {
     expect(() => deviceFormInputs({ ...form, reasonReferences: ['Condition/source'] }, reasonOptions)).toThrow('no longer available')
     expect(() => deviceFormInputs({ ...form, reasonReferences: ['CarePlan/destination'] }, reasonOptions)).toThrow('no longer available')
   })
-  it('uses UTC timestamps and maps the small assistive device subset', () => {
+  it('preserves date-only precision and maps the small assistive device subset', () => {
     const form = initialDeviceForm()
-    form.authoredOn = '2026-10-08T12:30'
+    form.authoredOn = '2026-10-08'
     const input = deviceFormInputs(form, [])
-    expect(input.request.authoredOn).toBe('2026-10-08T12:30:00.000Z')
+    expect(input.request.authoredOn).toBe('2026-10-08')
     expect(input.device.type?.coding?.[0].code).toBe('58938008')
     expect(input.device.udiCarrier).toEqual([{ deviceIdentifier: 'DEMO-PFE-58938008', carrierHRF: 'DEMO-PFE-58938008' }])
   })

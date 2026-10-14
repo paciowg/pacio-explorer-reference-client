@@ -53,7 +53,7 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
       <Choice label="Status" value={form.status} optional={false} choices={codes(['draft', 'active', 'on-hold', 'revoked', 'completed', 'entered-in-error', 'unknown'])} onChange={(value) => set('status', value as DeviceForm['status'])} />
       <Choice label="Intent" value={form.intent} optional={false} choices={codes(['proposal', 'plan', 'directive', 'order', 'original-order', 'reflex-order', 'filler-order', 'instance-order', 'option'])} onChange={(value) => set('intent', value as DeviceForm['intent'])} />
       <Choice label="Priority" value={form.priority} choices={codes(['routine', 'urgent', 'asap', 'stat'])} onChange={(value) => set('priority', value)} />
-      <TextField label="Authored date and time (UTC)" type="datetime-local" value={form.authoredOn} onChange={(value) => set('authoredOn', value)} />
+      <TextField label="Authored date" type="date" value={form.authoredOn} onChange={(value) => set('authoredOn', value)} />
       {reference('Encounter', 'encounter', ['Encounter'])}
       {/* The IG supports Device requesters, but this specialized use case is omitted from the demo. */}
       {reference('Requester', 'requester', ['PractitionerRole', 'Practitioner', 'Organization'])}
