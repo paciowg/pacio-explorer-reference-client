@@ -32,6 +32,7 @@ import { createBundleIndex } from '../../lib/fhir/bundleIndex'
 import { formatDate, getCodeableConceptText, getNarrativeText } from '../../lib/fhir/formatters'
 import { buildResourceDetailModel, type ResourceDetailModel } from '../../lib/fhir/resourceDetails'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
+import { compareDatesDesc } from '../../lib/dateTime'
 
 const ADI_DOCUMENT_REFERENCE_PROFILE = 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/ADI-DocumentReference'
 
@@ -194,7 +195,7 @@ export function isTocDocumentReference(resource: Resource): resource is Document
 
 export function getTocDocuments(bundle: Bundle | null): SelectableClinicalListItem[] {
   return resources(bundle).filter(isTocDocumentReference)
-    .sort((a, b) => Date.parse(b.date || '') - Date.parse(a.date || ''))
+    .sort((a, b) => compareDatesDesc(a.date, b.date))
     .slice(0, 10)
     .map((document) => ({
       id: document.id!,

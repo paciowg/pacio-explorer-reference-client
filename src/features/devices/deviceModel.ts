@@ -6,6 +6,7 @@ import { formatDate, getCodeableConceptText } from '../../lib/fhir/formatters'
 import { buildResourceDetailModel, type ResourceDetailModel, type ResolveResourceReference } from '../../lib/fhir/resourceDetails'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
+import { compareDatesDesc } from '../../lib/dateTime'
 
 export type DeviceRecord = Device | DeviceRequest | DeviceUseStatement
 export type DeviceEntry = {
@@ -22,6 +23,11 @@ function localReference(reference: string | undefined, baseUrl: string) {
   if (!reference) return ''
   const base = normalizeBaseUrl(baseUrl)
   return (reference.startsWith(`${base}/`) ? reference.slice(base.length + 1) : reference).replace(/\/_history\/[^/]+$/, '')
+}
+
+function deviceDate(resource: DeviceRecord) {
+  return resource.resourceType === 'DeviceRequest' ? resource.authoredOn : resource.resourceType === 'DeviceUseStatement'
+    ? resource.recordedOn || resource.timingDateTime || resource.timingPeriod?.start : undefined
 }
 
 export function getPatientDevices(bundle: Bundle | null, patientId: string, baseUrl: string): DeviceEntry[] {
@@ -47,10 +53,10 @@ export function getPatientDevices(bundle: Bundle | null, patientId: string, base
     const ref = resource.resourceType === 'DeviceRequest' ? resource.codeReference : resource.resourceType === 'DeviceUseStatement' ? resource.device : undefined
     const resolved = resolve(ref?.reference, resource)
     const device = resolved?.resourceType === 'Device' ? resolved as Device : undefined
-    const date = resource.resourceType === 'DeviceRequest' ? resource.authoredOn : resource.resourceType === 'DeviceUseStatement' ? resource.recordedOn || resource.timingDateTime || resource.timingPeriod?.start : undefined
+    const date = deviceDate(resource)
     return [{ key, resource, title: device ? getSimpleResourceDisplay(device) : getSimpleResourceDisplay(resource), deviceReference: ref?.reference, device, resolve,
       dateValue: date ? formatDate(date) : undefined }]
-  })
+  }).sort((a, b) => compareDatesDesc(deviceDate(a.resource), deviceDate(b.resource)))
 }
 
 export function deviceEntryDetails(entry: DeviceEntry, device = entry.device): ResourceDetailModel {

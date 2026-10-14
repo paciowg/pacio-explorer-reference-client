@@ -1,4 +1,14 @@
-/** Supplies local calendar dates and formats zoned timestamps without assigning instants to date-only values. */
+/** Supplies local calendar dates, compares raw dates, and formats zoned timestamps without assigning instants to date-only values. */
+export function compareDatesDesc(a: string | undefined, b: string | undefined) {
+  const aDate = Date.parse(a || '')
+  const bDate = Date.parse(b || '')
+  const aValid = Number.isFinite(aDate)
+  const bValid = Number.isFinite(bDate)
+  if (aValid && bValid) return bDate - aDate
+  if (aValid !== bValid) return aValid ? -1 : 1
+  return 0
+}
+
 export function localDateInputValue(date = new Date()) {
   return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }

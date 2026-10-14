@@ -8,6 +8,13 @@
 - Preserve standalone and recurring clock times, which do not identify a zoned instant. Keep raw timestamps for sorting and FHIR payloads; never parse localized display strings.
 - Generated creation/update instants and UTC ADI version identifiers remain timestamps. Do not discard time precision from existing resources.
 
+## Patient page listings
+
+- All dated clinical listings on the main patient page must display newest first, with missing or invalid dates last and original order retained for equal dates or undated entries. Use `compareDatesDesc` in `src/lib/dateTime.ts` on raw FHIR date values; never sort localized display strings. Sort before applying list limits.
+- Preserve each section's existing clinical-date precedence and use the same raw date for sorting and display. Devices use DeviceRequest authoredOn or DeviceUseStatement recordedOn, timingDateTime, then timingPeriod.start; standalone Devices currently have no summary date and sort last. Do not substitute manufacture/expiration dates for event dates.
+- Most Recent Vitals selects one latest usable reading per supported vital, then orders those selected readings newest first. Do not revert to a fixed order by vital type.
+- Preserve patient scoping, filters, deduplication, associated-device grouping, and list limits. Fixed demographic fields and Emergency Contacts retain their existing order because they are not dated clinical listings.
+
 ## Multi-selection controls
 
 - Prefer the shared `TransferList` in `src/components/TransferList.tsx` for fields selecting multiple items from an available set. Show available items on the left and selected items on the right; adding or removing an item moves it immediately between lists. Stack the panes on narrow screens.

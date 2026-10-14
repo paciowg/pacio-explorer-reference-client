@@ -118,6 +118,14 @@ Prefer date-only inputs wherever the underlying FHIR datatype and applicable pro
 
 Display calendar dates and partial dates at their original precision. When a value includes a zoned time, clinical summaries, resource details, document views, transfer lists, and saved-server timestamps display its date and time using the browser's locale and current timezone, with a visible timezone indicator. Use the shared helpers in `src/lib/dateTime.ts` and `formatDate` in `src/lib/fhir/formatters.ts`; keep raw timestamps for sorting and payloads rather than parsing localized display text. Standalone and recurring clock times retain their original precision. Generated creation/update timestamps and ADI version identifiers remain UTC; existing resource timestamps retain their time precision. These development preferences are also recorded in `AGENTS.md`.
 
+### Patient page listing order
+
+All dated clinical listings on the main patient page display newest first: Active Problems, Current Medications, Devices, Nutrition Orders, Known Allergies, Most Recent Vitals, Advance Directives, and Transitions of Care. Missing or invalid dates sort last; equal dates and undated entries retain their existing order. Use `compareDatesDesc` in `src/lib/dateTime.ts` on raw FHIR dates before formatting and before applying list limits.
+
+Keep sorting and display dates aligned with each section's existing precedence: problems use onset then recorded date; medications use asserted date, effective date, then effective-period start; allergies use last occurrence then recorded date; nutrition orders use order date; documents use DocumentReference date. Device requests use authoredOn; device usage uses recordedOn, timingDateTime, then timingPeriod.start. Standalone Devices have no summary event date and sort last; manufacture and expiration dates are not event-date substitutes. Associated Devices remain inside their request/usage expansion.
+
+Vitals retain one latest usable reading per supported type, using effectiveDateTime, issued, then meta.lastUpdated, and order the selected readings newest first. Preserve existing filters, patient scoping, deduplication, and list limits. Fixed demographic fields and Emergency Contacts retain their existing order. These development conventions are also recorded in `AGENTS.md`.
+
 ### Practitioner reference choices
 
 Mixed-resource selection fields use `ResourceType: Display name — Optional detail`, for example `PractitionerRole: Anita Chu — Primary Care Provider`, `Patient: Betsy Johnson`, or `RelatedPerson: Charles Johnson — son`. Single-type fields use an unprefixed display. The field's supported types determine this, even when only one type currently has choices. Rich selection cards place their resource-type badge before the title.
