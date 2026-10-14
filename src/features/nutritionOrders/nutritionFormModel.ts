@@ -1,5 +1,6 @@
 /** Converts demo nutrition form state into typed PFE inputs and validates user-entered quantities, schedules, and references. */
 import type { NutritionOrder, Quantity, Timing, TimingRepeat } from 'fhir/r4'
+import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
 import { NUTRITION_CHOICES, nutritionConcept } from '../../igs/pacioPfe/nutritionTerminology'
 import type { CreateNutritionOrderInput } from './createNutritionOrder'
 import { nutritionReference, type NutritionReferenceOption } from './nutritionCreateData'
@@ -24,7 +25,7 @@ export const newSchedule = (): ScheduleValue => ({ frequency: '1', period: '1', 
 export const newSupplement = (): SupplementValue => ({ type: '', schedules: [], quantity: emptyQuantity(), instruction: '' })
 export const newAdministration = (): AdministrationValue => ({ schedules: [], quantity: emptyQuantity(), rateType: '', rate: emptyQuantity('mL/h'), denominator: emptyQuantity('h') })
 export function initialNutritionForm(): NutritionForm {
-  return { status: 'draft', intent: 'order', dateTime: new Date().toISOString().slice(0, 16), encounter: '', orderer: '',
+  return { status: 'draft', intent: 'order', dateTime: localDateInputValue(), encounter: '', orderer: '',
     allergyMode: '', allergies: [], preferences: [], excludedFoods: [], oralEnabled: false, oralTypes: [], nutrients: [], textures: [], fluids: [], oralInstruction: '',
     supplementsEnabled: false, supplements: [], enteralEnabled: false, formula: '', additive: '', caloricDensity: emptyQuantity('kcal/mL'), route: '', administrations: [], enteralInstruction: '' }
 }
@@ -51,12 +52,10 @@ export function nutritionSchedule(input: ScheduleValue): Timing {
 
 export function nutritionFormInputs(form: NutritionForm, options: NutritionReferenceOption[]): Pick<CreateNutritionOrderInput, 'order' | 'allergies'> {
   if (!form.allergyMode) throw new Error('Select existing allergy records or explicitly choose no known food allergies.')
-  if (!form.dateTime.trim()) throw new Error('Enter the order date and time.')
-  const instant = new Date(`${form.dateTime}Z`)
-  if (!Number.isFinite(instant.getTime())) throw new Error('Enter a valid order date and time.')
+  const orderDate = calendarDateValue(form.dateTime, 'order date')
   const concept = (group: keyof typeof NUTRITION_CHOICES, code: string) => nutritionConcept(NUTRITION_CHOICES[group], code)
   const concepts = (group: keyof typeof NUTRITION_CHOICES, codes: string[]) => codes.map((code) => concept(group, code)!).filter(Boolean)
-  const order: CreateNutritionOrderInput['order'] = { status: form.status, intent: form.intent, dateTime: instant.toISOString(),
+  const order: CreateNutritionOrderInput['order'] = { status: form.status, intent: form.intent, dateTime: orderDate,
     encounter: nutritionReference(options, form.encounter, ['Encounter']), orderer: nutritionReference(options, form.orderer, ['Practitioner', 'PractitionerRole']),
     foodPreferenceModifier: concepts('preference', form.preferences), excludeFoodModifier: concepts('food', form.excludedFoods) }
   if (form.oralEnabled) order.oralDiet = { type: concepts('diet', form.oralTypes), nutrient: form.nutrients.map((nutrient) => ({ modifier: concept('nutrient', nutrient.modifier), amount: nutritionQuantity(nutrient.amount) })),

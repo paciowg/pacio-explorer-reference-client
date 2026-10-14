@@ -1,9 +1,21 @@
 /** Verifies explicit allergy decisions, component conversion, and quantity/schedule validation before nutrition writes. */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildPfeNutritionOrder } from '../../igs/pacioPfe/nutritionOrder'
 import { emptyQuantity, initialNutritionForm, newAdministration, newSchedule, newSupplement, nutritionFormInputs, nutritionQuantity, nutritionSchedule } from './nutritionFormModel'
 
 describe('nutrition form conversion', () => {
+  it('defaults order date to the local calendar and rejects invalid calendar dates', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date(2026, 9, 13, 12, 30, 45))
+      expect(initialNutritionForm().dateTime).toBe('2026-10-13')
+      expect(() => nutritionFormInputs({ ...initialNutritionForm(), allergyMode: 'none-known', dateTime: '2026-02-30' }, [])).toThrow('valid order date')
+      expect(nutritionFormInputs({ ...initialNutritionForm(), allergyMode: 'none-known', dateTime: '2024-02-29' }, []).order.dateTime).toBe('2024-02-29')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('does not preselect an allergy assertion or clinical components', () => {
     const form = initialNutritionForm()
     expect(form.allergyMode).toBe('')
@@ -12,13 +24,13 @@ describe('nutrition form conversion', () => {
   })
   it('converts all three component groups with repeatable quantities and rate choices', () => {
     const form = initialNutritionForm()
-    Object.assign(form, { allergyMode: 'none-known', dateTime: '2026-10-08T12:30', oralEnabled: true, oralTypes: ['437421000124105'],
+    Object.assign(form, { allergyMode: 'none-known', dateTime: '2026-10-08', oralEnabled: true, oralTypes: ['437421000124105'],
       nutrients: [{ modifier: '39972003', amount: { value: '2', unit: 'g' } }], textures: [{ modifier: '228049004', food: '226559002' }], fluids: ['1231508001'],
       supplementsEnabled: true, supplements: [{ ...newSupplement(), type: '443481000124101', schedules: [newSchedule()], quantity: { value: '200', unit: 'mL' } }, { ...newSupplement(), instruction: 'With lunch' }],
       enteralEnabled: true, formula: '6547210000124112', additive: 'fiber', route: 'NGT', caloricDensity: { value: '1.5', unit: 'kcal/mL' },
       administrations: [{ ...newAdministration(), rateType: 'quantity', rate: { value: '60', unit: 'mL/h' } }, { ...newAdministration(), rateType: 'ratio', rate: { value: '200', unit: 'mL' }, denominator: { value: '4', unit: 'h' } }] })
     const result = nutritionFormInputs(form, [])
-    expect(result.order.dateTime).toBe('2026-10-08T12:30:00.000Z')
+    expect(result.order.dateTime).toBe('2026-10-08')
     expect(result.allergies).toEqual({ mode: 'none-known' })
     expect(result.order.oralDiet?.nutrient?.[0].amount).toMatchObject({ value: 2, system: 'http://unitsofmeasure.org', code: 'g' })
     expect(result.order.supplement).toHaveLength(2)
@@ -33,7 +45,7 @@ describe('nutrition form conversion', () => {
   })
   it('rejects stale references, invalid dates, nonpositive quantities and malformed schedules', () => {
     expect(() => nutritionFormInputs({ ...initialNutritionForm(), allergyMode: 'existing', allergies: ['AllergyIntolerance/source'] }, [])).toThrow('no longer available')
-    expect(() => nutritionFormInputs({ ...initialNutritionForm(), allergyMode: 'none-known', dateTime: '' }, [])).toThrow('date and time')
+    expect(() => nutritionFormInputs({ ...initialNutritionForm(), allergyMode: 'none-known', dateTime: '' }, [])).toThrow('valid order date')
     expect(() => nutritionQuantity({ value: '-1', unit: 'mL' })).toThrow('positive number')
     expect(() => nutritionQuantity({ value: 'abc', unit: 'mL' })).toThrow('positive number')
     expect(() => nutritionQuantity({ value: '1', unit: 'unknown' })).toThrow('UCUM')

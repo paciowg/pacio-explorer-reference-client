@@ -2,6 +2,7 @@
 import type { Condition, Resource } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { buildResourceDetailModel } from './resourceDetails'
+import { formatDate } from './formatters'
 
 function detailValues(resource: Resource, label: string) {
   return buildResourceDetailModel(resource)?.groups
@@ -10,6 +11,16 @@ function detailValues(resource: Resource, label: string) {
 }
 
 describe('buildResourceDetailModel', () => {
+  it('formats zoned clinical timestamps and both period endpoints locally', () => {
+    const start = '2026-10-13T00:30:00Z'
+    const end = '2026-10-13T01:30:00Z'
+    const resource: Condition = { resourceType: 'Condition', subject: { reference: 'Patient/1' },
+      recordedDate: start, onsetPeriod: { start, end } }
+    expect(detailValues(resource, 'Recorded date')).toEqual([formatDate(start)])
+    expect(detailValues(resource, 'Onset')).toEqual([`${formatDate(start)} – ${formatDate(end)}`])
+    expect(formatDate(undefined)).toBe('--')
+  })
+
   it('includes the useful body site, dates, statuses, and complete note for a PACIO PFE Condition', () => {
     const condition: Condition = {
       resourceType: 'Condition',

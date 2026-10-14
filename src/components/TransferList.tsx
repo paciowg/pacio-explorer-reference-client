@@ -1,6 +1,7 @@
 /** Presents controlled multi-selection as available and selected lists without owning option loading or validation. */
 import { useId, useLayoutEffect, useRef } from 'react'
 import { compareTransferListDates, transferListSelection } from './transferListModel'
+import { formatDate } from '../lib/fhir/formatters'
 
 type Option = { value: string; label: string; dateValue?: string; dateLabel?: string }
 type Props = { label: string; options: Option[]; values: string[]; disabled?: boolean; showDates?: boolean; onChange: (values: string[]) => void }
@@ -20,7 +21,7 @@ export function TransferList({ label, options, values, disabled = false, showDat
   }
 
   const dateText = (option: Option) => option.dateValue && Number.isFinite(Date.parse(option.dateValue))
-    ? `${option.dateLabel || 'Date'}: ${option.dateValue.replace('T', ' ')}` : 'Date unavailable'
+    ? `${option.dateLabel || 'Date'}: ${formatDate(option.dateValue)}` : 'Date unavailable'
 
   useLayoutEffect(() => {
     if (pendingFocus.current !== null) {

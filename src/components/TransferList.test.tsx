@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { TransferList } from './TransferList'
 import { compareTransferListDates, transferListSelection } from './transferListModel'
+import { formatDate } from '../lib/fhir/formatters'
 
 const options = [
   { value: 'Coverage/a', label: 'Coverage: Health plan' },
@@ -20,7 +21,7 @@ describe('transfer list', () => {
     for (const values of [[], ['Observation/old', 'Observation/new', 'Observation/undated']]) {
       const html = render(values)
       expect(html.indexOf('<time dateTime="2026-10-13T09:00:00-04:00"')).toBeLessThan(html.indexOf('<time dateTime="2026-10-13T08:00:00Z"'))
-      expect(html).toContain('Effective: 2026-10-13 09:00:00-04:00')
+      expect(html).toContain(`Effective: ${formatDate('2026-10-13T09:00:00-04:00')}`)
       expect(html.indexOf('Undated assessment')).toBeGreaterThan(html.indexOf('<time dateTime="2026-10-13T08:00:00Z"'))
       expect(html).toContain('Date unavailable')
     }

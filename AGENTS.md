@@ -1,5 +1,13 @@
 # Repository instructions
 
+## Dates and times
+
+- Prefer date-only inputs wherever the underlying FHIR datatype and applicable profile permit date-only precision. Retain time entry when those constraints require it.
+- Default date inputs to the user's local calendar date. Validate and submit date-only values as `YYYY-MM-DD`; never add midnight or a timezone to fabricate a timestamp.
+- Display date-only and partial-date values at their original precision. When a value includes a zoned time, display its date and time in the browser's current timezone with a visible timezone indicator. Use the shared helpers in `src/lib/dateTime.ts` and `formatDate` in `src/lib/fhir/formatters.ts`.
+- Preserve standalone and recurring clock times, which do not identify a zoned instant. Keep raw timestamps for sorting and FHIR payloads; never parse localized display strings.
+- Generated creation/update instants and UTC ADI version identifiers remain timestamps. Do not discard time precision from existing resources.
+
 ## Multi-selection controls
 
 - Prefer the shared `TransferList` in `src/components/TransferList.tsx` for fields selecting multiple items from an available set. Show available items on the left and selected items on the right; adding or removing an item moves it immediately between lists. Stack the panes on narrow screens.

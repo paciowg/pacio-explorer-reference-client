@@ -42,7 +42,7 @@ export function NutritionOrderForm({ value: form, options, disabled, allergyLock
     <fieldset className="toc-section-card"><legend>Order</legend><div className="toc-metadata-grid">
       <Select label="Status" value={form.status} optional={false} options={choices(['draft', 'active', 'on-hold', 'revoked', 'completed', 'entered-in-error', 'unknown'])} onChange={(value) => set('status', value as NutritionForm['status'])} />
       <Select label="Intent" value={form.intent} optional={false} options={choices(['proposal', 'plan', 'directive', 'order', 'original-order', 'reflex-order', 'filler-order', 'instance-order', 'option'])} onChange={(value) => set('intent', value as NutritionForm['intent'])} />
-      <Input label="Order date and time (UTC)" type="datetime-local" value={form.dateTime} onChange={(value) => set('dateTime', value)} />
+      <Input label="Order date" type="date" value={form.dateTime} onChange={(value) => set('dateTime', value)} />
       <Select label="Encounter" value={form.encounter} options={references(['Encounter'])} onChange={(value) => set('encounter', value)} />
       <Select label="Orderer" value={form.orderer} options={references(['Practitioner', 'PractitionerRole'])} onChange={(value) => set('orderer', value)} />
     </div></fieldset>
