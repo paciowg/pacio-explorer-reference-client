@@ -17,6 +17,8 @@ export const ASSISTIVE_DEVICES = [
   { code: '74566002', display: 'Crutch', name: 'Crutches' },
   { code: '183146002', display: 'Zimmer frame', name: 'Walker' },
   { code: '6012004', display: 'Hearing aid', name: 'Hearing aid' },
+  // General spoon concept serves the feeding-spoon use case until a more specific code is selected.
+  { code: '303514007', display: 'Spoon', name: 'Spoon' },
 ] as const
 
 /** Supplies synthetic, type-specific demo metadata; these identifiers are not manufacturer-assigned UDIs. */

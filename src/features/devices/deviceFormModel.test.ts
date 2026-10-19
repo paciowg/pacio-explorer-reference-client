@@ -60,7 +60,7 @@ describe('device form conversion', () => {
   })
   it.each([
     ['58938008', 'Wheelchair'], ['87405001', 'Walking cane'], ['74566002', 'Crutches'],
-    ['183146002', 'Walker'], ['6012004', 'Hearing aid'],
+    ['183146002', 'Walker'], ['6012004', 'Hearing aid'], ['303514007', 'Spoon'],
   ])('sets demo device details for %s from the selected type', (type, name) => {
     const form = initialDeviceForm()
     form.type = type

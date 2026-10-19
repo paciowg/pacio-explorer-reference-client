@@ -10,7 +10,7 @@ The builder also preserves optional, repeatable `reasonCode` and `reasonReferenc
 
 Reason references use a transfer list of destination-patient Condition, Observation, DiagnosticReport, and DocumentReference records loaded through the existing patient-reference workflow. The form validates the selected reference types and clears them when the destination changes. These are the [FHIR R4 DeviceRequest reasonReference targets](https://hl7.org/fhir/R4/devicerequest-definitions.html#DeviceRequest.reasonReference); broader PFE narrative examples involving CarePlan, ServiceRequest, and NutritionOrder do not expand the inherited target types. `basedOn` support remains separate future work.
 
-Builder inputs use FHIR types and validate key presence and choice constraints. They do not replace full FHIR profile or terminology validation and do not verify that referenced resources conform to their target profiles. The five assistive device types and parameter codes are deliberately small demo subsets; they are not full value-set expansions.
+Builder inputs use FHIR types and validate key presence and choice constraints. They do not replace full FHIR profile or terminology validation and do not verify that referenced resources conform to their target profiles. The six assistive device types and parameter codes are deliberately small demo subsets; they are not full value-set expansions. The feeding-spoon use case uses the general SNOMED CT `303514007` (Spoon) concept.
 
 The browser form exposes a subset of allowed value representations and reference targets, including text or coded locations and basic repeating schedules. Further representations can be added without moving profile rules into the UI.
 
