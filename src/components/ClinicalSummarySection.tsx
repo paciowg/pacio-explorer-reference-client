@@ -9,6 +9,7 @@ type ClinicalSummarySectionProps = {
   items: ClinicalListItem[]
   emptyMessage?: string
   footer?: ReactNode
+  baseUrl?: string
 }
 
 export function ClinicalSummarySection({
@@ -16,6 +17,7 @@ export function ClinicalSummarySection({
   items,
   emptyMessage = 'None recorded',
   footer,
+  baseUrl,
 }: ClinicalSummarySectionProps) {
   return (
     <section className="summary-card clinical-summary-card">
@@ -27,7 +29,7 @@ export function ClinicalSummarySection({
       {items.length > 0 ? (
         <ul className="clinical-list">
           {items.map((item) => (
-            item.resource && item.details ? (
+            item.resource ? (
               <ExpandableFhirResource
                 key={`${item.resource.resourceType}-${item.resource.id || item.title}`}
                 title={item.title}
@@ -35,7 +37,8 @@ export function ClinicalSummarySection({
                 dateLabel={item.dateLabel}
                 dateValue={item.dateValue}
                 resource={item.resource}
-                details={item.details}
+                details={item.details || null}
+                baseUrl={baseUrl}
                 showResourceType={false}
               />
             ) : (

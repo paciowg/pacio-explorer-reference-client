@@ -38,6 +38,9 @@ describe('device UI markup', () => {
     expect(html.slice(html.indexOf('<summary>'), html.indexOf('</summary>'))).toContain('DeviceRequest')
     expect(html).not.toContain('<details open')
     expect(html).toContain('Create Device Request')
+    expect(html).toContain('#/fhir/DeviceRequest/r?server=https%3A%2F%2Fexample.test')
+    expect(html.indexOf('View FHIR JSON')).toBeGreaterThan(html.indexOf('</summary>'))
+    expect(html.indexOf('View FHIR JSON')).toBeLessThan(html.indexOf('</details>'))
   })
   it('shows the unavailable state and renders the Required/Must Support form groups', () => {
     expect(renderToStaticMarkup(<DevicesSection entries={[]} baseUrl="https://example.test" patientId="p" emptyMessage="Unavailable" />)).toContain('Unavailable')

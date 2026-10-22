@@ -35,8 +35,9 @@ describe('buildPatientSummaryModel', () => {
     expect(model.activeProblems).toMatchObject([{ title: 'Current condition', dateLabel: 'Onset', dateValue: '2025-01-02' }])
     expect(model.activeProblems[0].resource?.id).toBe('active')
     expect(model.activeProblems[0].details).not.toBeNull()
-    expect(model.advanceDirectives).toEqual([{
+    expect(model.advanceDirectives).toMatchObject([{
       id: 'adi', title: 'Portable medical order form', dateLabel: 'Date', dateValue: '2025-01-03', secondaryText: 'Advance directive',
     }])
+    expect(model.advanceDirectives[0].resource?.id).toBe('adi')
   })
 })

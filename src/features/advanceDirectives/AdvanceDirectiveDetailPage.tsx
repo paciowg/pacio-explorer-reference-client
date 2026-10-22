@@ -1,6 +1,7 @@
 /** Loads and displays an advance directive, enriching generic metadata from its document Bundle when available. */
 import { useEffect, useMemo, useState } from 'react'
 import type { DocumentReference } from 'fhir/r4'
+import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { loadDocumentDetails } from '../../lib/fhir/documentDetails'
 import {
   formatDate,
@@ -120,6 +121,7 @@ export function AdvanceDirectiveDetailPage({
           >
             Back to patient
           </button>
+          <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
         </div>
 
         {isLoading ? <div className="info-banner">Loading advance directive...</div> : null}

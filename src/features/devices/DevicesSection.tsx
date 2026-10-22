@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { Device } from 'fhir/r4'
 import { ClinicalEntrySummary } from '../../components/ClinicalEntrySummary'
 import { FhirResourceDetails } from '../../components/FhirResourceDetails'
+import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { readServerResource } from '../../lib/fhir/deviceTransport'
 import { navigateTo } from '../../lib/routing/routes'
 import { deviceEntryDetails, type DeviceEntry } from './deviceModel'
@@ -26,6 +27,7 @@ function DeviceRow({ entry, baseUrl }: { entry: DeviceEntry; baseUrl: string }) 
       <FhirResourceDetails model={deviceEntryDetails(entry, device)} />
       {state === 'loading' ? <p className="info-banner">Loading associated Device...</p> : null}
       {state === 'failed' ? <p className="warning-banner">Associated Device unavailable ({entry.deviceReference}).</p> : null}
+      <div className="fhir-resource-actions"><FhirJsonLink resource={entry.resource} baseUrl={baseUrl} /></div>
     </details>
   </li>
 }

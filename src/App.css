@@ -2,6 +2,57 @@
 
 /* Shell */
 
+.fhir-json-link {
+  display: inline-block;
+  align-self: start;
+  color: #4338ca;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.fhir-resource-actions {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.clinical-list-item > .clinical-entry-disclosure {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.fhir-viewer {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.fhir-json-card {
+  min-width: 0;
+}
+
+.fhir-json-card h3 {
+  overflow-wrap: anywhere;
+}
+
+.fhir-json {
+  max-width: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font: 0.9rem/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  tab-size: 2;
+}
+
+.json-key { color: #075985; }
+.json-string { color: #166534; }
+.json-number { color: #9a3412; }
+.json-literal { color: #7e22ce; }
+
 * {
   box-sizing: border-box;
 }

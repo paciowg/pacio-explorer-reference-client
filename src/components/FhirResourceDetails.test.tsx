@@ -1,4 +1,4 @@
-/** Verifies expandable FHIR entries render accessible native disclosure markup only when details exist. */
+/** Verifies clinical disclosures keep FHIR links inside their collapsed content and preserve static fallback rows. */
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ExpandableFhirResource } from './FhirResourceDetails'
@@ -9,6 +9,7 @@ describe('ExpandableFhirResource', () => {
       <ExpandableFhirResource
         title="Infected ulcer of skin"
         resource={{ resourceType: 'Condition', id: 'condition-1' }}
+        baseUrl="https://example.test/fhir"
         dateValue="2026-07-14"
         details={{ groups: [{ fields: [{ label: 'Body site', values: ['Right hip'] }] }] }}
       />,
@@ -20,6 +21,8 @@ describe('ExpandableFhirResource', () => {
     expect(html).not.toContain('>Details</span>')
     expect(html).toContain('Body site')
     expect(html).toContain('Right hip')
+    expect(html.indexOf('View FHIR JSON')).toBeGreaterThan(html.indexOf('</summary>'))
+    expect(html.indexOf('View FHIR JSON')).toBeLessThan(html.indexOf('</details>'))
   })
 
   it('renders a non-interactive row when no useful details exist', () => {

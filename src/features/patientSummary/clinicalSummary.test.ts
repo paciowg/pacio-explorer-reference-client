@@ -145,8 +145,10 @@ describe('buildClinicalSummary', () => {
     expect(model.activeProblems[0].resource?.id).toBe('ulcer')
     expect(fields?.find((field) => field.label === 'Body site')?.values).toEqual(['Right hip'])
     expect(fields?.find((field) => field.label === 'Notes')?.values).toEqual([note])
-    expect(model.advanceDirectives[0].resource).toBeUndefined()
-    expect(model.transitionOfCares[0].resource).toBeUndefined()
+    expect(model.advanceDirectives[0].resource?.id).toBe('directive')
+    expect(model.transitionOfCares[0].resource?.id).toBe('toc')
+    expect(model.advanceDirectives[0].details).toBeUndefined()
+    expect(model.transitionOfCares[0].details).toBeUndefined()
   })
 
   it('resolves Patient detail references against the loaded Bundle', () => {

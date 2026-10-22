@@ -199,6 +199,7 @@ export function getTocDocuments(bundle: Bundle | null): SelectableClinicalListIt
     .slice(0, 10)
     .map((document) => ({
       id: document.id!,
+      resource: document,
       title: getSimpleResourceDisplay(document),
       dateLabel: document.date ? 'Date' : undefined,
       dateValue: document.date ? formatDate(document.date) : undefined,

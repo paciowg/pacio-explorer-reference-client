@@ -23,6 +23,8 @@ From the patient summary, you can open either type of document:
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
+Expand a clinical entry and choose **View FHIR JSON ↗** to open its current server resource in a new tab. The Patient link is visible below the patient name; document links are on their detail pages. The viewer displays indented, syntax-colored, selectable JSON. Device requests and usage records also show their associated Device, and document references show their same-server document Bundle when available. Each resource loads independently, so an unavailable associated resource leaves the primary resource visible. Viewer links retain their original source server; they fetch current data rather than a snapshot of the clinical display.
+
 ### Create a Transition of Care document
 
 From a patient summary, open the TOC creation flow and choose a destination FHIR server, title, status, author, custodian, and at least one patient resource. The form exposes all 15 required TOC sections and records an explicit empty reason for every section without selected entries.
@@ -166,6 +168,7 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 ### Routes and persistence
 
 - `#/` — server connection and saved servers
+- `#/fhir/:resourceType/:resourceId?server=:encodedBaseUrl` — read-only FHIR JSON viewer tied to its source server
 - `#/patients` — patient list
 - `#/patients/:id` — patient summary
 - `#/patients/:id/pmo` — create an ADI portable medical order

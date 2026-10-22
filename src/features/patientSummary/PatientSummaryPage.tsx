@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { BundleEntry, Patient, Resource } from 'fhir/r4'
 import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
+import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { DevicesSection } from '../devices/DevicesSection'
 import { NutritionOrdersSection } from '../nutritionOrders/NutritionOrdersSection'
 import { SelectableClinicalSummarySection } from '../../components/SelectableClinicalSummarySection'
@@ -164,6 +165,7 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
               <div>
                 <p className="patient-summary-name">{summary.patientName}</p>
                 <p className="patient-summary-meta">{summary.patientMeta}</p>
+                <FhirJsonLink resource={{ resourceType: 'Patient', id: patientId }} baseUrl={activeServer.baseUrl} />
               </div>
               {summary.bundleStatusText ? (
                 <div className={`bundle-status ${summary.bundleStatusTone}`}>
@@ -278,23 +280,27 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
               </section>
 
               <ClinicalSummarySection
+                baseUrl={activeServer.baseUrl}
                 title="Active Problems"
                 items={summary.activeProblems}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
               <ClinicalSummarySection
+                baseUrl={activeServer.baseUrl}
                 title="Current Medications"
                 items={summary.currentMedications}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
               <DevicesSection entries={summary.devices} baseUrl={activeServer.baseUrl} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} />
-              <NutritionOrdersSection items={summary.nutritionOrders} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} />
+              <NutritionOrdersSection items={summary.nutritionOrders} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} baseUrl={activeServer.baseUrl} />
               <ClinicalSummarySection
+                baseUrl={activeServer.baseUrl}
                 title="Known Allergies"
                 items={summary.knownAllergies}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
               <ClinicalSummarySection
+                baseUrl={activeServer.baseUrl}
                 title="Most Recent Vitals"
                 items={summary.mostRecentVitals}
                 emptyMessage={summary.clinicalSectionEmptyMessage}

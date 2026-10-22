@@ -1,6 +1,7 @@
 /** Loads an indexed TOC document and presents its metadata and clinical sections. */
 import { useEffect, useState } from 'react'
 import type { DocumentReference } from 'fhir/r4'
+import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { loadDocumentDetails } from '../../lib/fhir/documentDetails'
 import { getCodeableConceptText, getDisplayNameFromHumanName, placeholderValue } from '../../lib/fhir/formatters'
 import { navigateTo } from '../../lib/routing/routes'
@@ -104,6 +105,7 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
           >
             Back to patient
           </button>
+          <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
         </div>
         {isLoading ? (
           <div className="info-banner">Loading Transition of Care document...</div>

@@ -217,6 +217,7 @@ function getAdvanceDirectives(bundle: Bundle | null): SelectableClinicalListItem
     .sort((a, b) => compareDatesDesc(a.date, b.date))
     .map((documentReference) => ({
       id: documentReference.id!,
+      resource: documentReference,
       title: getCodeableConceptText(documentReference.type) || placeholderValue(),
       dateLabel: documentReference.date ? 'Date' : undefined,
       dateValue: documentReference.date ? formatDate(documentReference.date) : undefined,

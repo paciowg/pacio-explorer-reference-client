@@ -1,6 +1,7 @@
 /** Defines, parses, and generates the application's dependency-free hash routes. */
 export type AppRoute =
   | { name: 'home' }
+  | { name: 'fhirViewer'; baseUrl: string; resourceType: string; resourceId: string }
   | { name: 'patients' }
   | { name: 'patientDetail'; patientId: string }
   | { name: 'patientPmoCreate'; patientId: string }
@@ -12,9 +13,18 @@ export type AppRoute =
 
 export function parseHashRoute(hash: string): AppRoute {
   const raw = hash.replace(/^#/, '') || '/'
-  const [pathname] = raw.split('?')
+  const [pathname, query = ''] = raw.split('?')
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`
   const segments = normalizedPath.split('/').filter(Boolean)
+
+  if (segments.length === 3 && segments[0] === 'fhir') {
+    const baseUrl = new URLSearchParams(query).get('server') || ''
+    try {
+      const url = new URL(baseUrl)
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return { name: 'home' }
+      return { name: 'fhirViewer', baseUrl, resourceType: decodeURIComponent(segments[1]), resourceId: decodeURIComponent(segments[2]) }
+    } catch { return { name: 'home' } }
+  }
 
   if (segments.length === 0) {
     return { name: 'home' }

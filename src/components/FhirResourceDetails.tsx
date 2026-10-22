@@ -1,12 +1,14 @@
-/** Renders a reusable, accessible disclosure for clinically useful FHIR resource details. */
+/** Renders accessible clinical disclosures with raw FHIR links available inside the expanded content. */
 import type { Resource } from 'fhir/r4'
 import type { ResourceDetailModel } from '../lib/fhir/resourceDetails'
 import { ClinicalEntrySummary, type ClinicalEntrySummaryProps } from './ClinicalEntrySummary'
+import { FhirJsonLink } from './FhirJsonLink'
 
 type ExpandableFhirResourceProps = Omit<ClinicalEntrySummaryProps, 'resourceType' | 'showDisclosure'> & {
   resource: Resource
   details: ResourceDetailModel | null
   showResourceType?: boolean
+  baseUrl?: string
 }
 
 export function FhirResourceDetails({ model }: { model: ResourceDetailModel }) {
@@ -49,7 +51,8 @@ export function ExpandableFhirResource(props: ExpandableFhirResourceProps) {
     resourceType: props.showResourceType === false ? undefined : props.resource.resourceType,
   }
 
-  if (!props.details) {
+  const hasJsonLink = Boolean(props.resource.id && props.baseUrl)
+  if (!props.details && !hasJsonLink) {
     return (
       <li className="clinical-list-item">
         <ClinicalEntrySummary {...summaryProps} />
@@ -63,7 +66,10 @@ export function ExpandableFhirResource(props: ExpandableFhirResourceProps) {
         <summary>
           <ClinicalEntrySummary {...summaryProps} showDisclosure />
         </summary>
-        <FhirResourceDetails model={props.details} />
+        {props.details ? <FhirResourceDetails model={props.details} /> : null}
+        {hasJsonLink ? <div className="fhir-resource-actions">
+          <FhirJsonLink resource={props.resource} baseUrl={props.baseUrl} />
+        </div> : null}
       </details>
     </li>
   )

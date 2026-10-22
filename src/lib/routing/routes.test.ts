@@ -3,6 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { parseHashRoute } from './routes'
 
 describe('parseHashRoute', () => {
+  it('rejects raw-resource routes without a usable source server', () => {
+    expect(parseHashRoute('#/fhir/Patient/p')).toEqual({ name: 'home' })
+    expect(parseHashRoute('#/fhir/Patient/p?server=javascript%3Aalert(1)')).toEqual({ name: 'home' })
+    expect(parseHashRoute('#/fhir/Patient/%XX?server=https%3A%2F%2Fexample.test')).toEqual({ name: 'home' })
+  })
   it('parses nutrition-order creation routes', () => {
     expect(parseHashRoute('#/patients/patient%201/nutrition-orders/new')).toEqual({ name: 'patientNutritionOrderCreate', patientId: 'patient 1' })
   })

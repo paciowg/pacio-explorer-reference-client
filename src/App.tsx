@@ -7,6 +7,7 @@ import { AppLayout } from './components/AppLayout'
 import { ServerConnectPage } from './features/servers/ServerConnectPage'
 import { PatientListPage } from './features/patients/PatientListPage'
 import { PatientSummaryPage } from './features/patientSummary/PatientSummaryPage'
+import { FhirViewerPage } from './features/fhirViewer/FhirViewerPage'
 import { PatientPmoCreatePage } from './features/advanceDirectives/PatientPmoCreatePage'
 import { AdvanceDirectiveDetailPage } from './features/advanceDirectives/AdvanceDirectiveDetailPage'
 import { PatientTocCreatePage } from './features/transitionsOfCare/PatientTocCreatePage'
@@ -37,7 +38,7 @@ function App() {
       return
     }
 
-    if (!activeServer && route.name !== 'home') {
+    if (!activeServer && route.name !== 'home' && route.name !== 'fhirViewer') {
       navigateTo('/')
     }
   }, [activeServer, route])
@@ -56,6 +57,7 @@ function App() {
     <AppLayout notification={notification}>
       {route.name === 'home' ? <ServerConnectPage /> : null}
       {route.name === 'patients' ? <PatientListPage /> : null}
+      {route.name === 'fhirViewer' ? <FhirViewerPage baseUrl={route.baseUrl} resourceType={route.resourceType} resourceId={route.resourceId} /> : null}
       {route.name === 'patientDetail' ? (
         <PatientSummaryPage patientId={route.patientId} />
       ) : null}
