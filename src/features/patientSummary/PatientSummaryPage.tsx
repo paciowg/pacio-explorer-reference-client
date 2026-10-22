@@ -297,24 +297,24 @@ export function PatientSummaryPage({ patientId, view }: PatientSummaryPageProps)
               />
               <ClinicalSummarySection
                 baseUrl={activeServer.baseUrl}
+                title="Most Recent Vitals"
+                items={summary.mostRecentVitals}
+                emptyMessage={summary.clinicalSectionEmptyMessage}
+              />
+              <ClinicalSummarySection
+                baseUrl={activeServer.baseUrl}
                 title="Current Medications"
                 items={summary.currentMedications}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
-              <DevicesSection entries={summary.devices} baseUrl={activeServer.baseUrl} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} />
-              <NutritionOrdersSection items={summary.nutritionOrders} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} baseUrl={activeServer.baseUrl} />
               <ClinicalSummarySection
                 baseUrl={activeServer.baseUrl}
                 title="Known Allergies"
                 items={summary.knownAllergies}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
-              <ClinicalSummarySection
-                baseUrl={activeServer.baseUrl}
-                title="Most Recent Vitals"
-                items={summary.mostRecentVitals}
-                emptyMessage={summary.clinicalSectionEmptyMessage}
-              />
+              <DevicesSection entries={summary.devices} baseUrl={activeServer.baseUrl} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} />
+              <NutritionOrdersSection items={summary.nutritionOrders} patientId={patientId} emptyMessage={summary.clinicalSectionEmptyMessage} baseUrl={activeServer.baseUrl} />
             </div>
 
             <div className="summary-grid" hidden={view !== 'documents'}>
