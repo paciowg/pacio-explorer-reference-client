@@ -1,4 +1,9 @@
-/** Updates controlled selections and compares presentation timestamps without reordering stored selection values. */
+/** Filters presentation labels, compares timestamps, and updates controlled selections without reordering stored values. */
+export function filterTransferListOptions<T extends { label: string }>(options: T[], query: string): T[] {
+  const search = query.trim().toLowerCase()
+  return options.filter((option) => option.label.toLowerCase().includes(search))
+}
+
 export function compareTransferListDates(a: { dateValue?: string }, b: { dateValue?: string }) {
   const aDate = Date.parse(a.dateValue || '')
   const bDate = Date.parse(b.dateValue || '')

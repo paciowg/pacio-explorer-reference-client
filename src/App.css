@@ -1088,6 +1088,16 @@ dd {
   margin: 0 0 0.75rem;
 }
 
+.transfer-list-search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.transfer-list-search input {
+  flex: 1;
+  min-width: 0;
+}
+
 .transfer-list-items {
   display: grid;
   gap: 0.5rem;

@@ -1,8 +1,8 @@
-/** Verifies transfer-list membership, accessible actions, disabled states, and removable unavailable selections. */
+/** Verifies transfer-list title filtering, membership, accessible controls, and removable unavailable selections. */
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { TransferList } from './TransferList'
-import { compareTransferListDates, transferListSelection } from './transferListModel'
+import { compareTransferListDates, filterTransferListOptions, transferListSelection } from './transferListModel'
 import { formatDate } from '../lib/fhir/formatters'
 
 const options = [
@@ -11,6 +11,44 @@ const options = [
 ]
 
 describe('transfer list', () => {
+  it('matches title substrings without case sensitivity and ignores surrounding search whitespace', () => {
+    expect(filterTransferListOptions(options, '  HEALTH pL  ')).toEqual([options[0]])
+    expect(filterTransferListOptions(options, 'Coverage/a')).toEqual([])
+    expect(filterTransferListOptions(options, 'missing')).toEqual([])
+    expect(filterTransferListOptions(options, '   ')).toEqual(options)
+    expect(filterTransferListOptions(options, '')).toEqual(options)
+  })
+
+  it('filters without changing ordering, dates, membership, or the other pane', () => {
+    const items = [
+      { value: 'new', label: 'Assessment: Mobility', dateValue: '2026-10-13' },
+      { value: 'old', label: 'Assessment: Mobility', dateValue: '2026-10-12' },
+      { value: 'other', label: 'Assessment: Cognition' },
+    ]
+    const values = ['old', 'other']
+    const available = items.filter((item) => !values.includes(item.value))
+    const selected = items.filter((item) => values.includes(item.value))
+    expect(filterTransferListOptions(available, 'mobility')).toEqual([items[0]])
+    expect(filterTransferListOptions(selected, 'cognition')).toEqual([items[2]])
+    expect(filterTransferListOptions(items, 'mobility')).toEqual([items[0], items[1]])
+    expect(filterTransferListOptions(selected, '')).toEqual([items[1], items[2]])
+    expect(values).toEqual(['old', 'other'])
+    expect(items.map((item) => item.value)).toEqual(['new', 'old', 'other'])
+  })
+
+  it('provides distinct labelled search fields outside each scrolling list', () => {
+    const html = renderToStaticMarkup(<TransferList label="Insurance" options={options} values={['Coverage/a']} onChange={() => {}} />)
+    expect(html.match(/type="search"/g)).toHaveLength(2)
+    expect(html).toContain('aria-label="Search available in Insurance"')
+    expect(html).toContain('aria-label="Search selected in Insurance"')
+    for (const section of html.split('<section').slice(1)) {
+      expect(section.indexOf('type="search"')).toBeLessThan(section.indexOf('<ul'))
+      const inputId = section.match(/<input id="([^"]+)"/)?.[1]
+      expect(inputId).toBeDefined()
+      expect(section).toContain(`<label for="${inputId}">`)
+    }
+  })
+
   it('sorts both resource panes by full timestamp and exposes dates for identical names', () => {
     const dated = [
       { value: 'Observation/old', label: 'Assessment', dateValue: '2026-10-13T08:00:00Z', dateLabel: 'Effective' },
@@ -77,5 +115,6 @@ describe('transfer list', () => {
     const html = renderToStaticMarkup(<TransferList label="Insurance" options={options} values={['Coverage/a']} disabled onChange={() => {}} />)
     expect(html).toContain('<fieldset class="toc-section-card transfer-list" disabled="">')
     expect(html.match(/<button[^>]*disabled=""/g)).toHaveLength(2)
+    expect(html.match(/<input[^>]*disabled=""/g)).toHaveLength(2)
   })
 })
