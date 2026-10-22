@@ -39,4 +39,28 @@ describe('device transport', () => {
     await expect(searchResources(base, 'Organization')).rejects.toThrow('pagination')
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
+  it.each([`${base}?_getpages=search&_getpagesoffset=200`, '/fhir?_getpages=search&_getpagesoffset=200', '?_getpages=search&_getpagesoffset=200'])(
+    'follows base-path pagination links: %s', async (next) => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ resourceType: 'Bundle', type: 'searchset', entry: [{ resource: { resourceType: 'Organization', id: 'a' } }], link: [{ relation: 'next', url: next }] })))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ resourceType: 'Bundle', type: 'searchset', entry: [{ resource: { resourceType: 'Organization', id: 'b' } }] })))
+      vi.stubGlobal('fetch', fetchMock)
+      expect((await searchResources(`${base}/`, 'Organization')).entry?.map((entry) => entry.resource?.id)).toEqual(['a', 'b'])
+      expect(fetchMock.mock.calls[1][0]).toBe(new URL(next, `${base}/`).href)
+    },
+  )
+  it.each(['https://other.test/fhir?page=2', 'http://example.test/fhir?page=2', `${base}-other?page=2`, `${base}/../other?page=2`])(
+    'rejects pagination outside the selected FHIR base: %s', async (next) => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ resourceType: 'Bundle', type: 'searchset', link: [{ relation: 'next', url: next }] })))
+      vi.stubGlobal('fetch', fetchMock)
+      await expect(searchResources(base, 'Organization')).rejects.toThrow('Unsupported resource-search pagination link.')
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    },
+  )
+  it('rejects repeated pagination links before fetching the same page again', async () => {
+    const bundle = { resourceType: 'Bundle', type: 'searchset', link: [{ relation: 'next', url: `${base}?_getpages=search&_getpagesoffset=200` }] }
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(bundle))))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(searchResources(base, 'Organization')).rejects.toThrow('Unsupported resource-search pagination link.')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })

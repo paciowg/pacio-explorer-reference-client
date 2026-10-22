@@ -17,10 +17,14 @@ export async function searchResources(baseUrl: string, resourceType: string, par
   if (bundle?.resourceType !== 'Bundle') throw new Error(`The server did not return a ${resourceType} search Bundle.`)
   const entries = [...(bundle.entry ?? [])]
   let next = bundle.link?.find((link) => link.relation === 'next')?.url
+  const base = new URL(`${normalizeBaseUrl(baseUrl)}/`)
+  const basePath = base.pathname.replace(/\/+$/, '')
   const seen = new Set<string>()
   while (next && entries.length < 500) {
-    const url = new URL(next, `${normalizeBaseUrl(baseUrl)}/`).href
-    if (!url.startsWith(`${normalizeBaseUrl(baseUrl)}/`) || seen.has(url)) throw new Error('Unsupported resource-search pagination link.')
+    const page = new URL(next, base)
+    const url = page.href
+    // HAPI places pagination queries directly on the FHIR base path, without a trailing slash.
+    if (page.origin !== base.origin || (page.pathname !== basePath && !page.pathname.startsWith(`${basePath}/`)) || seen.has(url)) throw new Error('Unsupported resource-search pagination link.')
     seen.add(url)
     bundle = await parse(await fetch(url, { cache: 'no-store', headers: { Accept: 'application/fhir+json' } })) as Bundle
     if (bundle?.resourceType !== 'Bundle') throw new Error('The server did not return a search Bundle.')
