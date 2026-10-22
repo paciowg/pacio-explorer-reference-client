@@ -809,6 +809,42 @@
   color: #4338ca;
 }
 
+.patient-view-nav {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.patient-view-nav a {
+  flex: 0 0 auto;
+  padding: 0.85rem 1rem;
+  border-bottom: 3px solid transparent;
+  color: #475569;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.patient-view-nav a:hover {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.patient-view-nav a[aria-current='page'] {
+  border-bottom-color: #4338ca;
+  color: #4338ca;
+}
+
+.patient-view-nav a:focus-visible {
+  outline: 2px solid #4338ca;
+  outline-offset: -4px;
+}
+
+.summary-grid[hidden] {
+  display: none;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

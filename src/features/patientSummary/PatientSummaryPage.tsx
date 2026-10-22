@@ -1,4 +1,4 @@
-/** Loads a patient's FHIR data and renders a summary, with a patient-only fallback when $everything fails. */
+/** Loads patient data once across the personal, clinical, and document views, with a patient-only fallback when $everything fails. */
 import { useEffect, useState } from 'react'
 import type { BundleEntry, Patient, Resource } from 'fhir/r4'
 import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
@@ -7,12 +7,13 @@ import { DevicesSection } from '../devices/DevicesSection'
 import { NutritionOrdersSection } from '../nutritionOrders/NutritionOrdersSection'
 import { SelectableClinicalSummarySection } from '../../components/SelectableClinicalSummarySection'
 import { fetchPatient, fetchPatientEverything } from '../../lib/fhir/client'
-import { navigateTo } from '../../lib/routing/routes'
+import { getRouteHref, navigateTo, type PatientView } from '../../lib/routing/routes'
 import { useSavedServers } from '../servers/useSavedServers'
 import { buildPatientSummaryModel, type PatientSummaryModel } from './patientSummaryModel'
 
 type PatientSummaryPageProps = {
   patientId: string
+  view: PatientView
 }
 
 function logBundleResourceSummary(patientId: string, entries: BundleEntry[] | undefined) {
@@ -43,7 +44,7 @@ function isPatient(resource: Resource | undefined, patientId: string): resource 
   return resource?.resourceType === 'Patient' && resource.id === patientId
 }
 
-export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
+export function PatientSummaryPage({ patientId, view }: PatientSummaryPageProps) {
   const { activeServer } = useSavedServers()
   const [summary, setSummary] = useState<PatientSummaryModel | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -174,7 +175,14 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
               ) : null}
             </section>
 
-            <div className="summary-grid">
+            <nav className="patient-view-nav" aria-label="Patient information">
+              <a href={getRouteHref(`/patients/${encodeURIComponent(patientId)}`)} aria-current={view === 'personal' ? 'page' : undefined}>Personal Information</a>
+              <a href={getRouteHref(`/patients/${encodeURIComponent(patientId)}?view=clinical`)} aria-current={view === 'clinical' ? 'page' : undefined}>Clinical Information</a>
+              <a href={getRouteHref(`/patients/${encodeURIComponent(patientId)}?view=documents`)} aria-current={view === 'documents' ? 'page' : undefined}>Documents</a>
+            </nav>
+
+            {/* Keep each view mounted so switching navigation preserves expanded entries. */}
+            <div className="summary-grid" hidden={view !== 'personal'}>
               <section className="summary-card wide">
                 <h3>Personal Information</h3>
                 <dl className="detail-grid">
@@ -278,7 +286,9 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
                   <p className="empty-state">None recorded</p>
                 )}
               </section>
+            </div>
 
+            <div className="summary-grid" hidden={view !== 'clinical'}>
               <ClinicalSummarySection
                 baseUrl={activeServer.baseUrl}
                 title="Active Problems"
@@ -305,6 +315,9 @@ export function PatientSummaryPage({ patientId }: PatientSummaryPageProps) {
                 items={summary.mostRecentVitals}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
               />
+            </div>
+
+            <div className="summary-grid" hidden={view !== 'documents'}>
               <SelectableClinicalSummarySection
                 title="Advance Directives"
                 items={summary.advanceDirectives}

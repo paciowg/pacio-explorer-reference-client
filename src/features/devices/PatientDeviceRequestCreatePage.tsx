@@ -52,14 +52,14 @@ export function PatientDeviceRequestCreatePage({ patientId }: { patientId: strin
       const input = deviceFormInputs(form, data.options)
       await createPatientDeviceRequest({ ...input, patient, sourceBaseUrl: activeServer.baseUrl, destinationBaseUrl: destination }, progress.current)
       const label = savedServers.find((server) => server.baseUrl === destination)?.label || destination
-      setRouteNotification({ routeHref: getRouteHref(`/patients/${patientId}`), tone: 'success', message: `Device and DeviceRequest created successfully on ${label}.` })
-      navigateTo(`/patients/${patientId}`)
+      setRouteNotification({ routeHref: getRouteHref(`/patients/${patientId}?view=clinical`), tone: 'success', message: `Device and DeviceRequest created successfully on ${label}.` })
+      navigateTo(`/patients/${patientId}?view=clinical`)
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to create the device request.') }
     finally { submittingRef.current = false; setSubmitting(false) }
   }
   if (!activeServer) return null
   return <section className="panel"><div className="panel-header"><h2>Create Device Request</h2><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <div className="pmo-form-panel full-width-panel"><div className="page-actions page-actions-spaced"><button type="button" disabled={submitting} className="secondary-button outline" onClick={() => navigateTo(`/patients/${patientId}`)}>Back to patient</button></div>
+    <div className="pmo-form-panel full-width-panel"><div className="page-actions page-actions-spaced"><button type="button" disabled={submitting} className="secondary-button outline" onClick={() => navigateTo(`/patients/${patientId}?view=clinical`)}>Back to patient</button></div>
       {patient ? <p className="patient-summary-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
       <form noValidate onSubmit={(event) => void submit(event)}>
         <DestinationServerField id="device-destination" servers={savedServers} value={destination} disabled={submitting || Boolean(progress.current.patient) || Boolean(progress.current.uncertain)} resourceDescription="Device and DeviceRequest" onChange={(value) => {

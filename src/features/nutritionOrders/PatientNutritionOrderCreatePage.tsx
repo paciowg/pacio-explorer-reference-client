@@ -59,8 +59,8 @@ export function PatientNutritionOrderCreatePage({ patientId }: { patientId: stri
       const input = nutritionFormInputs(form, data.options)
       await createPatientNutritionOrder({ ...input, patient, sourceBaseUrl: activeServer.baseUrl, destinationBaseUrl: destination, recordedAt: new Date().toISOString() }, progress.current)
       const label = savedServers.find((server) => server.baseUrl === destination)?.label || destination
-      setRouteNotification({ routeHref: getRouteHref(`/patients/${patientId}`), tone: 'success', message: `NutritionOrder created successfully on ${label}.` })
-      navigateTo(`/patients/${patientId}`)
+      setRouteNotification({ routeHref: getRouteHref(`/patients/${patientId}?view=clinical`), tone: 'success', message: `NutritionOrder created successfully on ${label}.` })
+      navigateTo(`/patients/${patientId}?view=clinical`)
     } catch (error) { setError(error instanceof Error ? error.message : 'Unable to create the nutrition order.') }
     finally { submittingRef.current = false; setSubmitting(false) }
   }
@@ -68,7 +68,7 @@ export function PatientNutritionOrderCreatePage({ patientId }: { patientId: stri
   if (!activeServer) return null
   const referenceLocked = Boolean(progress.current.patientCreated || progress.current.allergies || progress.current.createdAllergy)
   return <section className="panel"><div className="panel-header"><h2>Create Nutrition Order</h2><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <div className="pmo-form-panel full-width-panel"><div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={submitting} onClick={() => navigateTo(`/patients/${patientId}`)}>Back to patient</button></div>
+    <div className="pmo-form-panel full-width-panel"><div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={submitting} onClick={() => navigateTo(`/patients/${patientId}?view=clinical`)}>Back to patient</button></div>
       {patient ? <p className="patient-summary-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
       <form noValidate onSubmit={(event) => void submit(event)}>
         <DestinationServerField id="nutrition-destination" servers={savedServers} value={destination} disabled={submitting || referenceLocked || Boolean(progress.current.uncertain)} resourceDescription="NutritionOrder and, if needed, a no-known-food-allergy record" onChange={(destination) => {

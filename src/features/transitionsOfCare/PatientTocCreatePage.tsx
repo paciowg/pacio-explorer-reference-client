@@ -220,11 +220,11 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
         })),
       })
       setRouteNotification({
-        routeHref: getRouteHref(`/patients/${patientId}`),
+        routeHref: getRouteHref(`/patients/${patientId}?view=documents`),
         message: `Transition of Care document created successfully on ${destinationServer.label}.`,
         tone: 'success',
       })
-      navigateTo(`/patients/${patientId}`)
+      navigateTo(`/patients/${patientId}?view=documents`)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create the TOC document.')
     } finally {
@@ -248,7 +248,7 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
           <button
             type="button"
             className="secondary-button outline"
-            onClick={() => navigateTo(`/patients/${patientId}`)}
+            onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
           >
             Back to patient
           </button>

@@ -59,7 +59,7 @@ function App() {
       {route.name === 'patients' ? <PatientListPage /> : null}
       {route.name === 'fhirViewer' ? <FhirViewerPage baseUrl={route.baseUrl} resourceType={route.resourceType} resourceId={route.resourceId} /> : null}
       {route.name === 'patientDetail' ? (
-        <PatientSummaryPage patientId={route.patientId} />
+        <PatientSummaryPage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} view={route.view} />
       ) : null}
       {route.name === 'patientPmoCreate' ? (
         <PatientPmoCreatePage patientId={route.patientId} />

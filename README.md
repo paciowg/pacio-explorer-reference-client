@@ -23,6 +23,8 @@ From the patient summary, you can open either type of document:
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
+The patient display has three top navigation tabs: **Personal Information** (the default), **Clinical Information**, and **Documents**. The patient header remains visible across views, and switching tabs preserves loaded data and expanded entries. Documents retains separate Advance Directives and Transitions of Care sections, including empty states and creation actions. Each tab has a bookmarkable URL; document workflows return to Documents, while device and nutrition creation return to Clinical Information.
+
 Expand a clinical entry and choose **View FHIR JSON ↗** to open its current server resource in a new tab. The Patient link is visible below the patient name; document links are on their detail pages. The viewer displays indented, syntax-colored, selectable JSON. Device requests and usage records also show their associated Device, and document references show their same-server document Bundle when available. Each resource loads independently, so an unavailable associated resource leaves the primary resource visible. Viewer links retain their original source server; they fetch current data rather than a snapshot of the clinical display.
 
 ### Create a Transition of Care document
@@ -171,6 +173,8 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/fhir/:resourceType/:resourceId?server=:encodedBaseUrl` — read-only FHIR JSON viewer tied to its source server
 - `#/patients` — patient list
 - `#/patients/:id` — patient summary
+- `#/patients/:id?view=clinical` — patient clinical information
+- `#/patients/:id?view=documents` — patient documents
 - `#/patients/:id/pmo` — create an ADI portable medical order
 - `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
 - `#/patients/:id/transitions-of-care/new` — create a Transition of Care document

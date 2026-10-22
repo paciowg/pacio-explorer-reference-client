@@ -1,9 +1,11 @@
 /** Defines, parses, and generates the application's dependency-free hash routes. */
+export type PatientView = 'personal' | 'clinical' | 'documents'
+
 export type AppRoute =
   | { name: 'home' }
   | { name: 'fhirViewer'; baseUrl: string; resourceType: string; resourceId: string }
   | { name: 'patients' }
-  | { name: 'patientDetail'; patientId: string }
+  | { name: 'patientDetail'; patientId: string; view: PatientView }
   | { name: 'patientPmoCreate'; patientId: string }
   | { name: 'advanceDirectiveDetail'; patientId: string; documentReferenceId: string }
   | { name: 'patientTocCreate'; patientId: string }
@@ -82,7 +84,9 @@ export function parseHashRoute(hash: string): AppRoute {
   }
 
   if (segments.length === 2 && segments[0] === 'patients') {
-    return { name: 'patientDetail', patientId: decodeURIComponent(segments[1]) }
+    const requestedView = new URLSearchParams(query).get('view')
+    const view = requestedView === 'clinical' || requestedView === 'documents' ? requestedView : 'personal'
+    return { name: 'patientDetail', patientId: decodeURIComponent(segments[1]), view }
   }
 
   return { name: 'home' }

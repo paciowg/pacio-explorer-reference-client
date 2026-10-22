@@ -299,11 +299,11 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
       })
 
       setRouteNotification({
-        routeHref: getRouteHref(`/patients/${patientId}`),
+        routeHref: getRouteHref(`/patients/${patientId}?view=documents`),
         message: `ADI PMO created successfully on ${destinationServer.label}.`,
         tone: 'success',
       })
-      navigateTo(`/patients/${patientId}`)
+      navigateTo(`/patients/${patientId}?view=documents`)
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Unable to create the ADI POLST PMO document.',
@@ -336,7 +336,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
           <button
             type="button"
             className="secondary-button outline"
-            onClick={() => navigateTo(`/patients/${patientId}`)}
+            onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
           >
             Back to patient
           </button>

@@ -101,7 +101,7 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
           <button
             type="button"
             className="secondary-button outline"
-            onClick={() => navigateTo(`/patients/${patientId}`)}
+            onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
           >
             Back to patient
           </button>
