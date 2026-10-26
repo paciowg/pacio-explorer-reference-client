@@ -87,9 +87,10 @@ export function parseHashRoute(hash: string): AppRoute {
   }
 
   if (
-    segments.length === 3 &&
+    segments.length === 4 &&
     segments[0] === 'patients' &&
-    segments[2] === 'pmo'
+    segments[2] === 'portable-medical-orders' &&
+    segments[3] === 'new'
   ) {
     return { name: 'patientPmoCreate', patientId: decodeURIComponent(segments[1]) }
   }

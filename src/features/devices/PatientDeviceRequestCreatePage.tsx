@@ -58,9 +58,11 @@ export function PatientDeviceRequestCreatePage({ patientId }: { patientId: strin
     finally { submittingRef.current = false; setSubmitting(false) }
   }
   if (!activeServer) return null
-  return <section className="panel"><div className="panel-header"><h2>Create Device Request</h2><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <div className="pmo-form-panel full-width-panel"><div className="page-actions page-actions-spaced"><button type="button" disabled={submitting} className="secondary-button outline" onClick={() => navigateTo(`/patients/${patientId}?view=clinical`)}>Back to patient</button></div>
-      {patient ? <p className="patient-summary-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
+  return <section className="panel"><div className="panel-header"><div>
+          <h2>Create Device Request</h2>
+          {patient ? <p className="create-patient-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
+        </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
+    <><div className="page-actions page-actions-spaced"><button type="button" disabled={submitting} className="secondary-button outline" onClick={() => navigateTo(`/patients/${patientId}?view=clinical`)}>Back to patient</button></div>
       <form noValidate onSubmit={(event) => void submit(event)}>
         <DestinationServerField id="device-destination" servers={savedServers} value={destination} disabled={submitting || Boolean(progress.current.patient) || Boolean(progress.current.uncertain)} resourceDescription="Device and DeviceRequest" onChange={(value) => {
           setDestination(value)
@@ -74,6 +76,6 @@ export function PatientDeviceRequestCreatePage({ patientId }: { patientId: strin
         {data ? <><DeviceRequestForm value={form} options={data.options} disabled={submitting || loading || Boolean(progress.current.uncertain)} deviceLocked={Boolean(progress.current.device)} onChange={setForm} />
           <button type="submit" className="primary-button toc-submit" disabled={submitting || loading || Boolean(progress.current.uncertain)}>{submitting ? 'Creating...' : progress.current.device ? 'Retry DeviceRequest creation' : 'Create Device Request'}</button></> : null}
       </form>
-    </div>
+    </>
   </section>
 }

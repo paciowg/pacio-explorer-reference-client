@@ -173,6 +173,11 @@
   color: #0f172a;
 }
 
+.create-patient-name {
+  margin: 0.5rem 0 0;
+  font-weight: 400;
+}
+
 .panel-server-details {
   display: grid;
   justify-items: end;

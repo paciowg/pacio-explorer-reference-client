@@ -110,8 +110,17 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
   }
 
   return <div className="panel smp-page">
+    <div className="panel-header">
+      <div>
+        <h2>{kind === 'list' ? 'Create Medication List' : 'Create SMP Collection'}</h2>
+        {data ? <p className="create-patient-name">{getDisplayNameFromHumanName(data.patient.name?.[0])}</p> : null}
+      </div>
+      <div className="panel-server-details">
+        <span className="panel-server-label">{activeServer?.label}</span>
+        <span className="panel-server-url">{activeServer?.baseUrl}</span>
+      </div>
+    </div>
     <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(`${path}?view=documents`)}>Back to patient</button></div>
-    <h2>{kind === 'list' ? 'Create medication list' : 'Create SMP collection'}</h2>
     <p>{kind === 'list' ? 'Save a reusable, point-in-time List on the active source server. Existing statements are not changed.' : 'Capture saved Lists and their supporting resources in a collection. Lists remain distinct; this does not reconcile medications.'}</p>
     {error ? <p className="error-banner" role="alert">{error}</p> : null}
     {!data ? <p role="status">{error ? 'Source choices unavailable.' : 'Loading source choices…'}</p> : <>

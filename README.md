@@ -67,6 +67,16 @@ Writes remain separate. If the order is rejected, any created Patient or Allergy
 
 ## Developer notes
 
+### Patient create-page conventions
+
+Before implementing or modifying a create page, inspect an existing create page and its shared styles. Start with [Device Request creation](src/features/devices/PatientDeviceRequestCreatePage.tsx), or [SMP creation](src/features/medicationProfiles/SmpCreatePage.tsx) for List/collection workflows, and [the shared CSS](src/App.css). Follow their layout and controls rather than introducing a separate page shell. These requirements also appear in [AGENTS.md](AGENTS.md) for coding agents.
+
+- Use `/patients/:id/<plural-type>/new` for creation routes, such as `portable-medical-orders/new`. Update both the parser and the links that open the page.
+- Use a single outer `panel`. Its top `panel-header` has a left column containing an `h2` titled `Create X`, followed by the loaded patient's name in `p.create-patient-name` (regular font weight). Use `getDisplayNameFromHumanName` to format the name.
+- The header's right column shows the active FHIR server's name and URL using `panel-server-details`, `panel-server-label`, and `panel-server-url`, without a `Source FHIR server` heading. This remains the source-server identity when a separate destination is selected. Retain the shared responsive behavior.
+- Below the header, place a `Back to patient` button in `page-actions page-actions-spaced`, styled with `secondary-button outline`. Return to `?view=clinical` for device/nutrition workflows or `?view=documents` for document/List/collection workflows. Do not repeat the patient name beneath this button.
+- Render the form within the outer panel without another bordered form container. Keep workflow-specific fields and review sections consistent with existing controls.
+
 ### SMP medication Lists and collections
 
 The patient **Documents** tab shows reusable medication Lists and published SMP collections in separate sections. Medication Lists expand inline using the same disclosure style as clinical entries; their members load on first expansion and remain available when the entry is reopened. Collections open their snapshot detail pages. **Create medication list** selects existing patient MedicationStatements with dated transfer controls and saves a point-in-time List on the active source server, then returns to Documents with a success notification. All patient-scoped statements remain selectable regardless of SMP compatibility issues, without conformance labels; unavailable medication-name lookups fall back to existing displays or resource IDs. List type, date, and practitioner/role source are explicit; an empty List requires an explicit reason. Existing statements are never modified or automatically assigned an SMP profile.
@@ -185,7 +195,7 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/patients/:id` — patient summary
 - `#/patients/:id?view=clinical` — patient clinical information
 - `#/patients/:id?view=documents` — patient documents
-- `#/patients/:id/pmo` — create an ADI portable medical order
+- `#/patients/:id/portable-medical-orders/new` — create an ADI portable medical order
 - `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
 - `#/patients/:id/transitions-of-care/new` — create a Transition of Care document
 - `#/patients/:id/transitions-of-care/:documentReferenceId` — Transition of Care detail

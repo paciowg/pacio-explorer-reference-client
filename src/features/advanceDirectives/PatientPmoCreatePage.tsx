@@ -322,16 +322,16 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
       <div className="panel-header">
         <div>
           <h2>Create ADI PMO</h2>
+          {patient ? <p className="create-patient-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
         </div>
 
         <div className="panel-server-details">
-          <span className="section-kicker">Source FHIR server</span>
           <span className="panel-server-label">{activeServer.label}</span>
           <span className="panel-server-url">{activeServer.baseUrl}</span>
         </div>
       </div>
 
-      <div className="pmo-form-panel full-width-panel">
+      <>
         <div className="page-actions page-actions-spaced">
           <button
             type="button"
@@ -519,7 +519,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
             </div>
           </form>
         ) : null}
-      </div>
+      </>
     </section>
   )
 }
