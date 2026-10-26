@@ -15,6 +15,8 @@ import { TocDetailPage } from './features/transitionsOfCare/TocDetailPage'
 import { PatientDeviceRequestCreatePage } from './features/devices/PatientDeviceRequestCreatePage'
 import { PatientNutritionOrderCreatePage } from './features/nutritionOrders/PatientNutritionOrderCreatePage'
 import { useSavedServers } from './features/servers/useSavedServers'
+import { SmpCreatePage } from './features/medicationProfiles/SmpCreatePage'
+import { SmpDetailPage } from './features/medicationProfiles/SmpDetailPage'
 import {
   clearRouteNotification,
   getRouteNotification,
@@ -57,6 +59,8 @@ function App() {
     <AppLayout notification={notification}>
       {route.name === 'home' ? <ServerConnectPage /> : null}
       {route.name === 'patients' ? <PatientListPage /> : null}
+      {route.name === 'smpListCreate' || route.name === 'smpCollectionCreate' ? <SmpCreatePage key={`${activeServer?.baseUrl}:${route.patientId}:${route.name}`} patientId={route.patientId} kind={route.name === 'smpListCreate' ? 'list' : 'collection'} /> : null}
+      {route.name === 'smpListDetail' || route.name === 'smpCollectionDetail' ? <SmpDetailPage key={`${activeServer?.baseUrl}:${route.patientId}:${route.resourceId}:${route.name}`} patientId={route.patientId} resourceId={route.resourceId} kind={route.name === 'smpListDetail' ? 'list' : 'collection'} /> : null}
       {route.name === 'fhirViewer' ? <FhirViewerPage baseUrl={route.baseUrl} resourceType={route.resourceType} resourceId={route.resourceId} /> : null}
       {route.name === 'patientDetail' ? (
         <PatientSummaryPage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} view={route.view} />

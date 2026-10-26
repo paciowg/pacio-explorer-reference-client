@@ -12,12 +12,23 @@ export type AppRoute =
   | { name: 'patientDeviceRequestCreate'; patientId: string }
   | { name: 'patientNutritionOrderCreate'; patientId: string }
   | { name: 'tocDetail'; patientId: string; documentReferenceId: string }
+  | { name: 'smpListCreate'; patientId: string }
+  | { name: 'smpListDetail'; patientId: string; resourceId: string }
+  | { name: 'smpCollectionCreate'; patientId: string }
+  | { name: 'smpCollectionDetail'; patientId: string; resourceId: string }
 
 export function parseHashRoute(hash: string): AppRoute {
   const raw = hash.replace(/^#/, '') || '/'
   const [pathname, query = ''] = raw.split('?')
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`
   const segments = normalizedPath.split('/').filter(Boolean)
+
+  if (segments.length === 4 && segments[0] === 'patients' && ['medication-lists', 'smp-collections'].includes(segments[2])) {
+    const patientId = decodeURIComponent(segments[1])
+    const list = segments[2] === 'medication-lists'
+    if (segments[3] === 'new') return { name: list ? 'smpListCreate' : 'smpCollectionCreate', patientId }
+    return { name: list ? 'smpListDetail' : 'smpCollectionDetail', patientId, resourceId: decodeURIComponent(segments[3]) }
+  }
 
   if (segments.length === 3 && segments[0] === 'fhir') {
     const baseUrl = new URLSearchParams(query).get('server') || ''

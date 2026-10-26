@@ -392,8 +392,19 @@
   transition: transform 150ms ease;
 }
 
-.clinical-entry-disclosure[open] .clinical-entry-chevron {
+.clinical-entry-disclosure[open] > summary > .clinical-entry-chevron {
   transform: rotate(90deg);
+}
+
+.smp-medication-members {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.smp-medication-members > .clinical-entry-disclosure > summary {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
 }
 
 .fhir-resource-details {
@@ -458,6 +469,38 @@
 }
 
 /* Shared forms and buttons */
+
+.smp-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.smp-page fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.smp-page textarea {
+  width: 100%;
+  min-height: 5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  font: inherit;
+}
+
+.smp-page summary {
+  cursor: pointer;
+  padding: 0.6rem 0;
+  overflow-wrap: anywhere;
+}
+
+.smp-page .summary-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 .field-group {
   display: grid;

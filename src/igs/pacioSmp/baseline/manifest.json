@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/HL7/smp-ig",
+  "commit": "21d84d654dc2f9e835a87049b5116bc4f55f2415",
+  "sourceDate": "2026-10-02T14:40:38-04:00",
+  "package": "hl7.fhir.us.smp",
+  "version": "1.0.0",
+  "packageDate": "20261002184059",
+  "dependencies": {
+    "hl7.fhir.r4.core": "4.0.1",
+    "hl7.terminology.r4": "7.4.0",
+    "hl7.fhir.uv.extensions.r4": "5.3.0",
+    "hl7.fhir.us.core": "8.0.1",
+    "hl7.fhir.us.core.v700": "7.0.0",
+    "hl7.fhir.us.core.v610": "6.1.0",
+    "hl7.fhir.us.core.v311": "3.1.1",
+    "hl7.fhir.uv.xver-r5.r4": "0.1.0",
+    "us.nlm.vsac": "0.24.0"
+  },
+  "sha256": {
+    "StructureDefinition-smp-bundle.json": "b9f80b20d7b9afa6b9d93b4480ae7c437fea56224794eee9434e61c5450b048e",
+    "StructureDefinition-smp-bundle-documentreference.json": "09130c471d56e3c207265b2b5ac14f0ca028b6dbfe4dc7c50104c992a2ca32b8",
+    "StructureDefinition-smp-medication-list.json": "841e328d4c65bf50af331ee8c5b6a381f8a3df2ac2992597c3ab99fb2b6b0fd3",
+    "StructureDefinition-smp-medicationstatement.json": "9da0ce3ba93163e0b968e8f2e7997b910b9950603c90d9d16e4f52d32751661a",
+    "StructureDefinition-smp-medication.json": "b6fc441eb912d71ceef3e3851265bab4017efaa5eef136448d6b75b518bcf3f2",
+    "ValueSet-2.16.840.1.113762.1.4.1096.240.json": "efa929229ab4390b2261a46ff9ea7c474df6079746d08b63fdf9e7ea0e36bd3e"
+  }
+}

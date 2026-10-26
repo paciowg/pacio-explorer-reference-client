@@ -5,11 +5,11 @@ import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
 import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { DevicesSection } from '../devices/DevicesSection'
 import { NutritionOrdersSection } from '../nutritionOrders/NutritionOrdersSection'
-import { SelectableClinicalSummarySection } from '../../components/SelectableClinicalSummarySection'
 import { fetchPatient, fetchPatientEverything } from '../../lib/fhir/client'
 import { getRouteHref, navigateTo, type PatientView } from '../../lib/routing/routes'
 import { useSavedServers } from '../servers/useSavedServers'
 import { buildPatientSummaryModel, type PatientSummaryModel } from './patientSummaryModel'
+import { PatientDocumentsView } from './PatientDocumentsView'
 
 type PatientSummaryPageProps = {
   patientId: string
@@ -318,46 +318,7 @@ export function PatientSummaryPage({ patientId, view }: PatientSummaryPageProps)
             </div>
 
             <div className="summary-grid" hidden={view !== 'documents'}>
-              <SelectableClinicalSummarySection
-                title="Advance Directives"
-                items={summary.advanceDirectives}
-                emptyMessage={summary.clinicalSectionEmptyMessage}
-                onSelect={(item) =>
-                  navigateTo(
-                    `/patients/${patientId}/advance-directives/${item.id}`,
-                  )
-                }
-                footer={
-                  <div className="clinical-section-footer">
-                    <button
-                      type="button"
-                      className="secondary-button outline compact"
-                      onClick={() => navigateTo(`/patients/${patientId}/pmo`)}
-                    >
-                      Create ADI PMO
-                    </button>
-                  </div>
-                }
-              />
-              <SelectableClinicalSummarySection
-                title="Transitions of Care"
-                items={summary.transitionOfCares}
-                emptyMessage={summary.clinicalSectionEmptyMessage}
-                onSelect={(item) =>
-                  navigateTo(`/patients/${patientId}/transitions-of-care/${item.id}`)
-                }
-                footer={
-                  <div className="clinical-section-footer">
-                    <button
-                      type="button"
-                      className="secondary-button outline compact"
-                      onClick={() => navigateTo(`/patients/${patientId}/transitions-of-care/new`)}
-                    >
-                      Create TOC document
-                    </button>
-                  </div>
-                }
-              />
+              <PatientDocumentsView summary={summary} baseUrl={activeServer.baseUrl} patientId={patientId} />
             </div>
           </>
         ) : null}

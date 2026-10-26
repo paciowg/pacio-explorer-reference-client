@@ -23,7 +23,7 @@ From the patient summary, you can open either type of document:
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
-The patient display has three top navigation tabs: **Personal Information** (the default), **Clinical Information**, and **Documents**. The patient header remains visible across views, and switching tabs preserves loaded data and expanded entries. Documents retains separate Advance Directives and Transitions of Care sections, including empty states and creation actions. Each tab has a bookmarkable URL; document workflows return to Documents, while device and nutrition creation return to Clinical Information.
+The patient display has three top navigation tabs: **Personal Information** (the default), **Clinical Information**, and **Documents**. The patient header remains visible across views, and switching tabs preserves loaded data and expanded entries. Documents shows four sections in order: TOC Documents, Advance Directives, SMP Medication Lists, and SMP Collections, each with empty states and creation actions. Each tab has a bookmarkable URL; document workflows return to Documents, while device and nutrition creation return to Clinical Information.
 
 Expand a clinical entry and choose **View FHIR JSON ↗** to open its current server resource in a new tab. The Patient link is visible below the patient name; document links are on their detail pages. The viewer displays indented, syntax-colored, selectable JSON. Device requests and usage records also show their associated Device, and document references show their same-server document Bundle when available. Each resource loads independently, so an unavailable associated resource leaves the primary resource visible. Viewer links retain their original source server; they fetch current data rather than a snapshot of the clinical display.
 
@@ -66,6 +66,16 @@ The allergy choice is explicit: select existing patient AllergyIntolerance recor
 Writes remain separate. If the order is rejected, any created Patient or AllergyIntolerance remains on the destination and is reused for retry within that form session. An uncertain write outcome blocks automatic retry pending destination verification. Creation does not edit existing orders or fulfill them; IV nutrition and vitamin/mineral prescribing are outside this workflow.
 
 ## Developer notes
+
+### SMP medication Lists and collections
+
+The patient **Documents** tab shows reusable medication Lists and published SMP collections in separate sections. Medication Lists expand inline using the same disclosure style as clinical entries; their members load on first expansion and remain available when the entry is reopened. Collections open their snapshot detail pages. **Create medication list** selects existing patient MedicationStatements with dated transfer controls and saves a point-in-time List on the active source server, then returns to Documents with a success notification. All patient-scoped statements remain selectable regardless of SMP compatibility issues, without conformance labels; unavailable medication-name lookups fall back to existing displays or resource IDs. List type, date, and practitioner/role source are explicit; an empty List requires an explicit reason. Existing statements are never modified or automatically assigned an SMP profile.
+
+**Create SMP collection** selects one or more saved Lists, captures their statements and supporting resources, and reviews the snapshot before publishing to any saved server. Statement profile compatibility is not a publication gate; correct member resource types, patient identity, and reference resolution remain required. Shared statements are included once while retaining membership in each List. Source-local absolute and historical references are resolved and rewritten to internal UUID references; unresolved/external references and conflicting versions stop publication. The destination receives a collection Bundle and an SMP DocumentReference, plus a copied Patient only when needed. Embedded Lists and medications are not independently created there.
+
+Destination identifier matching must be unique. A name-only match requires explicit selection. A rejected index can be retried against its retained Bundle; an uncertain write requires destination verification before another submission. Retry state lasts only for the current form session. Collection details render the captured resources rather than current live resources. Existing Current Medications, ADI, and TOC behavior remains unchanged.
+
+The implementation targets the October 2, 2026 SMP development revision, including its official DocumentReference profile and LOINC `70006-2`. See the [SMP implementation notes](src/igs/pacioSmp/README.md) for the pinned artifacts, indexing convention, resource limits, and external validation handoff. New statement/adherence and MedicationRequest authoring remain deferred.
 
 ### Run and verify the application locally
 

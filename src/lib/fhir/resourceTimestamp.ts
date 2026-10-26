@@ -1,11 +1,18 @@
 /** Derives dated selection metadata from resource-specific clinical fields, falling back to explicitly labelled server updates. */
-import type { ClaimResponse, Condition, Coverage, DeviceRequest, DeviceUseStatement, DiagnosticReport, DocumentReference, Goal, Observation, Resource } from 'fhir/r4'
+import type { ClaimResponse, Condition, Coverage, DeviceRequest, DeviceUseStatement, DiagnosticReport, DocumentReference, Goal, List, MedicationStatement, Observation, Resource } from 'fhir/r4'
 
 export type ResourceTimestamp = { dateValue?: string; dateLabel?: string }
 
 export function getResourceTimestamp(resource: Resource): ResourceTimestamp {
   let candidates: ResourceTimestamp[] = []
   switch (resource.resourceType) {
+    case 'List': candidates = [{ dateValue: (resource as List).date, dateLabel: 'List date' }]; break
+    case 'MedicationStatement': {
+      const statement = resource as MedicationStatement
+      candidates = [{ dateValue: statement.dateAsserted, dateLabel: 'Asserted' }, { dateValue: statement.effectiveDateTime, dateLabel: 'Effective' },
+        { dateValue: statement.effectivePeriod?.start, dateLabel: 'Effective start' }]
+      break
+    }
     case 'Observation': {
       const observation = resource as Observation
       candidates = [{ dateValue: observation.effectiveDateTime, dateLabel: 'Effective' },
