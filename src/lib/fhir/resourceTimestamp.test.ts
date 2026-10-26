@@ -14,6 +14,9 @@ describe('resource selection timestamps', () => {
     [{ resourceType: 'Condition' as const, recordedDate: '2026-10-06', onsetDateTime: '2026-09-01' }, '2026-10-06', 'Recorded'],
     [{ resourceType: 'DiagnosticReport' as const, effectivePeriod: { start: '2026-10-05' }, issued: '2026-10-06' }, '2026-10-05', 'Effective'],
     [{ resourceType: 'DocumentReference' as const, date: '2026-10-04T11:00:00Z' }, '2026-10-04T11:00:00Z', 'Document date'],
+    [{ resourceType: 'List' as const, date: '2026-10-23' }, '2026-10-23', 'List date'],
+    [{ resourceType: 'MedicationStatement' as const, dateAsserted: '2026-10-23', effectiveDateTime: '2026-10-01' }, '2026-10-23', 'Asserted'],
+    [{ resourceType: 'MedicationStatement' as const, effectivePeriod: { start: '2026-10' } }, '2026-10', 'Effective start'],
   ])('uses the primary date for resource %#', (resource, dateValue, dateLabel) => {
     expect(getResourceTimestamp({ ...resource, meta: { lastUpdated: '2026-10-15T00:00:00Z' } })).toEqual({ dateValue, dateLabel })
   })

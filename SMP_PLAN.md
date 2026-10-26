@@ -3,6 +3,10 @@
 Status: planning only. This document authorizes no implementation or external writes.
 Prepared October 23, 2026, against the current repository implementation and the SMP sources linked below.
 
+Implementation notes (October 26, 2026): the user subsequently authorized implementation. The pinned October 2 source includes an official SMP Bundle DocumentReference profile missed during initial planning, so the implementation uses that profile, LOINC `70006-2`, and its inherited required US Core category instead of the application-only indexing proposal below. See `src/igs/pacioSmp/README.md` and the baseline manifest for the implemented contract. The user explicitly moved independent FHIR/profile validation to a post-implementation step using separate tooling; repository tests, build, and lint remain implementation checks. This supersedes the requirement to finish external validation before implementation delivery. Live test-server writes remain unauthorized.
+
+Creation workflow update: subsequent user testing supersedes the statement-eligibility and post-save UI requirements below. All patient-scoped MedicationStatements are selectable without SMP compatibility exclusions or labels, and those compatibility issues do not block collection publication. Patient identity, member resource types, authored List field requirements, reference closure, version conflicts, and write recovery remain enforced. Medication label lookup is optional enrichment. Successful List saves return to Documents with a standard success notification; the saved-List action panel, manual source reload, excluded-resource panel, and resource-inspection dropdown are removed. Changed choices still refresh automatically before renewed submission.
+
 ## 1. Outcome and decisions
 
 Deliver two related workflows:
