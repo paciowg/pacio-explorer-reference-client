@@ -15,6 +15,38 @@ describe('buildClinicalSummary', () => {
     ['knownAllergies', 'AllergyIntolerance', 'lastOccurrence'],
     ['advanceDirectives', 'DocumentReference', 'date'],
     ['transitionOfCares', 'DocumentReference', 'date'],
+  ] as const)('uses update timestamps before limiting %s with matching clinical dates', (section, resourceType, dateField) => {
+    const resources = Array.from({ length: 12 }, (_, i) => ({
+      resourceType, id: String(i), [dateField]: '2026-10-01', status: 'active',
+      meta: { lastUpdated: `2026-10-02T${String(i).padStart(2, '0')}:00:00Z` },
+      ...(resourceType === 'DocumentReference' ? { category: [{ coding: [{ code: '42348-3' }] }], type: { coding: [{ code: '18761-7' }] }, content: [] } : {}),
+    }))
+    const bundle = { resourceType: 'Bundle', type: 'collection', entry: resources.map((resource) => ({ resource })) } as unknown as Bundle
+    expect(buildClinicalSummary(bundle)[section].map((item) => item.resource?.id)).toEqual(['11', '10', '9', '8', '7', '6', '5', '4', '3', '2'])
+    expect(bundle.entry?.[0].resource?.id).toBe('0')
+  })
+
+  it('breaks vital-reading selection and display ties by update time, skipping unusable readings', () => {
+    const readings = [
+      { id: 'heart-old', code: '8867-4', updated: '10', usable: true },
+      { id: 'heart-new', code: '8867-4', updated: '11', usable: true },
+      { id: 'heart-unusable', code: '8867-4', updated: '13', usable: false },
+      { id: 'respiratory', code: '9279-1', updated: '12', usable: true },
+    ]
+    const bundle = { resourceType: 'Bundle', type: 'collection', entry: readings.map((reading) => ({ resource: {
+      resourceType: 'Observation', id: reading.id, status: 'final', code: { coding: [{ code: reading.code }] },
+      effectiveDateTime: '2026-10-01', meta: { lastUpdated: `2026-10-02T${reading.updated}:00:00Z` },
+      ...(reading.usable ? { valueQuantity: { value: 1 } } : {}),
+    } })) } as unknown as Bundle
+    expect(buildClinicalSummary(bundle).mostRecentVitals.map((item) => item.resource?.id)).toEqual(['respiratory', 'heart-new'])
+  })
+
+  it.each([
+    ['activeProblems', 'Condition', 'onsetDateTime'],
+    ['currentMedications', 'MedicationStatement', 'dateAsserted'],
+    ['knownAllergies', 'AllergyIntolerance', 'lastOccurrence'],
+    ['advanceDirectives', 'DocumentReference', 'date'],
+    ['transitionOfCares', 'DocumentReference', 'date'],
   ] as const)('orders %s by raw dates with stable ties and undated entries last', (section, resourceType, dateField) => {
     const dates = ['2026-01-01', undefined, 'invalid', '2026-10-14T09:00:00-04:00', '2026-10-14T13:00:00Z']
     const b = { resourceType: 'Bundle', type: 'collection', entry: dates.map((date, index) => ({ resource: {

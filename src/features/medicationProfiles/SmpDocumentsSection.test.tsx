@@ -10,6 +10,20 @@ const baseUrl = 'https://source.test/fhir'
 const data = { lists: [list], indexes: [index], listError: '', indexError: '' }
 
 describe('SMP Documents sections', () => {
+  it('uses update timestamps to break clinical-date ties before limiting both sections', () => {
+    const records = Array.from({ length: 11 }, (_, i) => ({
+      id: String(i), meta: { lastUpdated: `2026-10-24T${String(i).padStart(2, '0')}:00:00Z` },
+    }))
+    const html = renderToStaticMarkup(<SmpDocumentsContent baseUrl={baseUrl} patientId="p" data={{ ...data,
+      lists: records.map((record) => ({ ...list, ...record, title: `List entry ${record.id}!` })),
+      indexes: records.map((record) => ({ ...index, ...record, description: `Collection entry ${record.id}!` })),
+    }} />)
+    for (const prefix of ['List', 'Collection']) {
+      expect(html.indexOf(`${prefix} entry 10!`)).toBeLessThan(html.indexOf(`${prefix} entry 9!`))
+      expect(html).not.toContain(`${prefix} entry 0!`)
+    }
+  })
+
   it('uses a collapsed clinical disclosure for Lists instead of a link to their standalone page', () => {
     const html = renderToStaticMarkup(<SmpDocumentsContent baseUrl={baseUrl} patientId="p" data={data} />)
     expect(html.match(/<section class="summary-card clinical-summary-card">/g)).toHaveLength(2)

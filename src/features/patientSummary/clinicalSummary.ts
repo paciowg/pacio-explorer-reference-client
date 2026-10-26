@@ -20,7 +20,7 @@ import {
 import { buildResourceDetailModel, type ResolveResourceReference } from '../../lib/fhir/resourceDetails'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 import { getTocDocuments } from '../transitionsOfCare/tocModel'
-import { compareDatesDesc } from '../../lib/dateTime'
+import { compareClinicalDatesDesc } from '../../lib/dateTime'
 
 // This reference client intentionally recognizes a small explicit LOINC subset rather than
 // attempting terminology expansion in the browser.
@@ -88,9 +88,11 @@ function getActiveProblems(bundle: Bundle | null, resolve?: ResolveResourceRefer
       return !status || ['active', 'recurrence', 'relapse'].includes(status)
     })
     .sort((a, b) =>
-      compareDatesDesc(
+      compareClinicalDatesDesc(
         a.onsetDateTime || a.recordedDate,
         b.onsetDateTime || b.recordedDate,
+        a.meta?.lastUpdated,
+        b.meta?.lastUpdated,
       ),
     )
     .map((condition) => {
@@ -112,9 +114,11 @@ function getCurrentMedications(bundle: Bundle | null, resolve?: ResolveResourceR
       return !status || ['active', 'completed', 'intended', 'on-hold'].includes(status)
     })
     .sort((a, b) =>
-      compareDatesDesc(
+      compareClinicalDatesDesc(
         a.dateAsserted || a.effectiveDateTime || a.effectivePeriod?.start,
         b.dateAsserted || b.effectiveDateTime || b.effectivePeriod?.start,
+        a.meta?.lastUpdated,
+        b.meta?.lastUpdated,
       ),
     )
     .map((statement) => {
@@ -136,9 +140,11 @@ function getKnownAllergies(bundle: Bundle | null, resolve?: ResolveResourceRefer
   return getBundleResources<AllergyIntolerance>(bundle, 'AllergyIntolerance')
     .filter((allergy) => allergy.verificationStatus?.coding?.[0]?.code !== 'entered-in-error')
     .sort((a, b) =>
-      compareDatesDesc(
+      compareClinicalDatesDesc(
         a.lastOccurrence || a.recordedDate,
         b.lastOccurrence || b.recordedDate,
+        a.meta?.lastUpdated,
+        b.meta?.lastUpdated,
       ),
     )
     .map((allergy) => {
@@ -214,7 +220,7 @@ function getAdvanceDirectives(bundle: Bundle | null): SelectableClinicalListItem
         hasCoding(category.coding, ADVANCE_DIRECTIVE_CATEGORY_CODES),
       ),
     )
-    .sort((a, b) => compareDatesDesc(a.date, b.date))
+    .sort((a, b) => compareClinicalDatesDesc(a.date, b.date, a.meta?.lastUpdated, b.meta?.lastUpdated))
     .map((documentReference) => ({
       id: documentReference.id!,
       resource: documentReference,
@@ -309,7 +315,7 @@ function getObservationDate(observation: Observation) {
 }
 
 function sortByObservationDateDesc(a: Observation, b: Observation) {
-  return compareDatesDesc(getObservationDate(a), getObservationDate(b))
+  return compareClinicalDatesDesc(getObservationDate(a), getObservationDate(b), a.meta?.lastUpdated, b.meta?.lastUpdated)
 }
 
 function capitalize(value: string) {

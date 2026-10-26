@@ -1,6 +1,6 @@
 /** Verifies calendar precision and local timestamp displays under externally selected timezone environments. */
 import { describe, expect, it, vi } from 'vitest'
-import { calendarDateValue, formatLocalTimestamp, localDateInputValue } from './dateTime'
+import { calendarDateValue, compareClinicalDatesDesc, formatLocalTimestamp, localDateInputValue } from './dateTime'
 import { initialDeviceForm } from '../features/devices/deviceFormModel'
 import { initialNutritionForm } from '../features/nutritionOrders/nutritionFormModel'
 
@@ -11,6 +11,22 @@ const cases: Record<string, { date: string; day: number; hour: number }> = {
   'Asia/Calcutta': { date: '2026-10-13', day: 13, hour: 6 },
   'Asia/Kolkata': { date: '2026-10-13', day: 13, hour: 6 },
 }
+
+describe('clinical date ordering', () => {
+  it.each([
+    ['2026-10-01', '2026-10-02', '2026-12-01T00:00:00Z', undefined, 1],
+    ['2026-10-01', '2026-10-01', '2026-10-02T11:00:00Z', '2026-10-02T10:00:00Z', -1],
+    ['2026-10-01', '2026-10-01', '2026-10-02T11:00:00Z', undefined, -1],
+    ['2026-10-01', '2026-10-01', 'invalid', '2026-10-02T10:00:00Z', 1],
+    ['2026-10-01', '2026-10-01', undefined, 'invalid', 0],
+    ['2026-10-01T09:00:00-04:00', '2026-10-01T13:00:00Z', '2026-10-02T10:00:00Z', '2026-10-02T10:00:00Z', 0],
+    [undefined, 'invalid', '2026-10-02T11:00:00Z', '2026-10-02T10:00:00Z', 0],
+    [undefined, '2026-10-01', '2026-12-01T00:00:00Z', undefined, 1],
+  ] as const)('compares %s and %s with update timestamps %s and %s', (a, b, aUpdated, bUpdated, expected) => {
+    expect(Math.sign(compareClinicalDatesDesc(a, b, aUpdated, bUpdated))).toBe(expected)
+    expect(Math.sign(compareClinicalDatesDesc(b, a, bUpdated, aUpdated)) || 0).toBe(-expected || 0)
+  })
+})
 
 describe('local date and time handling', () => {
   it.skipIf(!cases[zone])('uses the local calendar date for defaults at UTC date boundaries', () => {

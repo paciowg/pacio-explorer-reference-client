@@ -11,6 +11,16 @@ const use: DeviceUseStatement = { resourceType: 'DeviceUseStatement', id: 'use',
 const bundle = (...resources: Array<Device | DeviceRequest | DeviceUseStatement>): Bundle => ({ resourceType: 'Bundle', type: 'collection', entry: resources.map((resource) => ({ resource })) })
 
 describe('patient devices', () => {
+  it('breaks event-date ties using event metadata rather than the associated Device', () => {
+    const b = bundle(
+      { ...device, meta: { lastUpdated: '2026-12-31T00:00:00Z' } },
+      { ...request, id: 'older', authoredOn: '2026-10-01', meta: { lastUpdated: '2026-10-02T10:00:00Z' } },
+      { ...use, id: 'newer', recordedOn: '2026-10-01', meta: { lastUpdated: '2026-10-02T11:00:00Z' } },
+      { ...device, id: 'undated', meta: { lastUpdated: '2026-12-31T00:00:00Z' } },
+    )
+    expect(getPatientDevices(b, 'p', base).map((entry) => entry.resource.id)).toEqual(['newer', 'older', 'undated'])
+  })
+
   it('orders dated requests and usage together, keeping ties stable and undated Devices last', () => {
     const b = bundle(
       { ...request, id: 'old', authoredOn: '2026-01-01' },
