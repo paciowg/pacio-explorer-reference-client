@@ -20,7 +20,7 @@ export function PatientDocumentsView({ summary, baseUrl, patientId }: { summary:
       items={summary.advanceDirectives}
       emptyMessage={summary.clinicalSectionEmptyMessage}
       onSelect={(item) => navigateTo(`/patients/${patientId}/advance-directives/${item.id}`)}
-      footer={<div className="clinical-section-footer"><button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${patientId}/pmo`)}>Create ADI PMO</button></div>}
+      footer={<div className="clinical-section-footer"><button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${patientId}/portable-medical-orders/new`)}>Create ADI PMO</button></div>}
     />
     <SmpDocumentsSection baseUrl={baseUrl} patientId={patientId} />
   </>

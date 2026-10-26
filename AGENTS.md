@@ -1,5 +1,14 @@
 # Repository instructions
 
+## Patient create pages
+
+- Before adding or changing a create page, inspect an existing create page and its shared styles, then align with that implementation. Use `src/features/devices/PatientDeviceRequestCreatePage.tsx` for the standard layout and `src/features/medicationProfiles/SmpCreatePage.tsx` for List/collection workflows; consult `src/App.css` for the shared classes. Do not design a separate page shell.
+- Creation routes end in the plural type followed by `/new`: `/patients/:id/<plural-type>/new`, for example `device-requests/new`, `nutrition-orders/new`, `portable-medical-orders/new`, `transitions-of-care/new`, `medication-lists/new`, and `smp-collections/new`. Keep route parsing and navigation links consistent.
+- Use one outer `panel` with a `panel-header` at the top. In the header's left column, show an `h2` reading `Create X`, then the patient name in a `p.create-patient-name` with regular font weight. Format the loaded patient's name with `getDisplayNameFromHumanName`; do not repeat it beneath the back button.
+- In the header's right column, use `panel-server-details`, `panel-server-label`, and `panel-server-url` to show the active FHIR server's name and URL. Do not add a `Source FHIR server` heading. This identifies the active source server even when the form offers a different destination. Preserve the shared responsive layout.
+- Place a `Back to patient` button below the header using `page-actions page-actions-spaced` and `secondary-button outline`. Return to the relevant patient tab: `?view=clinical` for device/nutrition workflows and `?view=documents` for document/List/collection workflows.
+- Place the form content directly in the outer panel, without a second bordered container such as `pmo-form-panel`. Keep workflow-specific fields and review sections consistent with existing form controls.
+
 ## Dates and times
 
 - Prefer date-only inputs wherever the underlying FHIR datatype and applicable profile permit date-only precision. Retain time entry when those constraints require it.

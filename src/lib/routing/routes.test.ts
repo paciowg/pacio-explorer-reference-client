@@ -31,6 +31,9 @@ describe('parseHashRoute', () => {
   it('parses nutrition-order creation routes', () => {
     expect(parseHashRoute('#/patients/patient%201/nutrition-orders/new')).toEqual({ name: 'patientNutritionOrderCreate', patientId: 'patient 1' })
   })
+  it('parses portable-medical-order creation routes', () => {
+    expect(parseHashRoute('#/patients/patient%201/portable-medical-orders/new')).toEqual({ name: 'patientPmoCreate', patientId: 'patient 1' })
+  })
   it('parses patient device-request creation routes', () => {
     expect(parseHashRoute('#/patients/patient%201/device-requests/new')).toEqual({ name: 'patientDeviceRequestCreate', patientId: 'patient 1' })
   })
