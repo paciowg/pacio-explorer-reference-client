@@ -6,7 +6,7 @@ import { formatDate, getCodeableConceptText } from '../../lib/fhir/formatters'
 import { buildResourceDetailModel, type ResourceDetailModel, type ResolveResourceReference } from '../../lib/fhir/resourceDetails'
 import { getSimpleResourceDisplay } from '../../lib/fhir/resourceDisplay'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
-import { compareDatesDesc } from '../../lib/dateTime'
+import { compareClinicalDatesDesc } from '../../lib/dateTime'
 
 export type DeviceRecord = Device | DeviceRequest | DeviceUseStatement
 export type DeviceEntry = {
@@ -56,7 +56,7 @@ export function getPatientDevices(bundle: Bundle | null, patientId: string, base
     const date = deviceDate(resource)
     return [{ key, resource, title: device ? getSimpleResourceDisplay(device) : getSimpleResourceDisplay(resource), deviceReference: ref?.reference, device, resolve,
       dateValue: date ? formatDate(date) : undefined }]
-  }).sort((a, b) => compareDatesDesc(deviceDate(a.resource), deviceDate(b.resource)))
+  }).sort((a, b) => compareClinicalDatesDesc(deviceDate(a.resource), deviceDate(b.resource), a.resource.meta?.lastUpdated, b.resource.meta?.lastUpdated))
 }
 
 export function deviceEntryDetails(entry: DeviceEntry, device = entry.device): ResourceDetailModel {

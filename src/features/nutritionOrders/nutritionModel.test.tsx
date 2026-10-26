@@ -13,6 +13,15 @@ const order: NutritionOrder = { resourceType: 'NutritionOrder', id: 'order', sta
   enteralFormula: { baseFormulaType: { text: 'Formula' }, administration: [{ rateRatio: { numerator: { value: 200, unit: 'mL' }, denominator: { value: 4, unit: 'h' } } }] } }
 
 describe('nutrition order viewing', () => {
+  it('orders matching clinical dates by update time without changing the displayed date', () => {
+    const b: Bundle = { resourceType: 'Bundle', type: 'collection', entry: ['10', '11'].map((hour) => ({ resource: {
+      ...order, id: hour, meta: { lastUpdated: `2026-10-09T${hour}:00:00Z` },
+    } })) }
+    const items = getPatientNutritionOrders(b, 'p', 'https://example.test')
+    expect(items.map((item) => item.resource?.id)).toEqual(['11', '10'])
+    expect(items.map((item) => item.dateValue)).toEqual(['2026-10-08', '2026-10-08'])
+  })
+
   it('orders valid dates newest first, retaining ties and placing invalid dates after pre-1970 orders', () => {
     const dates = ['1960-01-01', '', 'not-a-date', '2026-10-14T13:00:00Z', '2026-10-14T09:00:00-04:00']
     const b: Bundle = { resourceType: 'Bundle', type: 'collection', entry: dates.map((dateTime, index) => ({ resource: { ...order, id: String(index), dateTime } })) }

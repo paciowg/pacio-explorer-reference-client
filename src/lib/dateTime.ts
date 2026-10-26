@@ -9,6 +9,18 @@ export function compareDatesDesc(a: string | undefined, b: string | undefined) {
   return 0
 }
 
+/** Breaks clinical-date ties by update time while preserving the order of undated entries. */
+export function compareClinicalDatesDesc(
+  a: string | undefined,
+  b: string | undefined,
+  aLastUpdated: string | undefined,
+  bLastUpdated: string | undefined,
+) {
+  const clinicalOrder = compareDatesDesc(a, b)
+  if (clinicalOrder || !Number.isFinite(Date.parse(a || ''))) return clinicalOrder
+  return compareDatesDesc(aLastUpdated, bLastUpdated)
+}
+
 export function localDateInputValue(date = new Date()) {
   return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
