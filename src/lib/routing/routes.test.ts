@@ -23,10 +23,14 @@ describe('parseHashRoute', () => {
       name: 'patientDetail', patientId: 'patient 1', view,
     })
   })
-  it('rejects raw-resource routes without a usable source server', () => {
-    expect(parseHashRoute('#/fhir/Patient/p')).toEqual({ name: 'home' })
-    expect(parseHashRoute('#/fhir/Patient/p?server=javascript%3Aalert(1)')).toEqual({ name: 'home' })
-    expect(parseHashRoute('#/fhir/Patient/%XX?server=https%3A%2F%2Fexample.test')).toEqual({ name: 'home' })
+  it('parses raw-resource routes without a server and ignores legacy server parameters', () => {
+    const expected = { name: 'fhirViewer', resourceType: 'Patient', resourceId: 'p' }
+    expect(parseHashRoute('#/fhir/Patient/p')).toEqual(expected)
+    expect(parseHashRoute('#/fhir/Patient/p?server=https%3A%2F%2Fother.test')).toEqual(expected)
+  })
+  it('decodes resource identifiers and rejects malformed encoding', () => {
+    expect(parseHashRoute('#/fhir/Patient/p%201')).toEqual({ name: 'fhirViewer', resourceType: 'Patient', resourceId: 'p 1' })
+    expect(parseHashRoute('#/fhir/Patient/%XX')).toEqual({ name: 'home' })
   })
   it('parses nutrition-order creation routes', () => {
     expect(parseHashRoute('#/patients/patient%201/nutrition-orders/new')).toEqual({ name: 'patientNutritionOrderCreate', patientId: 'patient 1' })

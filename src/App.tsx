@@ -40,7 +40,7 @@ function App() {
       return
     }
 
-    if (!activeServer && route.name !== 'home' && route.name !== 'fhirViewer') {
+    if (!activeServer && route.name !== 'home') {
       navigateTo('/')
     }
   }, [activeServer, route])
@@ -61,7 +61,7 @@ function App() {
       {route.name === 'patients' ? <PatientListPage /> : null}
       {route.name === 'smpListCreate' || route.name === 'smpCollectionCreate' ? <SmpCreatePage key={`${activeServer?.baseUrl}:${route.patientId}:${route.name}`} patientId={route.patientId} kind={route.name === 'smpListCreate' ? 'list' : 'collection'} /> : null}
       {route.name === 'smpListDetail' || route.name === 'smpCollectionDetail' ? <SmpDetailPage key={`${activeServer?.baseUrl}:${route.patientId}:${route.resourceId}:${route.name}`} patientId={route.patientId} resourceId={route.resourceId} kind={route.name === 'smpListDetail' ? 'list' : 'collection'} /> : null}
-      {route.name === 'fhirViewer' ? <FhirViewerPage baseUrl={route.baseUrl} resourceType={route.resourceType} resourceId={route.resourceId} /> : null}
+      {route.name === 'fhirViewer' && activeServer ? <FhirViewerPage baseUrl={activeServer.baseUrl} resourceType={route.resourceType} resourceId={route.resourceId} /> : null}
       {route.name === 'patientDetail' ? (
         <PatientSummaryPage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} view={route.view} />
       ) : null}

@@ -1,4 +1,4 @@
-/** Reads current FHIR resources from the link's source server, isolating failures for associated resources. */
+/** Reads current FHIR resources from the active server supplied by the app, isolating failures for associated resources. */
 import { useEffect, useState } from 'react'
 import type { Resource } from 'fhir/r4'
 import { FhirJson } from '../../components/FhirJson'
