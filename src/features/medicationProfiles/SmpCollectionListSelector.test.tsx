@@ -23,6 +23,7 @@ describe('collection list selection', () => {
     expect(html).toContain('Last updated')
     expect(html).toContain('0 medications')
     expect(html.indexOf('type="checkbox"')).toBeLessThan(html.indexOf('<details'))
+    expect(html.indexOf('</label>')).toBeLessThan(html.indexOf('<details'))
     expect(html).not.toContain('transfer-list')
     expect(html).not.toContain('Loading medication List details')
   })
