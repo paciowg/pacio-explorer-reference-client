@@ -14,19 +14,18 @@ const capability = { resourceType: 'CapabilityStatement', fhirVersion: '4.0.1' }
 afterEach(() => vi.unstubAllGlobals())
 
 describe('SMP patient matching', () => {
-  it('uses unique identifier matches and never writes during review', async () => {
+  it('uses identifier matches and never writes during matching', async () => {
     const fetch = vi.fn(async (url: string, _options?: RequestInit) => response(url.endsWith('/metadata') ? capability : { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: { ...patient, id: 'd' } }] }))
     vi.stubGlobal('fetch', fetch)
     expect((await matchSmpPatient(source, destination, patient)).patient?.id).toBe('d')
     expect(fetch.mock.calls.every(([, options]) => !options?.method || options.method === 'GET')).toBe(true)
   })
-  it('requires explicit name selection, blocks ambiguity, and propagates failed searches', async () => {
+  it('automatically uses the first name or identifier match and propagates failed searches', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response(url.endsWith('/metadata') ? capability : { resourceType: 'Bundle', type: 'searchset', entry: url.includes('identifier=') ? [] : [{ resource: { ...patient, id: 'name' } }] })))
     const match = await matchSmpPatient(source, destination, patient)
-    expect(match.patient).toBeUndefined()
-    expect(match.nameCandidate?.id).toBe('name')
+    expect(match.patient?.id).toBe('name')
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response(url.endsWith('/metadata') ? capability : { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: patient }, { resource: { ...patient, id: 'other' } }] })))
-    await expect(matchSmpPatient(source, destination, patient)).rejects.toThrow('ambiguous')
+    expect((await matchSmpPatient(source, destination, patient)).patient?.id).toBe('p')
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response(url.endsWith('/metadata') ? capability : { issue: [{ diagnostics: 'search failed' }] }, url.endsWith('/metadata') ? 200 : 500)))
     await expect(matchSmpPatient(source, destination, patient)).rejects.toThrow('search failed')
   })
@@ -43,7 +42,7 @@ describe('SMP publication', () => {
     })
     vi.stubGlobal('fetch', fetch)
     const progress: SmpProgress = {}
-    const input = { sourceBase: source, destinationBase: destination, title: 'Medication collection', snapshot, match: { patient: { ...patient, id: 'd' }, warning: '' }, acceptName: false }
+    const input = { sourceBase: source, destinationBase: destination, title: 'Medication collection', snapshot, match: { patient: { ...patient, id: 'd' }, warning: '' } }
     await expect(publishSmpCollection(input, progress)).rejects.toThrow('Index rejected')
     expect(progress.bundle?.id).toBe('b')
     expect(progress.uncertain).toBeUndefined()
@@ -57,6 +56,23 @@ describe('SMP publication', () => {
     expect(indexed.author).toBeUndefined()
     expect(indexed.masterIdentifier).toEqual(bundle.identifier)
   })
+  it('retains a copied Patient after a definite Bundle rejection and retries without another Patient write', async () => {
+    let bundles = 0
+    const fetch = vi.fn(async (url: string, options?: RequestInit) => {
+      if (!options?.method) return response(snapshot.originals.get('List/l'))
+      if (url.endsWith('/Bundle') && bundles++ === 0) return response({ issue: [{ diagnostics: 'Bundle rejected' }] }, 422)
+      return response({ ...JSON.parse(options.body as string), id: 'created' }, 201)
+    })
+    vi.stubGlobal('fetch', fetch)
+    const progress: SmpProgress = {}
+    const input = { sourceBase: source, destinationBase: destination, title: 'Snapshot', snapshot, match: { warning: '' } }
+    await expect(publishSmpCollection(input, progress)).rejects.toThrow('Bundle rejected')
+    expect(progress.patient?.id).toBe('created')
+    await publishSmpCollection(input, progress)
+    expect(fetch.mock.calls.filter(([url, options]) => options?.method === 'POST' && url.endsWith('/Patient'))).toHaveLength(1)
+    const postedBundle = fetch.mock.calls.find(([url, options]) => options?.method === 'POST' && url.endsWith('/Bundle'))
+    expect(JSON.parse(postedBundle![1]!.body as string)).toEqual(bundle)
+  })
   it('copies a Patient only on submission and never posts embedded resources independently', async () => {
     const fetch = vi.fn(async (_url: string, opts?: RequestInit) => {
       if (!opts?.method) return response(snapshot.originals.get('List/l'))
@@ -64,7 +80,7 @@ describe('SMP publication', () => {
     })
     vi.stubGlobal('fetch', fetch)
     const progress: SmpProgress = {}
-    await publishSmpCollection({ sourceBase: source, destinationBase: destination, title: 'Snapshot', snapshot, match: { warning: '' }, acceptName: false }, progress)
+    await publishSmpCollection({ sourceBase: source, destinationBase: destination, title: 'Snapshot', snapshot, match: { warning: '' } }, progress)
     const writes = fetch.mock.calls.filter(([, opts]) => opts?.method === 'POST')
     expect(writes.map(([url]) => url.split('/').at(-1))).toEqual(['Patient', 'Bundle', 'DocumentReference'])
     expect(JSON.parse(writes[0][1]!.body as string).id).toBeUndefined()
@@ -73,7 +89,7 @@ describe('SMP publication', () => {
     const fetch = vi.fn(async (_url: string, options?: RequestInit) => options?.method ? response({ issue: [{ diagnostics: 'commit status unknown' }] }, 500) : response(snapshot.originals.get('List/l')))
     vi.stubGlobal('fetch', fetch)
     const progress: SmpProgress = {}
-    const input = { sourceBase: source, destinationBase: destination, title: 'Snapshot', snapshot, match: { patient, warning: '' }, acceptName: false }
+    const input = { sourceBase: source, destinationBase: destination, title: 'Snapshot', snapshot, match: { patient, warning: '' } }
     await expect(publishSmpCollection(input, progress)).rejects.toThrow('commit status unknown')
     expect(progress.uncertain).toBe('Bundle')
     const count = fetch.mock.calls.length
