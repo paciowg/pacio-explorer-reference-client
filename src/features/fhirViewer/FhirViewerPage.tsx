@@ -35,13 +35,16 @@ function ResourcePanel({ baseUrl, reference, includeRelated = false }: { baseUrl
   </>
 }
 
-export function FhirViewerPage({ baseUrl, resourceType, resourceId }: { baseUrl: string; resourceType: string; resourceId: string }) {
+export function FhirViewerPage({ baseUrl, serverLabel, resourceType, resourceId }: { baseUrl: string; serverLabel: string; resourceType: string; resourceId: string }) {
   return <section className="panel">
     <div className="panel-header">
       <h2>FHIR JSON</h2>
-      <span className="panel-server-url">{baseUrl}</span>
+      <div className="panel-server-details">
+        <span className="panel-server-label">{serverLabel}</span>
+        <span className="panel-server-url">{baseUrl}</span>
+      </div>
     </div>
-    <div className="summary-preview-panel full-width-panel fhir-viewer">
+    <div className="fhir-viewer">
       <ResourcePanel key={`${baseUrl}:${resourceType}/${resourceId}`} baseUrl={baseUrl} reference={`${resourceType}/${resourceId}`} includeRelated />
     </div>
   </section>
