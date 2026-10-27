@@ -96,32 +96,30 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
           <span className="panel-server-url">{activeServer.baseUrl}</span>
         </div>
       </div>
-      <div className="summary-preview-panel full-width-panel">
-        <div className="page-actions page-actions-spaced">
-          <button
-            type="button"
-            className="secondary-button outline"
-            onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
-          >
-            Back to patient
-          </button>
-          <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
-        </div>
-        {isLoading ? (
-          <div className="info-banner">Loading Transition of Care document...</div>
-        ) : null}
-        {warningMessage ? <div className="warning-banner">{warningMessage}</div> : null}
-        {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
-        {!isLoading && !errorMessage && documentReference ? (
-          <TocDocumentView
-            title={title}
-            patientName={patientName}
-            compositionDate={compositionDate}
-            documentReference={documentReference}
-            sections={sections}
-          />
-        ) : null}
+      <div className="page-actions page-actions-spaced">
+        <button
+          type="button"
+          className="secondary-button outline"
+          onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
+        >
+          Back to patient
+        </button>
       </div>
+      {isLoading ? (
+        <div className="info-banner">Loading Transition of Care document...</div>
+      ) : null}
+      {warningMessage ? <div className="warning-banner">{warningMessage}</div> : null}
+      {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
+      {!isLoading && !errorMessage && documentReference ? (
+        <TocDocumentView
+          title={title}
+          patientName={patientName}
+          compositionDate={compositionDate}
+          documentReference={documentReference}
+          sections={sections}
+        />
+      ) : null}
+      <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
     </section>
   )
 }
