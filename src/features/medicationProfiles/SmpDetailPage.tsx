@@ -75,7 +75,7 @@ export function SmpDetailPage({ patientId, resourceId, kind }: { patientId: stri
           </div>
         </section>
         <div className="smp-page">
-          {index ? <section className="summary-card wide">
+          {index ? <section className="summary-card">
             <h3>Collection Details</h3>
             <dl className="detail-grid">
               {metadata.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
@@ -83,7 +83,7 @@ export function SmpDetailPage({ patientId, resourceId, kind }: { patientId: stri
             <p>Medication lists reflect the saved collection.</p>
           </section> : null}
           {data.warning ? <p className="warning-banner">{data.warning}</p> : null}
-          {data.lists.map((list, i) => <SmpListContent key={`${list.id}:${i}`} list={list} resolve={resolve!} />)}
+          {data.lists.map((list, i) => <SmpListContent key={`${list.id}:${i}`} list={list} resolve={resolve!} showListJson={false} />)}
           <div className="page-actions">
             {index?.id ? <div>DocumentReference: <FhirJsonLink resource={index} baseUrl={activeServer.baseUrl} /></div> : null}
             {data.bundle.id ? <div>Bundle: <FhirJsonLink resource={data.bundle} baseUrl={activeServer.baseUrl} /></div> : null}

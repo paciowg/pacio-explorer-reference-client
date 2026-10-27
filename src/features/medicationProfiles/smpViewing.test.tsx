@@ -14,6 +14,12 @@ const statement: MedicationStatement = { resourceType: 'MedicationStatement', id
 const bundle: Bundle = { resourceType: 'Bundle', type: 'collection', entry: [{ fullUrl: 'urn:uuid:l', resource: list }, { fullUrl: 'urn:uuid:p', resource: patient }, { fullUrl: 'urn:uuid:s', resource: statement }] }
 
 describe('SMP snapshot viewing', () => {
+  it('can omit redundant List JSON while preserving captured medication JSON on collection detail pages', () => {
+    const html = renderToStaticMarkup(<SmpListContent list={list} resolve={snapshotResolver(bundle)} showListJson={false} />)
+    expect(html).not.toContain('List FHIR JSON')
+    expect(html).toContain('Captured FHIR JSON')
+    expect(html).toContain('Captured aspirin')
+  })
   it('renders stored membership and dosage without live-resource links', () => {
     const html = renderToStaticMarkup(<SmpListContent list={list} resolve={snapshotResolver(bundle)} />)
     expect(html).toContain('Discharge medications')
