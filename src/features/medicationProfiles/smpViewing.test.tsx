@@ -67,7 +67,7 @@ describe('SMP snapshot viewing', () => {
   it('provides both creation actions and uses dated accessible transfer controls for statements', () => {
     const section = renderToStaticMarkup(<SmpDocumentsSection baseUrl="https://source.test/fhir" patientId="patient 1" />)
     expect(section).toContain('<button type="button" class="secondary-button outline compact">Create medication list</button>')
-    expect(section).toContain('#/patients/patient%201/smp-collections/new')
+    expect(section).toContain('<button type="button" class="secondary-button outline compact">Create SMP collection</button>')
     const resource: MedicationStatement = { ...statement, dateAsserted: '2026-10-23' }
     const options = getResourceTransferChoices([{ reference: 'MedicationStatement/s', label: 'MedicationStatement: Aspirin', display: 'Aspirin', resource }], ['MedicationStatement'])
     const html = renderToStaticMarkup(<TransferList label="Medication statements" options={options} values={[]} showDates onChange={() => {}} />)

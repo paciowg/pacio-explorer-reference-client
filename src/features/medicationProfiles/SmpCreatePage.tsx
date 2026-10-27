@@ -109,7 +109,7 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
     navigateTo(`/patients/${encodeURIComponent(progress.current.patient.id!)}/smp-collections/${encodeURIComponent(progress.current.index.id!)}`)
   }
 
-  return <div className="panel smp-page">
+  return <div className="panel">
     <div className="panel-header">
       <div>
         <h2>{kind === 'list' ? 'Create Medication List' : 'Create SMP Collection'}</h2>
@@ -121,11 +121,13 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
       </div>
     </div>
     <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(`${path}?view=documents`)}>Back to patient</button></div>
-    <p>{kind === 'list' ? 'Save a reusable, point-in-time List on the active source server. Existing statements are not changed.' : 'Capture saved Lists and their supporting resources in a collection. Lists remain distinct; this does not reconcile medications.'}</p>
+    <div className="smp-page">
+    {kind === 'list' ? <p>Save a reusable, point-in-time List on the active source server. Existing statements are not changed.</p> : null}
     {error ? <p className="error-banner" role="alert">{error}</p> : null}
     {!data ? <p role="status">{error ? 'Source choices unavailable.' : 'Loading source choices…'}</p> : <>
       <form onSubmit={(e) => { e.preventDefault(); void perform(kind === 'list' ? saveList : prepare) }}>
         <fieldset disabled={locked}>
+          {kind === 'collection' ? <DestinationServerField id="smp-destination" servers={savedServers} value={destination} disabled={locked} onChange={setDestination} /> : null}
           <div className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" value={title} required onChange={(e) => setTitle(e.target.value)} /></div>
           {kind === 'list' ? <>
             <p>Mode: snapshot · Status: current</p>
@@ -133,7 +135,7 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
             <div className="field-group"><label htmlFor="smp-date">List date</label><input id="smp-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
             <div className="field-group"><label htmlFor="smp-author">Author / source</label><select id="smp-author" required value={author} onChange={(e) => setAuthor(e.target.value)}><option value="">Select an author</option>{data.authors.map((o) => <option key={o.reference} value={o.reference}>{o.label}</option>)}</select></div>
             <div className="field-group"><label htmlFor="smp-notes">Notes</label><textarea id="smp-notes" value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-          </> : <DestinationServerField id="smp-destination" servers={savedServers} value={destination} disabled={locked} onChange={setDestination} />}
+          </> : null}
           <TransferList label={kind === 'list' ? 'Medication statements' : 'Medication Lists'} showDates disabled={locked} values={selected}
             options={getResourceTransferChoices(data.options.map((o) => ({ ...o, display: o.label })), [kind === 'list' ? 'MedicationStatement' : 'List'])}
             onChange={(values) => { setSelected(values); if (values.length) setEmptyReason('') }} />
@@ -159,5 +161,6 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
       {progress.current.uncertain ? <p className="warning-banner">The {progress.current.uncertain} write outcome is uncertain. Verify the server before starting another submission; automatic retry is disabled.</p> : null}
       {listProgress.current.uncertain ? <p className="warning-banner">The List write outcome is uncertain. Verify the source server before starting another submission; automatic retry is disabled.</p> : null}
     </>}
+    </div>
   </div>
 }

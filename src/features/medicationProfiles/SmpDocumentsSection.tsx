@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { ClinicalEntrySummary } from '../../components/ClinicalEntrySummary'
 import { compareClinicalDatesDesc } from '../../lib/dateTime'
 import { formatDate } from '../../lib/fhir/formatters'
-import { getRouteHref, navigateTo } from '../../lib/routing/routes'
+import { navigateTo } from '../../lib/routing/routes'
 import { loadSmpDocuments } from './smpData'
 import { SmpMedicationListItem } from './SmpMedicationListItem'
 
@@ -40,7 +40,7 @@ export function SmpDocumentsContent({ baseUrl, patientId, data, error = '' }: { 
             <ClinicalEntrySummary title={index.description || 'SMP medication collection'} secondaryText={index.status} dateLabel={index.date ? 'Date' : undefined} dateValue={index.date ? formatDate(index.date) : undefined} />
           </button>
         </li>)}</ul> : <p className="empty-state">None recorded</p>}
-      <div className="clinical-section-footer"><a className="secondary-button outline compact" href={getRouteHref(`/patients/${encodeURIComponent(patientId)}/smp-collections/new`)}>Create SMP collection</a></div>
+      <div className="clinical-section-footer"><button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/smp-collections/new`)}>Create SMP collection</button></div>
     </section>
   </>
 }
