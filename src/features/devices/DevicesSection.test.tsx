@@ -1,6 +1,6 @@
 /** Verifies device summaries, accessible PFE form controls, and read-only demo details matching submitted data. */
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { DeviceRequest, Practitioner, PractitionerRole } from 'fhir/r4'
+import type { Device, DeviceRequest, DeviceUseStatement, Practitioner, PractitionerRole } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { DevicesSection } from './DevicesSection'
 import { getPatientDevices } from './deviceModel'
@@ -11,6 +11,34 @@ import { getRolePreferredReferenceOptions } from '../../lib/fhir/resourceOptions
 import type { ReferenceOption } from './deviceCreateData'
 
 describe('device UI markup', () => {
+  it.each(['DeviceRequest', 'DeviceUseStatement'] as const)('offers separate %s and Device links inside the expanded entry', (resourceType) => {
+    const device: Device = { resourceType: 'Device', id: 'd' }
+    const event: DeviceRequest | DeviceUseStatement = resourceType === 'DeviceRequest'
+      ? { resourceType, id: 'r', intent: 'order', subject: { reference: 'Patient/p' }, codeReference: { reference: 'Device/d' } }
+      : { resourceType, id: 'r', status: 'active', subject: { reference: 'Patient/p' }, device: { reference: 'https://example.test/Device/d' } }
+    const entries = getPatientDevices({ resourceType: 'Bundle', type: 'collection', entry: [{ resource: event }, { resource: device }] }, 'p', 'https://example.test')
+    const html = renderToStaticMarkup(<DevicesSection entries={entries} baseUrl="https://example.test" patientId="p" emptyMessage="None" />)
+    expect(html).toContain(`href="#/fhir/${resourceType}/r"`)
+    expect(html).toContain('href="#/fhir/Device/d"')
+    expect(html.match(/class="fhir-json-link"/g)).toHaveLength(2)
+    expect(html.indexOf('href="#/fhir/Device/d"')).toBeGreaterThan(html.indexOf('</summary>'))
+    expect(html.indexOf('href="#/fhir/Device/d"')).toBeLessThan(html.indexOf('</details>'))
+  })
+  it.each(['#d', 'https://other.test/Device/d'])('does not link a contained or external Device at %s as a local standalone resource', (reference) => {
+    const device: Device = { resourceType: 'Device', id: 'd' }
+    const event: DeviceRequest = { resourceType: 'DeviceRequest', id: 'r', intent: 'order', subject: { reference: 'Patient/p' }, codeReference: { reference }, ...(reference.startsWith('#') ? { contained: [device] } : {}) }
+    const entries = getPatientDevices({ resourceType: 'Bundle', type: 'collection', entry: [{ resource: event }, { fullUrl: reference, resource: device }] }, 'p', 'https://example.test')
+    const html = renderToStaticMarkup(<DevicesSection entries={entries} baseUrl="https://example.test" patientId="p" emptyMessage="None" />)
+    expect(html).toContain('href="#/fhir/DeviceRequest/r"')
+    expect(html).not.toContain('href="#/fhir/Device/d"')
+  })
+  it('offers just one link for a standalone Device', () => {
+    const device: Device = { resourceType: 'Device', id: 'd', patient: { reference: 'Patient/p' } }
+    const entries = getPatientDevices({ resourceType: 'Bundle', type: 'collection', entry: [{ resource: device }] }, 'p', 'https://example.test')
+    const html = renderToStaticMarkup(<DevicesSection entries={entries} baseUrl="https://example.test" patientId="p" emptyMessage="None" />)
+    expect(html).toContain('href="#/fhir/Device/d"')
+    expect(html.match(/class="fhir-json-link"/g)).toHaveLength(1)
+  })
   it('offers roles instead of paired practitioners in both Requester and Device Users', () => {
     const resources = new Map<string, Practitioner | PractitionerRole>([
       ['Practitioner/paired', { resourceType: 'Practitioner', id: 'paired', name: [{ text: 'Alex Smith' }] }],

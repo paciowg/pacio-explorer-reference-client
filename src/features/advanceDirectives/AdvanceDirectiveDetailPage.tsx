@@ -1,6 +1,6 @@
 /** Loads and displays an advance directive, enriching generic metadata from its document Bundle when available. */
 import { useEffect, useMemo, useState } from 'react'
-import type { DocumentReference } from 'fhir/r4'
+import type { Bundle, DocumentReference } from 'fhir/r4'
 import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { loadDocumentDetails } from '../../lib/fhir/documentDetails'
 import {
@@ -31,6 +31,7 @@ export function AdvanceDirectiveDetailPage({
   const { activeServer } = useSavedServers()
   const [patientName, setPatientName] = useState('')
   const [documentReference, setDocumentReference] = useState<DocumentReference | null>(null)
+  const [bundle, setBundle] = useState<Bundle | null>(null)
   const [bundleDerivedData, setBundleDerivedData] = useState<BundleDerivedData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -48,6 +49,7 @@ export function AdvanceDirectiveDetailPage({
     setErrorMessage('')
     setBundleWarningMessage('')
     setBundleDerivedData(null)
+    setBundle(null)
 
     async function load() {
       try {
@@ -60,6 +62,7 @@ export function AdvanceDirectiveDetailPage({
             placeholderValue(),
         )
         setDocumentReference(loaded.documentReference)
+        setBundle(loaded.bundle)
 
         // Bundle enrichment is optional: generic DocumentReference details remain useful on failure.
         if (!loaded.bundleReference) return
@@ -168,7 +171,10 @@ export function AdvanceDirectiveDetailPage({
           </section>
         </>
       ) : null}
-      <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
+      <div className="page-actions">
+        {documentReference?.id ? <div>DocumentReference: <FhirJsonLink resource={documentReference} baseUrl={activeServer.baseUrl} /></div> : null}
+        {bundle?.id ? <div>Bundle: <FhirJsonLink resource={bundle} baseUrl={activeServer.baseUrl} /></div> : null}
+      </div>
     </section>
   )
 }

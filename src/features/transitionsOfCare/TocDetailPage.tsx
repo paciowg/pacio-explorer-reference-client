@@ -1,6 +1,6 @@
 /** Loads an indexed TOC document and presents its metadata and clinical sections. */
 import { useEffect, useState } from 'react'
-import type { DocumentReference } from 'fhir/r4'
+import type { Bundle, DocumentReference } from 'fhir/r4'
 import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { loadDocumentDetails } from '../../lib/fhir/documentDetails'
 import { getCodeableConceptText, getDisplayNameFromHumanName, placeholderValue } from '../../lib/fhir/formatters'
@@ -15,6 +15,7 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
   const { activeServer } = useSavedServers()
   const [patientName, setPatientName] = useState('')
   const [documentReference, setDocumentReference] = useState<DocumentReference | null>(null)
+  const [bundle, setBundle] = useState<Bundle | null>(null)
   const [sections, setSections] = useState<TocViewSection[]>([])
   const [compositionTitle, setCompositionTitle] = useState('')
   const [compositionDate, setCompositionDate] = useState('')
@@ -34,6 +35,7 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
       setIsLoading(true)
       setErrorMessage('')
       setWarningMessage('')
+      setBundle(null)
       try {
         const loaded = await loadDocumentDetails(baseUrl, patientId, documentReferenceId)
         if (!mounted) return
@@ -43,6 +45,7 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
             placeholderValue(),
         )
         setDocumentReference(loaded.documentReference)
+        setBundle(loaded.bundle)
 
         if (!loaded.bundleReference) {
           setWarningMessage(
@@ -119,7 +122,10 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
           sections={sections}
         />
       ) : null}
-      <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
+      <div className="page-actions">
+        {documentReference?.id ? <div>DocumentReference: <FhirJsonLink resource={documentReference} baseUrl={activeServer.baseUrl} /></div> : null}
+        {bundle?.id ? <div>Bundle: <FhirJsonLink resource={bundle} baseUrl={activeServer.baseUrl} /></div> : null}
+      </div>
     </section>
   )
 }
