@@ -4,10 +4,10 @@ import { buildSmpDocumentReference } from '../../igs/pacioSmp/smp'
 import { validateFhirServer } from '../../lib/fhir/client'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
 import { serverResourceUrl } from '../../lib/fhir/resourceTransport'
-import { completeSearch } from './smpData'
+import { findDestinationPatient } from '../../lib/fhir/destinationPatient'
 import { assertSnapshotUnchanged, sourceReference, type PreparedSnapshot } from './smpReferences'
 
-export type DestinationMatch = { patient?: Patient; nameCandidate?: Patient; warning: string }
+export type DestinationMatch = { patient?: Patient; warning: string }
 export type SmpProgress = { patient?: Patient; bundle?: Bundle; index?: DocumentReference; uncertain?: string; publicationKey?: string }
 export class SmpWriteError extends Error {
   uncertain: boolean
@@ -52,29 +52,13 @@ function capabilityWarnings(capability: CapabilityStatement, needsPatientCreate:
 export async function matchSmpPatient(sourceBase: string, destinationBase: string, patient: Patient): Promise<DestinationMatch> {
   const capability = await validateFhirServer(destinationBase)
   if (normalizeBaseUrl(sourceBase) === normalizeBaseUrl(destinationBase)) return { patient, warning: capabilityWarnings(capability, false, false) }
-  const matches = new Map<string, Patient>()
-  for (const identifier of patient.identifier || []) {
-    if (!identifier.system || !identifier.value) continue
-    for (const result of await completeSearch(destinationBase, 'Patient', { identifier: `${identifier.system}|${identifier.value}` })) {
-      if (!(result as Patient).identifier?.some((i) => i.system === identifier.system && i.value === identifier.value)) throw new Error('Destination returned a patient that does not match the searched identifier. Resolve patient identity before publishing.')
-      matches.set(result.id!, result as Patient)
-    }
-  }
-  if (matches.size > 1) throw new Error('Conflicting or ambiguous destination identifier matches. Resolve patient identity before publishing.')
-  if (matches.size === 1) return { patient: [...matches.values()][0], warning: capabilityWarnings(capability, false) }
-  const name = patient.name?.find((n) => n.family && n.given?.length)
-  let nameCandidate: Patient | undefined
-  if (name?.family && name.given?.[0]) {
-    const candidates = await completeSearch(destinationBase, 'Patient', { family: name.family, given: name.given[0] })
-    if (candidates.length > 1) throw new Error('Ambiguous destination name matches. Resolve patient identity before publishing.')
-    nameCandidate = candidates[0] as Patient | undefined
-  }
-  return { nameCandidate, warning: capabilityWarnings(capability, true) }
+  const matched = await findDestinationPatient({ sourceBaseUrl: sourceBase, destinationBaseUrl: destinationBase, patient })
+  return { patient: matched || undefined, warning: capabilityWarnings(capability, !matched) }
 }
 
-export async function publishSmpCollection(input: { sourceBase: string; destinationBase: string; title: string; snapshot: PreparedSnapshot; match: DestinationMatch; acceptName: boolean }, progress: SmpProgress) {
+export async function publishSmpCollection(input: { sourceBase: string; destinationBase: string; title: string; snapshot: PreparedSnapshot; match: DestinationMatch }, progress: SmpProgress) {
   if (progress.uncertain) throw new Error(`Verify the destination after the uncertain ${progress.uncertain} write before starting another submission.`)
-  const publicationKey = JSON.stringify([normalizeBaseUrl(input.sourceBase), normalizeBaseUrl(input.destinationBase), input.title, input.snapshot.bundle, input.match.patient?.id, input.acceptName ? input.match.nameCandidate?.id : null])
+  const publicationKey = JSON.stringify([normalizeBaseUrl(input.sourceBase), normalizeBaseUrl(input.destinationBase), input.title, input.snapshot.bundle, input.match.patient?.id])
   if (progress.publicationKey && publicationKey !== progress.publicationKey) throw new Error('Publication inputs changed. Start a new collection rather than reusing retained writes.')
   if (progress.index) return progress.index
   if (!progress.bundle) await assertSnapshotUnchanged(input.sourceBase, input.snapshot)
@@ -82,7 +66,7 @@ export async function publishSmpCollection(input: { sourceBase: string; destinat
   let stage = 'Patient'
   try {
     if (!progress.patient) {
-      const selected = input.match.patient || (input.acceptName ? input.match.nameCandidate : undefined)
+      const selected = input.match.patient
       if (selected) progress.patient = selected
       else {
         const copy = structuredClone(input.snapshot.patient)

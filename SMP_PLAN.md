@@ -90,6 +90,8 @@ Register creation routes before parameterized detail routes. Cancel/back links r
 
 ### Create an SMP collection
 
+> Updated workflow: collection creation is now one form with expandable List rows and independent checkboxes, followed by one Create action and return to the source patient Documents tab. Destination matching uses the shared TOC/ADI first-identifier/first-name-match helper without confirmation, with Patient copying when no match exists. Retained snapshot/write progress and uncertain-outcome safeguards remain. These decisions supersede the original transfer-list, review-step, strict-matching, and post-save navigation requirements below.
+
 - Require title and at least one saved compatible patient List. Default title to `Medication profile for <patient name>`. Use a dated transfer list for List selection; add shared List timestamp support using `List.date`, then labelled last-update fallback.
 - Existing working Lists may be included as captured resources; preserve their actual mode, entries, dates, and status. Do not relabel them as authored snapshot Lists. Exclude entered-in-error Lists. Preserve valid retired Lists and show their status.
 - Load and validate all selected List memberships, including statements not present in the initial patient search. Do not drop unresolved entries or empty Lists.

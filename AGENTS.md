@@ -31,6 +31,8 @@
 - Resource transfer lists must use `getResourceTransferChoices` and `TransferList` with `showDates`. Display resource-specific clinical/authored dates (including time and timezone when present), with labelled `meta.lastUpdated` fallback; show Date unavailable when no valid date exists. Sort both panes newest first, with undated entries last and ties retaining their existing order. Keep timestamp metadata out of submitted FHIR reference displays. Terminology-only transfer lists retain their original order without timestamps.
 - DeviceRequest Supporting assessments, Supporting goals, Prior requests, Insurance, Coded reasons, and Reason references use this pattern. Do not migrate unrelated existing controls unless requested.
 
+- SMP Collection creation is an intentional exception: use full-width expandable medication List rows with independent checkboxes so membership can be inspected during selection. Keep this a single form submission, with destination Patient matching shared with TOC/ADI and return navigation to the source patient Documents tab.
+
 ## Resource selection labels
 
 - Fields supporting multiple resource types must use `ResourceType: Display name — Optional detail`. Use exact FHIR resource-type names; role or relationship details follow the name. Fields supporting only one resource type use an unprefixed display.

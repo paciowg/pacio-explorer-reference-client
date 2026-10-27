@@ -359,6 +359,22 @@
   padding: 0;
 }
 
+.clinical-list-item.smp-selectable-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.smp-selectable-list > input[type="checkbox"] {
+  margin: 1rem 0 0 1rem;
+}
+
+.smp-selectable-list > .clinical-entry-disclosure {
+  grid-column: 2;
+}
+
 .clinical-entry-disclosure {
   width: 100%;
 }
