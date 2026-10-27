@@ -5,12 +5,20 @@ import { ClinicalEntrySummary } from '../../components/ClinicalEntrySummary'
 import { FhirResourceDetails } from '../../components/FhirResourceDetails'
 import { FhirJsonLink } from '../../components/FhirJsonLink'
 import { readServerResource } from '../../lib/fhir/deviceTransport'
+import { serverResourceUrl } from '../../lib/fhir/resourceTransport'
 import { navigateTo } from '../../lib/routing/routes'
 import { deviceEntryDetails, type DeviceEntry } from './deviceModel'
 
 function DeviceRow({ entry, baseUrl }: { entry: DeviceEntry; baseUrl: string }) {
   const [device, setDevice] = useState<Device | undefined>(entry.device)
   const [state, setState] = useState<'idle' | 'loading' | 'loaded' | 'failed'>('idle')
+  let standaloneDevice: Device | undefined
+  if (device?.id && entry.resource.resourceType !== 'Device' && entry.deviceReference) {
+    try {
+      serverResourceUrl(baseUrl, entry.deviceReference)
+      standaloneDevice = device
+    } catch { /* Contained and external Devices have no standalone endpoint on the active server. */ }
+  }
   async function load(open: boolean) {
     if (!open || device || !entry.deviceReference || state !== 'idle') return
     setState('loading')
@@ -27,7 +35,10 @@ function DeviceRow({ entry, baseUrl }: { entry: DeviceEntry; baseUrl: string }) 
       <FhirResourceDetails model={deviceEntryDetails(entry, device)} />
       {state === 'loading' ? <p className="info-banner">Loading associated Device...</p> : null}
       {state === 'failed' ? <p className="warning-banner">Associated Device unavailable ({entry.deviceReference}).</p> : null}
-      <div className="fhir-resource-actions"><FhirJsonLink resource={entry.resource} baseUrl={baseUrl} /></div>
+      <div className="fhir-resource-actions page-actions">
+        {entry.resource.id ? <div>{entry.resource.resourceType}: <FhirJsonLink resource={entry.resource} baseUrl={baseUrl} /></div> : null}
+        {standaloneDevice ? <div>Device: <FhirJsonLink resource={standaloneDevice} baseUrl={baseUrl} /></div> : null}
+      </div>
     </details>
   </li>
 }
