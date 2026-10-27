@@ -31,11 +31,11 @@ describe('SMP snapshot viewing', () => {
     expect(html).not.toContain('List FHIR JSON')
     expect(html).not.toContain('<pre')
     expect(html.match(/class="fhir-json-link"/g)).toHaveLength(2)
-    const medicationLink = html.indexOf('#/fhir/MedicationStatement/s?server=')
+    const medicationLink = html.indexOf('href="#/fhir/MedicationStatement/s"')
     const medicationClose = html.indexOf('</details>')
     expect(medicationLink).toBeGreaterThan(html.indexOf('</summary>'))
     expect(medicationLink).toBeLessThan(medicationClose)
-    expect(html.indexOf('#/fhir/List/l?server=')).toBeGreaterThan(medicationClose)
+    expect(html.indexOf('href="#/fhir/List/l"')).toBeGreaterThan(medicationClose)
   })
   it('links a contained medication to its owning List instead of an unrelated standalone resource', () => {
     const contained: List = { ...list, contained: [{ ...statement, id: 'contained-statement' }], entry: [{ item: { reference: '#contained-statement' } }] }

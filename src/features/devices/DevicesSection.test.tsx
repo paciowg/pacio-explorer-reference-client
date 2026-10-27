@@ -38,7 +38,7 @@ describe('device UI markup', () => {
     expect(html.slice(html.indexOf('<summary>'), html.indexOf('</summary>'))).toContain('DeviceRequest')
     expect(html).not.toContain('<details open')
     expect(html).toContain('Create Device Request')
-    expect(html).toContain('#/fhir/DeviceRequest/r?server=https%3A%2F%2Fexample.test')
+    expect(html).toContain('href="#/fhir/DeviceRequest/r"')
     expect(html.indexOf('View FHIR JSON')).toBeGreaterThan(html.indexOf('</summary>'))
     expect(html.indexOf('View FHIR JSON')).toBeLessThan(html.indexOf('</details>'))
   })

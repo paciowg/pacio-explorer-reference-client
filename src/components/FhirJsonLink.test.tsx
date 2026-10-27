@@ -1,4 +1,4 @@
-/** Verifies raw-resource links preserve their source server and open outside clinical navigation. */
+/** Verifies raw-resource links use server-independent routes and open outside clinical navigation. */
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { FhirJsonLink } from './FhirJsonLink'
@@ -9,10 +9,11 @@ import { parseHashRoute } from '../lib/routing/routes'
 describe('FHIR JSON links', () => {
   const resource = { resourceType: 'Condition' as const, id: 'c' }
   const baseUrl = 'https://example.test/fhir'
-  it('round trips the source server and resource through the viewer route', () => {
+  it('round trips the resource through the viewer route without a server parameter', () => {
     const html = renderToStaticMarkup(<FhirJsonLink resource={resource} baseUrl={baseUrl} />)
     const href = html.match(/href="([^"]+)"/)![1]
-    expect(parseHashRoute(href)).toEqual({ name: 'fhirViewer', baseUrl, resourceType: 'Condition', resourceId: 'c' })
+    expect(href).toBe('#/fhir/Condition/c')
+    expect(parseHashRoute(href)).toEqual({ name: 'fhirViewer', resourceType: 'Condition', resourceId: 'c' })
     expect(html).toContain('target="_blank"')
     expect(html).toContain('rel="noopener noreferrer"')
     expect(html).toContain('opens in a new tab')

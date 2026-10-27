@@ -25,7 +25,7 @@ Missing scalar values display as `--`; loaded empty lists display `None recorded
 
 The patient display has three top navigation tabs: **Personal Information** (the default), **Clinical Information**, and **Documents**. The patient header remains visible across views, and switching tabs preserves loaded data and expanded entries. Documents shows four sections in order: TOC Documents, Advance Directives, SMP Medication Lists, and SMP Collections, each with empty states and creation actions. Each tab has a bookmarkable URL; document workflows return to Documents, while device and nutrition creation return to Clinical Information.
 
-Expand a clinical entry and choose **View FHIR JSON ↗** to open its current server resource in a new tab. The Patient link is visible below the patient name; document links are on their detail pages. The viewer displays indented, syntax-colored, selectable JSON. Device requests and usage records also show their associated Device, and document references show their same-server document Bundle when available. Each resource loads independently, so an unavailable associated resource leaves the primary resource visible. Viewer links retain their original source server; they fetch current data rather than a snapshot of the clinical display.
+Expand a clinical entry and choose **View FHIR JSON ↗** to open its current server resource in a new tab. The Patient link is visible below the patient name; document links are on their detail pages. The viewer displays indented, syntax-colored, selectable JSON. Device requests and usage records also show their associated Device, and document references show their same-server document Bundle when available. Each resource loads independently, so an unavailable associated resource leaves the primary resource visible. The viewer requires an active server connection and reads from that server; it fetches current data rather than a snapshot of the clinical display.
 
 ### Create a Transition of Care document
 
@@ -190,7 +190,7 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 ### Routes and persistence
 
 - `#/` — server connection and saved servers
-- `#/fhir/:resourceType/:resourceId?server=:encodedBaseUrl` — read-only FHIR JSON viewer tied to its source server
+- `#/fhir/:resourceType/:resourceId` — read-only FHIR JSON viewer using the active server connection
 - `#/patients` — patient list
 - `#/patients/:id` — patient summary
 - `#/patients/:id?view=clinical` — patient clinical information

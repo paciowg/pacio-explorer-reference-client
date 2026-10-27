@@ -3,7 +3,7 @@ export type PatientView = 'personal' | 'clinical' | 'documents'
 
 export type AppRoute =
   | { name: 'home' }
-  | { name: 'fhirViewer'; baseUrl: string; resourceType: string; resourceId: string }
+  | { name: 'fhirViewer'; resourceType: string; resourceId: string }
   | { name: 'patients' }
   | { name: 'patientDetail'; patientId: string; view: PatientView }
   | { name: 'patientPmoCreate'; patientId: string }
@@ -31,11 +31,8 @@ export function parseHashRoute(hash: string): AppRoute {
   }
 
   if (segments.length === 3 && segments[0] === 'fhir') {
-    const baseUrl = new URLSearchParams(query).get('server') || ''
     try {
-      const url = new URL(baseUrl)
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') return { name: 'home' }
-      return { name: 'fhirViewer', baseUrl, resourceType: decodeURIComponent(segments[1]), resourceId: decodeURIComponent(segments[2]) }
+      return { name: 'fhirViewer', resourceType: decodeURIComponent(segments[1]), resourceId: decodeURIComponent(segments[2]) }
     } catch { return { name: 'home' } }
   }
 
