@@ -16,7 +16,7 @@ export function SmpResourceContent({ resource, resolve, baseUrl, sourceResource 
     : <details><summary>Captured FHIR JSON</summary><FhirJson resource={resource} /></details>}</>
 }
 
-export function SmpListContent({ list, resolve, embedded = false, baseUrl }: { list: List; resolve: SmpResolver; embedded?: boolean; baseUrl?: string }) {
+export function SmpListContent({ list, resolve, embedded = false, baseUrl, showListJson = true }: { list: List; resolve: SmpResolver; embedded?: boolean; baseUrl?: string; showListJson?: boolean }) {
   const source = resolve(list.source?.reference, list)
   const role = source?.resourceType === 'PractitionerRole' ? source as PractitionerRole : undefined
   const practitioner = role ? resolve(role.practitioner?.reference, role) : undefined
@@ -50,6 +50,6 @@ export function SmpListContent({ list, resolve, embedded = false, baseUrl }: { l
       })}</dd>
     </div></dl> : null}
     {baseUrl ? <div className="fhir-resource-actions"><FhirJsonLink resource={list} baseUrl={baseUrl} /></div>
-      : <details><summary>List FHIR JSON</summary><FhirJson resource={list} /></details>}
+      : showListJson ? <details><summary>List FHIR JSON</summary><FhirJson resource={list} /></details> : null}
   </section>
 }
