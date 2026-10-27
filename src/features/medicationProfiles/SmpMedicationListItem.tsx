@@ -24,8 +24,10 @@ export function SmpMedicationListItem({ list, baseUrl, patientId, selection }: {
   const title = list.title || getCodeableConceptText(list.code) || list.id || 'Medication List'
   const timestamp = selection ? getResourceTimestamp(list) : { dateValue: list.date, dateLabel: list.date ? 'List date' : undefined }
   return <li className={`clinical-list-item clinical-list-expandable-item${selection ? ' smp-selectable-list' : ''}`}>
-    {selection ? <input type="checkbox" aria-label={`Include ${title}`} checked={selection.checked} disabled={selection.disabled}
-      onChange={(event) => selection.onChange(event.currentTarget.checked)} /> : null}
+    {selection ? <label className="smp-list-selection">
+      <input type="checkbox" aria-label={`Include ${title}`} checked={selection.checked} disabled={selection.disabled}
+        onChange={(event) => selection.onChange(event.currentTarget.checked)} />
+    </label> : null}
     <details className="clinical-entry-disclosure" onToggle={(event) => { if (event.currentTarget.open) setRequested(true) }}>
       <summary><ClinicalEntrySummary title={title}
         secondaryText={`${list.entry?.length || 0} ${list.entry?.length === 1 ? 'medication' : 'medications'}`}
