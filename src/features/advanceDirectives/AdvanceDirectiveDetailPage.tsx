@@ -112,65 +112,63 @@ export function AdvanceDirectiveDetailPage({
         </div>
       </div>
 
-      <div className="summary-preview-panel full-width-panel">
-        <div className="page-actions page-actions-spaced">
-          <button
-            type="button"
-            className="secondary-button outline"
-            onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
-          >
-            Back to patient
-          </button>
-          <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
-        </div>
+      <div className="page-actions page-actions-spaced">
+        <button
+          type="button"
+          className="secondary-button outline"
+          onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
+        >
+          Back to patient
+        </button>
+      </div>
 
-        {isLoading ? <div className="info-banner">Loading advance directive...</div> : null}
-        {bundleWarningMessage ? <div className="warning-banner">{bundleWarningMessage}</div> : null}
-        {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
+      {isLoading ? <div className="info-banner">Loading advance directive...</div> : null}
+      {bundleWarningMessage ? <div className="warning-banner">{bundleWarningMessage}</div> : null}
+      {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
 
-        {!isLoading && !errorMessage && documentReference ? (
-          <>
-            <section className="patient-summary-hero">
-              <div>
-                <p className="patient-summary-name">{pageTitle}</p>
-                <p className="patient-summary-meta">
-                  {patientName} · Date {formatDate(pageDate)} · DocumentReference/{documentReference.id}
-                </p>
+      {!isLoading && !errorMessage && documentReference ? (
+        <>
+          <section className="patient-summary-hero">
+            <div>
+              <p className="patient-summary-name">{pageTitle}</p>
+              <p className="patient-summary-meta">
+                {patientName} · Date {formatDate(pageDate)} · DocumentReference/{documentReference.id}
+              </p>
+            </div>
+          </section>
+
+          {bundleDerivedData?.pdfViewers.length ? (
+            <section className="summary-card wide source-attachments-section">
+              <h3>Source Attachments</h3>
+              <div className="attachment-actions">
+                {bundleDerivedData.pdfViewers.map((viewer) => (
+                  <button
+                    key={viewer.label}
+                    type="button"
+                    className="secondary-button outline"
+                    onClick={viewer.open}
+                  >
+                    {viewer.label}
+                  </button>
+                ))}
               </div>
             </section>
+          ) : null}
 
-            {bundleDerivedData?.pdfViewers.length ? (
-              <section className="summary-card wide source-attachments-section">
-                <h3>Source Attachments</h3>
-                <div className="attachment-actions">
-                  {bundleDerivedData.pdfViewers.map((viewer) => (
-                    <button
-                      key={viewer.label}
-                      type="button"
-                      className="secondary-button outline"
-                      onClick={viewer.open}
-                    >
-                      {viewer.label}
-                    </button>
-                  ))}
+          <section className="summary-card wide">
+            <h3>Document Details</h3>
+            <dl className="stacked-details detail-list">
+              {documentDetailsRows.map((row) => (
+                <div key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd className="preformatted-detail">{row.value}</dd>
                 </div>
-              </section>
-            ) : null}
-
-            <section className="summary-card wide">
-              <h3>Document Details</h3>
-              <dl className="stacked-details detail-list">
-                {documentDetailsRows.map((row) => (
-                  <div key={row.label}>
-                    <dt>{row.label}</dt>
-                    <dd className="preformatted-detail">{row.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          </>
-        ) : null}
-      </div>
+              ))}
+            </dl>
+          </section>
+        </>
+      ) : null}
+      <FhirJsonLink resource={documentReference || undefined} baseUrl={activeServer.baseUrl} />
     </section>
   )
 }
