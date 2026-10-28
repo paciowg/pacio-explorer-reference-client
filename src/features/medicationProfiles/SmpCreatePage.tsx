@@ -18,6 +18,9 @@ import { SmpCollectionListSelector } from './SmpCollectionListSelector'
 
 type PreparedCollection = { snapshot: PreparedSnapshot; match: DestinationMatch; title: string; destination: string }
 
+// Limit authoring choices without changing recognition of existing medication Lists.
+const medicationListTypeChoices = LIST_TYPES.filter(([code]) => !['104206-8', '104207-6', '104208-4'].includes(code))
+
 export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'list' | 'collection' }) {
   const { activeServer, savedServers } = useSavedServers()
   const [data, setData] = useState<SmpChoices | null>(null)
@@ -130,7 +133,7 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
           <div className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" value={title} required onChange={(e) => setTitle(e.target.value)} /></div>
           {kind === 'list' ? <>
             <p>Mode: snapshot · Status: current</p>
-            <div className="field-group"><label htmlFor="smp-type">List type</label><select id="smp-type" value={typeCode} required onChange={(e) => setTypeCode(e.target.value)}><option value="">Select a type</option>{LIST_TYPES.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></div>
+            <div className="field-group"><label htmlFor="smp-type">List type</label><select id="smp-type" value={typeCode} required onChange={(e) => setTypeCode(e.target.value)}><option value="">Select a type</option>{medicationListTypeChoices.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></div>
             <div className="field-group"><label htmlFor="smp-date">List date</label><input id="smp-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
             <div className="field-group"><label htmlFor="smp-author">Author / source</label><select id="smp-author" required value={author} onChange={(e) => setAuthor(e.target.value)}><option value="">Select an author</option>{data.authors.map((o) => <option key={o.reference} value={o.reference}>{o.label}</option>)}</select></div>
             <div className="field-group"><label htmlFor="smp-notes">Notes</label><textarea id="smp-notes" value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
