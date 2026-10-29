@@ -1,5 +1,5 @@
 /** Verifies clinically useful resource details, FHIR fallbacks, and supported resource coverage. */
-import type { Condition, Resource } from 'fhir/r4'
+import type { Condition, MedicationStatement, Resource } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { buildResourceDetailModel } from './resourceDetails'
 import { formatDate } from './formatters'
@@ -11,6 +11,20 @@ function detailValues(resource: Resource, label: string) {
 }
 
 describe('buildResourceDetailModel', () => {
+  it('shows statement adherence, its reason, basedOn, and authored dosage schedules', () => {
+    const statement: MedicationStatement = { resourceType: 'MedicationStatement', status: 'not-taken', subject: { reference: 'Patient/p' }, medicationCodeableConcept: { text: 'Medication' },
+      basedOn: [{ reference: 'MedicationRequest/r', display: 'Original request' }], extension: [{ url: 'http://hl7.org/fhir/5.0/StructureDefinition/extension-MedicationStatement.adherence', extension: [
+        { url: 'code', valueCodeableConcept: { coding: [{ code: 'not-taking', display: 'Not taking' }] } }, { url: 'reason', valueCodeableConcept: { text: 'Cost' } },
+      ] }], dosage: [{ text: 'Reported instructions', timing: { repeat: { frequency: 2, period: 1, periodUnit: 'd', timeOfDay: ['08:30:00'] } }, asNeededBoolean: true }] }
+    expect(detailValues(statement, 'Adherence')).toEqual(['Not taking'])
+    expect(detailValues(statement, 'Adherence reason')).toEqual(['Cost'])
+    expect(detailValues(statement, 'Based on')).toEqual(['Original request'])
+    expect(detailValues(statement, 'Dosage')?.[0]).toContain('2 time(s) every 1 d')
+    expect(detailValues(statement, 'Dosage')?.[0]).toContain('08:30:00')
+    expect(detailValues(statement, 'Dosage')?.[0]).toContain('As needed')
+    const withoutAdherence: MedicationStatement = { ...statement, extension: undefined }
+    expect(detailValues(withoutAdherence, 'Adherence')).toBeUndefined()
+  })
   it('formats zoned clinical timestamps and both period endpoints locally', () => {
     const start = '2026-10-13T00:30:00Z'
     const end = '2026-10-13T01:30:00Z'

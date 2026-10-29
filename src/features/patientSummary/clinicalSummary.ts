@@ -109,10 +109,6 @@ function getActiveProblems(bundle: Bundle | null, resolve?: ResolveResourceRefer
 
 function getCurrentMedications(bundle: Bundle | null, resolve?: ResolveResourceReference): ClinicalListItem[] {
   return getBundleResources<MedicationStatement>(bundle, 'MedicationStatement')
-    .filter((statement) => {
-      const status = statement.status
-      return !status || ['active', 'completed', 'intended', 'on-hold'].includes(status)
-    })
     .sort((a, b) =>
       compareClinicalDatesDesc(
         a.dateAsserted || a.effectiveDateTime || a.effectivePeriod?.start,

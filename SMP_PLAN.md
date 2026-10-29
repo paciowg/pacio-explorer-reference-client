@@ -7,6 +7,8 @@ Implementation notes (October 26, 2026): the user subsequently authorized implem
 
 Creation workflow update: subsequent user testing supersedes the statement-eligibility and post-save UI requirements below. All patient-scoped MedicationStatements are selectable without SMP compatibility exclusions or labels, and those compatibility issues do not block collection publication. Patient identity, member resource types, authored List field requirements, reference closure, version conflicts, and write recovery remain enforced. Medication label lookup is optional enrichment. Successful List saves return to Documents with a standard success notification; the saved-List action panel, manual source reload, excluded-resource panel, and resource-inspection dropdown are removed. Changed choices still refresh automatically before renewed submission.
 
+MedicationStatement authoring update (October 28, 2026): the user authorized the follow-up authoring capability described in README.md. This supersedes the statement/adherence deferral and Current Medications preservation requirements below. The section is now Medications, includes all statuses, and retains the latest-ten limit. Authoring supports destination selection, the supplied 20-product coded catalog or existing Medication references, optional existing MedicationRequest linkage with copied/locked medication and complete dosage, adherence, selected context/reason references, and notes. Clearing basedOn retains the copied values for editing. No status/adherence combination limits or warnings are applied for this demo. MedicationRequest authoring and formal external validation remain deferred.
+
 ## 1. Outcome and decisions
 
 Deliver two related workflows:
