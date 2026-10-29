@@ -31,6 +31,34 @@ export const MEDICATION_CATALOG = [
 
 export const ADHERENCE_CODES = ['taking', 'taking-as-directed', 'taking-not-as-directed', 'not-taking', 'on-hold',
   'on-hold-as-directed', 'on-hold-not-as-directed', 'stopped', 'stopped-as-directed', 'stopped-not-as-directed', 'unknown'] as const
+export const ADHERENCE_REASON_SYSTEM = 'http://snomed.info/sct'
+// Authoring selection only; Other is submitted as CodeableConcept.text, never as a terminology code.
+export const OTHER_ADHERENCE_REASON = '__other__'
+// Demo subset of the FHIR R5 reason-medication-status-codes expansion; UI labels stay separate from coding displays.
+export const ADHERENCE_REASONS = [
+  { code: '182864000', display: 'Drug not taken - side-effects', label: 'Not taken because of side effects' },
+  { code: '182872003', display: 'Drug discontinued - too expensive', label: 'Stopped taking medication because of cost' },
+  { code: '182840001', display: 'Drug treatment stopped - medical advice', label: 'Stopped on clinician advice' },
+  { code: '266711001', display: 'Drug not taken - problem swallowing', label: 'Not taken because swallowing is difficult' },
+  { code: '182834008', display: 'Drug course completed', label: 'Medication course completed' },
+  { code: '408354007', display: 'Drug treatment still needed', label: 'Treatment remains necessary' },
+  { code: '408355008', display: 'Drug treatment no longer needed', label: 'Treatment is no longer necessary' },
+] as const
+
+export function adherenceReasonConcept(code: string, text = ''): CodeableConcept | undefined {
+  if (!code) return undefined
+  if (code === OTHER_ADHERENCE_REASON) {
+    if (!text.trim()) throw new Error('Enter an adherence reason for Other.')
+    return { text: text.trim() }
+  }
+  const choice = ADHERENCE_REASONS.find((reason) => reason.code === code)
+  if (!choice) throw new Error('Select a supported adherence reason.')
+  return { coding: [{ system: ADHERENCE_REASON_SYSTEM, code: choice.code, display: choice.display }] }
+}
+
+export function adherenceReasonCode(concept: CodeableConcept | undefined) {
+  return concept?.coding?.find((coding) => coding.system === ADHERENCE_REASON_SYSTEM && ADHERENCE_REASONS.some((reason) => reason.code === coding.code))?.code
+}
 export const STATEMENT_STATUSES = ['active', 'completed', 'intended', 'stopped', 'on-hold', 'unknown', 'not-taken'] as const
 export const MEDICATION_ROUTES = [
   ['PO', 'Oral'], ['SC', 'Subcutaneous'], ['IM', 'Intramuscular'], ['IV', 'Intravenous'], ['RESPINH', 'Inhalation'], ['TOP', 'Topical'],
@@ -44,10 +72,10 @@ export function catalogMedication(code: string): CodeableConcept {
 
 export type SmpStatementInput = Pick<MedicationStatement, 'subject' | 'status' | 'medicationCodeableConcept' | 'medicationReference' |
   'basedOn' | 'effectiveDateTime' | 'effectivePeriod' | 'dateAsserted' | 'informationSource' | 'dosage' | 'context' |
-  'category' | 'statusReason' | 'reasonReference' | 'note'> & { adherence?: string; adherenceReason?: string }
+  'category' | 'statusReason' | 'reasonReference' | 'note'> & { adherence?: string; adherenceReason?: string; adherenceReasonText?: string }
 
 export function buildSmpMedicationStatement(input: SmpStatementInput): MedicationStatement {
-  const { adherence, adherenceReason, ...fields } = structuredClone(input)
+  const { adherence, adherenceReason, adherenceReasonText, ...fields } = structuredClone(input)
   if (!STATEMENT_STATUSES.includes(fields.status as typeof STATEMENT_STATUSES[number])) throw new Error('Select a medication-use status.')
   if (!fields.subject.reference) throw new Error('A patient is required.')
   if (Number(Boolean(fields.medicationCodeableConcept)) + Number(Boolean(fields.medicationReference)) !== 1) throw new Error('Select exactly one medication.')
@@ -56,11 +84,12 @@ export function buildSmpMedicationStatement(input: SmpStatementInput): Medicatio
   if (fields.effectiveDateTime && fields.effectivePeriod) throw new Error('Choose an effective date or date range.')
   if (adherence && !ADHERENCE_CODES.includes(adherence as typeof ADHERENCE_CODES[number])) throw new Error('Select a supported adherence value.')
   if (!adherence && adherenceReason?.trim()) throw new Error('Select adherence before providing an adherence reason.')
+  const reason = adherenceReasonConcept(adherenceReason || '', adherenceReasonText)
   // This demo intentionally permits all status/adherence combinations without clinical warnings.
   return { resourceType: 'MedicationStatement', meta: { profile: [SMP_STATEMENT] }, ...fields,
     ...(adherence ? { extension: [{ url: SMP_ADHERENCE, extension: [
       { url: 'code', valueCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/CodeSystem/medication-statement-adherence', code: adherence,
         display: adherence.replaceAll('-', ' ') }] } },
-      ...(adherenceReason?.trim() ? [{ url: 'reason', valueCodeableConcept: { text: adherenceReason.trim() } }] : []),
+      ...(reason ? [{ url: 'reason', valueCodeableConcept: reason }] : []),
     ] }] } : {}) }
 }

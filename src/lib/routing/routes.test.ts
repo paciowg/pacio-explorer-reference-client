@@ -6,6 +6,9 @@ describe('parseHashRoute', () => {
   it('parses medication statement creation routes', () => {
     expect(parseHashRoute('#/patients/patient%201/medication-statements/new')).toEqual({ name: 'patientMedicationStatementCreate', patientId: 'patient 1' })
   })
+  it('parses medication statement update routes independently of creation', () => {
+    expect(parseHashRoute('#/patients/patient%201/medication-statements/statement%201/edit')).toEqual({ name: 'patientMedicationStatementEdit', patientId: 'patient 1', statementId: 'statement 1' })
+  })
   it.each([
     ['medication-lists/new', { name: 'smpListCreate' }],
     ['medication-lists/list-1', { name: 'smpListDetail', resourceId: 'list-1' }],

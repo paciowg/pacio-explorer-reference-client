@@ -15,6 +15,7 @@ import { TocDetailPage } from './features/transitionsOfCare/TocDetailPage'
 import { PatientDeviceRequestCreatePage } from './features/devices/PatientDeviceRequestCreatePage'
 import { PatientNutritionOrderCreatePage } from './features/nutritionOrders/PatientNutritionOrderCreatePage'
 import { PatientMedicationStatementCreatePage } from './features/medicationStatements/PatientMedicationStatementCreatePage'
+import { PatientMedicationStatementEditPage } from './features/medicationStatements/PatientMedicationStatementEditPage'
 import { useSavedServers } from './features/servers/useSavedServers'
 import { SmpCreatePage } from './features/medicationProfiles/SmpCreatePage'
 import { SmpDetailPage } from './features/medicationProfiles/SmpDetailPage'
@@ -81,6 +82,7 @@ function App() {
       {route.name === 'patientDeviceRequestCreate' ? <PatientDeviceRequestCreatePage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} /> : null}
       {route.name === 'patientNutritionOrderCreate' ? <PatientNutritionOrderCreatePage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} /> : null}
       {route.name === 'patientMedicationStatementCreate' ? <PatientMedicationStatementCreatePage key={`${activeServer?.baseUrl}:${route.patientId}`} patientId={route.patientId} /> : null}
+      {route.name === 'patientMedicationStatementEdit' ? <PatientMedicationStatementEditPage key={`${activeServer?.baseUrl}:${route.patientId}:${route.statementId}`} patientId={route.patientId} statementId={route.statementId} /> : null}
       {route.name === 'tocDetail' ? (
         <TocDetailPage patientId={route.patientId} documentReferenceId={route.documentReferenceId} />
       ) : null}

@@ -16,6 +16,13 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.fhir-resource-actions-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
 .clinical-list-item > .clinical-entry-disclosure {
   grid-column: 1 / -1;
   min-width: 0;

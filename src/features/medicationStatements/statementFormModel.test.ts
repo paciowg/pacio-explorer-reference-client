@@ -1,7 +1,7 @@
 /** Verifies request locking, lossless dosage copying, medication restrictions, and authored date/adherence payloads. */
 import type { MedicationRequest } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
-import { ADHERENCE_CODES, buildSmpMedicationStatement, catalogMedication, MEDICATION_CATALOG, SMP_ADHERENCE, SMP_STATEMENT } from '../../igs/pacioSmp/medicationStatement'
+import { ADHERENCE_CODES, buildSmpMedicationStatement, catalogMedication, MEDICATION_CATALOG, OTHER_ADHERENCE_REASON, SMP_ADHERENCE, SMP_STATEMENT } from '../../igs/pacioSmp/medicationStatement'
 import { initialStatementForm, selectStatementRequest, statementFormInputs } from './statementFormModel'
 import type { StatementCreateData } from './statementCreateData'
 
@@ -45,7 +45,7 @@ describe('statement inputs', () => {
   })
   it('serializes date-only inputs, optional adherence, reason references, and standalone clock times', () => {
     const fields = statementFormInputs({ ...form(), dateAsserted: '2026-10-28', effectiveKind: 'period', effectiveStart: '2026-10-01',
-      effectiveEnd: '', adherence: 'not-taking', adherenceReason: 'Cost', reasonReferences: ['Condition/c'],
+      effectiveEnd: '', adherence: 'not-taking', adherenceReason: '182872003', reasonReferences: ['Condition/c'],
       dosage: [{ text: 'Reported instructions', timing: { repeat: { frequency: 1, period: 1, periodUnit: 'd', timeOfDay: ['08:30'] } }, asNeededBoolean: false }] }, data)
     const statement = buildSmpMedicationStatement({ ...fields, subject: { reference: 'Patient/p' } })
     expect(statement.meta?.profile).toEqual([SMP_STATEMENT])
@@ -55,7 +55,7 @@ describe('statement inputs', () => {
     expect(statement.dosage?.[0].asNeededBoolean).toBe(false)
     expect(statement.extension).toEqual([{ url: SMP_ADHERENCE, extension: [
       { url: 'code', valueCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/CodeSystem/medication-statement-adherence', code: 'not-taking', display: 'not taking' }] } },
-      { url: 'reason', valueCodeableConcept: { text: 'Cost' } },
+      { url: 'reason', valueCodeableConcept: { coding: [{ system: 'http://snomed.info/sct', code: '182872003', display: 'Drug discontinued - too expensive' }] } },
     ] }])
     expect(statement.reasonReference).toEqual([{ reference: 'Condition/c', display: 'Indication' }])
     expect(statement.reasonCode).toBeUndefined()
@@ -64,7 +64,20 @@ describe('statement inputs', () => {
     for (const adherence of ADHERENCE_CODES) expect(() => statementFormInputs({ ...form(), adherence }, data)).not.toThrow()
     expect(buildSmpMedicationStatement({ ...statementFormInputs(form(), data), subject: { reference: 'Patient/p' } }).extension).toBeUndefined()
   })
+  it('submits Other as text only, requires its explanation, and ignores inactive text for coded or absent reasons', () => {
+    const fields = statementFormInputs({ ...form(), adherence: 'not-taking', adherenceReason: OTHER_ADHERENCE_REASON, adherenceReasonText: ' Custom explanation ' }, data)
+    const statement = buildSmpMedicationStatement({ ...fields, subject: { reference: 'Patient/p' } })
+    expect(statement.extension?.[0].extension?.[1]).toEqual({ url: 'reason', valueCodeableConcept: { text: 'Custom explanation' } })
+    expect(JSON.stringify(statement)).not.toContain(OTHER_ADHERENCE_REASON)
+    expect(statement).not.toHaveProperty('adherenceReasonText')
+    expect(() => statementFormInputs({ ...form(), adherence: 'not-taking', adherenceReason: OTHER_ADHERENCE_REASON, adherenceReasonText: ' ' }, data)).toThrow('Enter an adherence reason for Other')
+    for (const reason of ['182872003', '']) {
+      const input = statementFormInputs({ ...form(), adherence: 'not-taking', adherenceReason: reason, adherenceReasonText: 'Ignore me' }, data)
+      expect(JSON.stringify(buildSmpMedicationStatement({ ...input, subject: { reference: 'Patient/p' } }))).not.toContain('Ignore me')
+    }
+  })
   it('rejects uncoded/missing medication, stale choices, invalid dates, ranges, and schedules before publication', () => {
+    expect(() => statementFormInputs({ ...form(), adherence: 'not-taking', adherenceReason: 'Cost' }, data)).toThrow('supported adherence reason')
     expect(() => statementFormInputs({ ...form(), medication: { medicationCodeableConcept: { text: 'Uncoded' } } }, data)).toThrow('coded medication')
     expect(() => statementFormInputs({ ...form(), medication: {} }, data)).toThrow('one medication')
     expect(() => statementFormInputs({ ...form(), reasonReferences: ['Condition/absent'] }, data)).toThrow('no longer available')
