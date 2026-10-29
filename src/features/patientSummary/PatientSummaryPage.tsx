@@ -306,6 +306,9 @@ export function PatientSummaryPage({ patientId, view }: PatientSummaryPageProps)
                 title="Medications"
                 items={summary.currentMedications}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
+                renderItemActions={(resource) => resource.resourceType === 'MedicationStatement' && resource.id
+                  ? <button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/medication-statements/${encodeURIComponent(resource.id!)}/edit`)}>Update Medication Statement</button>
+                  : null}
                 footer={<button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/medication-statements/new`)}>Create Medication Statement</button>}
               />
               <ClinicalSummarySection

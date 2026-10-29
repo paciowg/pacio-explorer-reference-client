@@ -1,5 +1,6 @@
-/** Renders a read-only clinical-summary list with consistent empty and unavailable states. */
+/** Renders clinical summaries with consistent empty states and optional actions supplied by their owning patient section. */
 import type { ReactNode } from 'react'
+import type { Resource } from 'fhir/r4'
 import type { ClinicalListItem } from './clinicalTypes'
 import { ClinicalEntrySummary } from './ClinicalEntrySummary'
 import { ExpandableFhirResource } from './FhirResourceDetails'
@@ -10,6 +11,7 @@ type ClinicalSummarySectionProps = {
   emptyMessage?: string
   footer?: ReactNode
   baseUrl?: string
+  renderItemActions?: (resource: Resource) => ReactNode
 }
 
 export function ClinicalSummarySection({
@@ -18,6 +20,7 @@ export function ClinicalSummarySection({
   emptyMessage = 'None recorded',
   footer,
   baseUrl,
+  renderItemActions,
 }: ClinicalSummarySectionProps) {
   return (
     <section className="summary-card clinical-summary-card">
@@ -40,6 +43,7 @@ export function ClinicalSummarySection({
                 details={item.details || null}
                 baseUrl={baseUrl}
                 showResourceType={false}
+                actions={renderItemActions?.(item.resource)}
               />
             ) : (
               <li

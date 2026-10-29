@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { MedicationRequest } from 'fhir/r4'
-import { catalogMedication } from '../../igs/pacioSmp/medicationStatement'
+import { ADHERENCE_REASONS, catalogMedication, OTHER_ADHERENCE_REASON } from '../../igs/pacioSmp/medicationStatement'
 import { MedicationStatementForm } from './MedicationStatementForm'
 import { initialStatementForm, selectStatementRequest } from './statementFormModel'
 import type { StatementCreateData } from './statementCreateData'
@@ -15,6 +15,22 @@ const data: StatementCreateData = { patient: { resourceType: 'Patient', id: 'p' 
 ] }
 
 describe('statement form', () => {
+  it('uses a fixed coded adherence reason dropdown with every choice available rather than filtered autocomplete', () => {
+    const html = renderToStaticMarkup(<MedicationStatementForm value={{ ...initialStatementForm(), adherence: 'not-taking', adherenceReason: '182872003' }} data={data} disabled={false} onChange={() => {}} />)
+    expect(html).not.toContain('<datalist')
+    expect(html).toContain('Adherence reason<select')
+    expect(html).toContain('<option value="182872003" selected="">Stopped taking medication because of cost</option>')
+    for (const reason of ADHERENCE_REASONS) expect(html).toContain(`value="${reason.code}"`)
+    expect(html).toContain('None selected')
+    expect(html).toContain(`<option value="${OTHER_ADHERENCE_REASON}">Other</option>`)
+    expect(html).not.toContain('Other adherence reason')
+  })
+  it('shows a separate text field only when Other is selected', () => {
+    const html = renderToStaticMarkup(<MedicationStatementForm value={{ ...initialStatementForm(), adherence: 'taking', adherenceReason: OTHER_ADHERENCE_REASON, adherenceReasonText: 'My explanation' }} data={data} disabled={false} onChange={() => {}} />)
+    expect(html).toContain('Other adherence reason<input')
+    expect(html).toContain('value="My explanation"')
+    expect(html).not.toContain('<datalist')
+  })
   it('places basedOn first and uses the standard dated transfer list for reasons', () => {
     const html = renderToStaticMarkup(<MedicationStatementForm value={initialStatementForm()} data={data} disabled={false} onChange={() => {}} />)
     expect(html.indexOf('Based on MedicationRequest')).toBeLessThan(html.indexOf('<legend>Medication</legend>'))

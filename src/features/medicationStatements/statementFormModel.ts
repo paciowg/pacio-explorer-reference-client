@@ -8,12 +8,12 @@ import { REASON_TYPES, SOURCE_TYPES, type StatementCreateData, type StatementMed
 export type StatementForm = {
   basedOn: string; medication: StatementMedication; dosage: Dosage[]; status: MedicationStatement['status'] | ''
   effectiveKind: '' | 'date' | 'period'; effectiveStart: string; effectiveEnd: string; dateAsserted: string
-  informationSource: string; adherence: string; adherenceReason: string; context: string; category: string
+  informationSource: string; adherence: string; adherenceReason: string; adherenceReasonText: string; context: string; category: string
   statusReason: string; reasonReferences: string[]; notes: string
 }
 export function initialStatementForm(): StatementForm {
   return { basedOn: '', medication: {}, dosage: [], status: '', effectiveKind: '', effectiveStart: '', effectiveEnd: '',
-    dateAsserted: localDateInputValue(), informationSource: '', adherence: '', adherenceReason: '', context: '', category: '',
+    dateAsserted: localDateInputValue(), informationSource: '', adherence: '', adherenceReason: '', adherenceReasonText: '', context: '', category: '',
     statusReason: '', reasonReferences: [], notes: '' }
 }
 
@@ -94,7 +94,7 @@ export function statementFormInputs(form: StatementForm, data: StatementCreateDa
     ...(form.statusReason.trim() ? { statusReason: [{ text: form.statusReason.trim() }] } : {}),
     ...(form.reasonReferences.length ? { reasonReference: form.reasonReferences.map((value) => statementReference(data.options, value, REASON_TYPES)!) } : {}),
     ...(form.notes.trim() ? { note: [{ text: form.notes.trim() }] } : {}),
-    adherence: form.adherence || undefined, adherenceReason: form.adherenceReason || undefined,
+    adherence: form.adherence || undefined, adherenceReason: form.adherenceReason || undefined, adherenceReasonText: form.adherenceReasonText || undefined,
   }
   buildSmpMedicationStatement(input)
   const { subject: _subject, ...fields } = input

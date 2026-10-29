@@ -1,4 +1,5 @@
-/** Renders accessible clinical disclosures with raw FHIR links available inside the expanded content. */
+/** Renders accessible clinical disclosures with FHIR links and caller-supplied actions inside the expanded content. */
+import type { ReactNode } from 'react'
 import type { Resource } from 'fhir/r4'
 import type { ResourceDetailModel } from '../lib/fhir/resourceDetails'
 import { ClinicalEntrySummary, type ClinicalEntrySummaryProps } from './ClinicalEntrySummary'
@@ -9,6 +10,7 @@ type ExpandableFhirResourceProps = Omit<ClinicalEntrySummaryProps, 'resourceType
   details: ResourceDetailModel | null
   showResourceType?: boolean
   baseUrl?: string
+  actions?: ReactNode
 }
 
 export function FhirResourceDetails({ model }: { model: ResourceDetailModel }) {
@@ -52,7 +54,7 @@ export function ExpandableFhirResource(props: ExpandableFhirResourceProps) {
   }
 
   const hasJsonLink = Boolean(props.resource.id && props.baseUrl)
-  if (!props.details && !hasJsonLink) {
+  if (!props.details && !hasJsonLink && !props.actions) {
     return (
       <li className="clinical-list-item">
         <ClinicalEntrySummary {...summaryProps} />
@@ -67,8 +69,9 @@ export function ExpandableFhirResource(props: ExpandableFhirResourceProps) {
           <ClinicalEntrySummary {...summaryProps} showDisclosure />
         </summary>
         {props.details ? <FhirResourceDetails model={props.details} /> : null}
-        {hasJsonLink ? <div className="fhir-resource-actions">
-          <FhirJsonLink resource={props.resource} baseUrl={props.baseUrl} />
+        {hasJsonLink || props.actions ? <div className={`fhir-resource-actions${props.actions ? ' fhir-resource-actions-stacked' : ''}`}>
+          {props.actions}
+          {hasJsonLink ? <FhirJsonLink resource={props.resource} baseUrl={props.baseUrl} /> : null}
         </div> : null}
       </details>
     </li>

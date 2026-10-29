@@ -61,3 +61,34 @@ export async function createResource<T extends Resource>(baseUrl: string, resour
   if (!id) throw new Error(`The server accepted the ${resource.resourceType}, but did not return its id. Verify the destination before retrying.`)
   return { ...resource, id: decodeURIComponent(id) }
 }
+
+export class FhirUpdateError extends Error {
+  readonly uncertain: boolean
+  constructor(message: string, uncertain: boolean) { super(message); this.uncertain = uncertain }
+}
+
+/** Updates an existing identity without concurrency headers; callers must preserve fields outside their editing scope. */
+export async function updateResource<T extends Resource>(baseUrl: string, resource: T): Promise<T> {
+  if (!resource.id || !/^[A-Za-z0-9.-]{1,64}$/.test(resource.id)) throw new FhirUpdateError('An existing resource id is required for update.', false)
+  const url = serverResourceUrl(baseUrl, `${resource.resourceType}/${resource.id}`)
+  try {
+    const response = await fetch(url, { method: 'PUT', cache: 'no-store',
+      headers: { Accept: 'application/fhir+json', 'Content-Type': 'application/fhir+json', Prefer: 'return=representation' },
+      body: JSON.stringify(resource) })
+    const raw = await response.text()
+    let body: T | { resourceType?: string; issue?: { diagnostics?: string; details?: { text?: string } }[] } | null
+    try { body = raw ? JSON.parse(raw) : null }
+    catch { throw new FhirUpdateError('The server returned an unreadable update response.', response.ok || response.status >= 500 || response.status === 408) }
+    if (!response.ok) {
+      const outcome = body as { issue?: { diagnostics?: string; details?: { text?: string } }[] } | null
+      throw new FhirUpdateError(outcome?.issue?.[0]?.diagnostics || outcome?.issue?.[0]?.details?.text || `FHIR update failed (${response.status}).`, response.status >= 500 || response.status === 408)
+    }
+    // PUT already identifies the resource, so a successful empty response needs no Location header.
+    if (!body || body.resourceType === 'OperationOutcome') return resource
+    if (body.resourceType !== resource.resourceType || !('id' in body) || body.id !== resource.id) throw new FhirUpdateError('The server accepted the update but returned an unexpected resource identity.', true)
+    return body as T
+  } catch (error) {
+    if (error instanceof FhirUpdateError) throw error
+    throw new FhirUpdateError(error instanceof Error ? error.message : 'Update interrupted.', true)
+  }
+}

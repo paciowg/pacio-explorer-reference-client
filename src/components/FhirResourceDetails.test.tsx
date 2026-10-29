@@ -1,9 +1,17 @@
-/** Verifies clinical disclosures keep FHIR links inside their collapsed content and preserve static fallback rows. */
+/** Verifies clinical disclosures keep links and caller actions inside collapsed content and preserve static fallback rows. */
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ExpandableFhirResource } from './FhirResourceDetails'
 
 describe('ExpandableFhirResource', () => {
+  it('keeps supplied update actions inside expanded content and does not add them by default', () => {
+    const props = { title: 'Medication', resource: { resourceType: 'MedicationStatement', id: 's' }, details: null, baseUrl: 'https://example.test/fhir' }
+    const html = renderToStaticMarkup(<ExpandableFhirResource {...props} actions={<button type="button">Update Medication Statement</button>} />)
+    expect(html.indexOf('Update Medication Statement')).toBeGreaterThan(html.indexOf('</summary>'))
+    expect(html.indexOf('Update Medication Statement')).toBeLessThan(html.indexOf('</details>'))
+    expect(html).not.toContain('<details open=""')
+    expect(renderToStaticMarkup(<ExpandableFhirResource {...props} />)).not.toContain('Update Medication Statement')
+  })
   it('renders details in a closed native disclosure', () => {
     const html = renderToStaticMarkup(
       <ExpandableFhirResource

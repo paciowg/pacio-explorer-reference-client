@@ -9,6 +9,10 @@ Creation workflow update: subsequent user testing supersedes the statement-eligi
 
 MedicationStatement authoring update (October 28, 2026): the user authorized the follow-up authoring capability described in README.md. This supersedes the statement/adherence deferral and Current Medications preservation requirements below. The section is now Medications, includes all statuses, and retains the latest-ten limit. Authoring supports destination selection, the supplied 20-product coded catalog or existing Medication references, optional existing MedicationRequest linkage with copied/locked medication and complete dosage, adherence, selected context/reason references, and notes. Clearing basedOn retains the copied values for editing. No status/adherence combination limits or warnings are applied for this demo. MedicationRequest authoring and formal external validation remain deferred.
 
+Limited statement update follow-up (October 29, 2026): the user authorized editing status, adherence/reason, and appending a note through an update page reached only from expanded statements in the patient's Medications section. The edit model preserves the original resource outside explicitly changed fields. PUT updates the original server identity; there is no destination selection. Concurrency protection, unexpected-extension interpretation, and narrative reconciliation are deliberately deferred, with version-aware updates recorded as a future improvement. Creation behavior and captured collections remain unchanged. See README.md for the implemented workflow.
+
+Adherence reason follow-up (October 29, 2026): create/update forms use a normal dropdown with seven coded SNOMED CT reasons from the FHIR R5 reason-medication-status-codes expansion, None selected, and Other. Other reveals a text field and submits a text-only CodeableConcept. Updates match known reasons by system/code, show an Existing option for unsupported coding, and load text-only reasons into Other. Original concepts remain intact unless explicitly edited, replaced, or cleared.
+
 ## 1. Outcome and decisions
 
 Deliver two related workflows:

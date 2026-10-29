@@ -1,7 +1,7 @@
 /** Presents statement authoring with an optional authoritative request, lossless dosage review, and destination-local selections. */
 import type { Dosage, TimingRepeat } from 'fhir/r4'
 import { TransferList } from '../../components/TransferList'
-import { ADHERENCE_CODES, catalogMedication, MEDICATION_CATALOG, MEDICATION_ROUTES, STATEMENT_STATUSES } from '../../igs/pacioSmp/medicationStatement'
+import { ADHERENCE_CODES, ADHERENCE_REASONS, catalogMedication, MEDICATION_CATALOG, MEDICATION_ROUTES, OTHER_ADHERENCE_REASON, STATEMENT_STATUSES } from '../../igs/pacioSmp/medicationStatement'
 import { formatDate, getCodeableConceptText } from '../../lib/fhir/formatters'
 import { getResourceReferenceChoices, getResourceTransferChoices } from '../../lib/fhir/resourceOptions'
 import { REASON_TYPES, SOURCE_TYPES, type StatementCreateData } from './statementCreateData'
@@ -87,9 +87,11 @@ export function MedicationStatementForm({ value: form, data, disabled, onChange 
     </fieldset>
     <fieldset className="toc-section-card"><legend>Dosage</legend>{form.basedOn ? <DosageReview values={form.dosage} /> : <DosageEditor values={form.dosage} onChange={(value) => set('dosage', value)} />}</fieldset>
     <fieldset className="toc-section-card"><legend>Adherence</legend><p className="helper-text">Record reported adherence for the effective period. Leave unselected when no adherence assertion is being made.</p>
-      <Select label="Adherence" value={form.adherence} options={choices(ADHERENCE_CODES)} onChange={(value) => onChange({ ...form, adherence: value, adherenceReason: value ? form.adherenceReason : '' })} />
-      {form.adherence ? <><div className="field-group"><label>Adherence reason<input list="statement-adherence-reasons" value={form.adherenceReason} onChange={(event) => set('adherenceReason', event.target.value)} /></label></div>
-        <datalist id="statement-adherence-reasons">{['Cost', 'Side effects', 'Forgot doses', 'Difficulty obtaining medication', 'Following clinician instructions', 'Patient preference'].map((value) => <option key={value} value={value} />)}</datalist></> : null}
+      <Select label="Adherence" value={form.adherence} options={choices(ADHERENCE_CODES)} onChange={(value) => onChange({ ...form, adherence: value,
+        adherenceReason: value ? form.adherenceReason : '', adherenceReasonText: value ? form.adherenceReasonText : '' })} />
+      {form.adherence ? <><Select label="Adherence reason" value={form.adherenceReason} options={[...ADHERENCE_REASONS.map((reason) => ({ value: reason.code, label: reason.label })), { value: OTHER_ADHERENCE_REASON, label: 'Other' }]} onChange={(value) => set('adherenceReason', value)} />
+        {form.adherenceReason === OTHER_ADHERENCE_REASON ? <Input label="Other adherence reason" value={form.adherenceReasonText} onChange={(value) => set('adherenceReasonText', value)} /> : null}
+      </> : null}
     </fieldset>
     <details><summary>Additional details</summary><div className="device-form-fields"><div className="toc-metadata-grid">
       <Select label="Encounter" value={form.context} options={getResourceReferenceChoices(data.options, ['Encounter'])} onChange={(value) => set('context', value)} />
