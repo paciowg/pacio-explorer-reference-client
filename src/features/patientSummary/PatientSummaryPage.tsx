@@ -303,9 +303,10 @@ export function PatientSummaryPage({ patientId, view }: PatientSummaryPageProps)
               />
               <ClinicalSummarySection
                 baseUrl={activeServer.baseUrl}
-                title="Current Medications"
+                title="Medications"
                 items={summary.currentMedications}
                 emptyMessage={summary.clinicalSectionEmptyMessage}
+                footer={<button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/medication-statements/new`)}>Create Medication Statement</button>}
               />
               <ClinicalSummarySection
                 baseUrl={activeServer.baseUrl}

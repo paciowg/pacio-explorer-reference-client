@@ -373,6 +373,7 @@ function medicationRequestDetails(resource: MedicationRequest, resolve?: Resolve
 }
 
 function medicationStatementDetails(resource: MedicationStatement, resolve?: ResolveResourceReference) {
+  const adherence = resource.extension?.find((extension) => extension.url === 'http://hl7.org/fhir/5.0/StructureDefinition/extension-MedicationStatement.adherence')
   return model(group([
     field('Status', humanize(resource.status)),
     field('Status reason', resource.statusReason?.map(getCodeableConceptText)),
@@ -381,8 +382,18 @@ function medicationStatementDetails(resource: MedicationStatement, resolve?: Res
     field('Effective', choice(resource.effectiveDateTime, resource.effectivePeriod)),
     field('Date asserted', resource.dateAsserted ? formatDate(resource.dateAsserted) : undefined),
     field('Information source', reference(resource.informationSource, resource, resolve)),
+    field('Based on', references(resource.basedOn, resource, resolve)),
+    field('Adherence', getCodeableConceptText(adherence?.extension?.find((extension) => extension.url === 'code')?.valueCodeableConcept)),
+    field('Adherence reason', getCodeableConceptText(adherence?.extension?.find((extension) => extension.url === 'reason')?.valueCodeableConcept)),
     field('Reason', [...concepts(resource.reasonCode), ...references(resource.reasonReference, resource, resolve)]),
-    field('Dosage', resource.dosage?.map(dosage)),
+    field('Dosage', resource.dosage?.map((value) => {
+      const repeat = value.timing?.repeat
+      return compact([dosage(value), repeat?.frequency && repeat.period ? `${repeat.frequency} time(s) every ${repeat.period} ${repeat.periodUnit || ''}` : undefined,
+        repeat?.timeOfDay?.length ? `At ${repeat.timeOfDay.join(', ')}` : undefined,
+        repeat?.boundsPeriod ? choice(undefined, repeat.boundsPeriod) : undefined,
+        value.asNeededBoolean === true ? 'As needed' : getCodeableConceptText(value.asNeededCodeableConcept),
+        value.patientInstruction, ...concepts(value.additionalInstruction)]).join(' · ')
+    })),
     field('Notes', notes(resource.note), true),
   ]))
 }

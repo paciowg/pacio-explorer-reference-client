@@ -1,8 +1,11 @@
-/** Verifies patient-view navigation and parsing of document, SMP, device, nutrition, and FHIR viewer routes. */
+/** Verifies patient-view navigation and parsing of clinical creation, document, SMP, and FHIR viewer routes. */
 import { describe, expect, it } from 'vitest'
 import { parseHashRoute } from './routes'
 
 describe('parseHashRoute', () => {
+  it('parses medication statement creation routes', () => {
+    expect(parseHashRoute('#/patients/patient%201/medication-statements/new')).toEqual({ name: 'patientMedicationStatementCreate', patientId: 'patient 1' })
+  })
   it.each([
     ['medication-lists/new', { name: 'smpListCreate' }],
     ['medication-lists/list-1', { name: 'smpListDetail', resourceId: 'list-1' }],

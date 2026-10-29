@@ -11,6 +11,7 @@ export type AppRoute =
   | { name: 'patientTocCreate'; patientId: string }
   | { name: 'patientDeviceRequestCreate'; patientId: string }
   | { name: 'patientNutritionOrderCreate'; patientId: string }
+  | { name: 'patientMedicationStatementCreate'; patientId: string }
   | { name: 'tocDetail'; patientId: string; documentReferenceId: string }
   | { name: 'smpListCreate'; patientId: string }
   | { name: 'smpListDetail'; patientId: string; resourceId: string }
@@ -44,6 +45,9 @@ export function parseHashRoute(hash: string): AppRoute {
   }
   if (segments.length === 4 && segments[0] === 'patients' && segments[2] === 'nutrition-orders' && segments[3] === 'new') {
     return { name: 'patientNutritionOrderCreate', patientId: decodeURIComponent(segments[1]) }
+  }
+  if (segments.length === 4 && segments[0] === 'patients' && segments[2] === 'medication-statements' && segments[3] === 'new') {
+    return { name: 'patientMedicationStatementCreate', patientId: decodeURIComponent(segments[1]) }
   }
 
   if (segments.length === 1 && segments[0] === 'patients') {

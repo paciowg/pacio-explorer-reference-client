@@ -9,6 +9,13 @@ function presentationOnly(items: ClinicalListItem[]) {
 }
 
 describe('buildClinicalSummary', () => {
+  it('includes every medication status while preserving the latest-ten summary limit', () => {
+    const statuses = ['stopped', 'not-taken', 'unknown', 'entered-in-error', 'completed', 'on-hold', 'intended', 'active']
+    const bundle = { resourceType: 'Bundle', type: 'collection', entry: statuses.map((status, index) => ({ resource: {
+      resourceType: 'MedicationStatement', id: String(index), status, dateAsserted: '2026-10-28', medicationCodeableConcept: { text: status },
+    } })) } as unknown as Bundle
+    expect(buildClinicalSummary(bundle).currentMedications.map((item) => item.title)).toEqual(statuses)
+  })
   it.each([
     ['activeProblems', 'Condition', 'onsetDateTime'],
     ['currentMedications', 'MedicationStatement', 'dateAsserted'],
@@ -93,6 +100,7 @@ describe('buildClinicalSummary', () => {
     const model = buildClinicalSummary(bundle)
     expect(presentationOnly(model.currentMedications)).toEqual([
       { title: 'Aspirin', dateLabel: 'Recorded', dateValue: '2025-01-02' },
+      { title: 'Stopped medication', dateLabel: undefined, dateValue: undefined },
     ])
     expect(presentationOnly(model.knownAllergies)).toEqual([{
       title: 'Peanuts', secondaryText: 'Food allergy',
