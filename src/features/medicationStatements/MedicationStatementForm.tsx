@@ -96,6 +96,6 @@ export function MedicationStatementForm({ value: form, data, disabled, onChange 
       <Select label="Category" value={form.category} options={choices(['inpatient', 'outpatient', 'community', 'patientspecified'])} onChange={(value) => set('category', value)} />
       <Input label="Status reason" value={form.statusReason} onChange={(value) => set('statusReason', value)} />
     </div><TransferList label="Reason references" showDates options={getResourceTransferChoices(data.options, REASON_TYPES)} values={form.reasonReferences} disabled={disabled} onChange={(value) => set('reasonReferences', value)} /></div></details>
-    <div className="field-group"><label>Notes<textarea value={form.notes} onChange={(event) => set('notes', event.target.value)} /></label></div>
+    <div className="field-group"><label htmlFor="statement-notes">Notes</label><textarea id="statement-notes" rows={4} value={form.notes} onChange={(event) => set('notes', event.target.value)} /></div>
   </fieldset>
 }
