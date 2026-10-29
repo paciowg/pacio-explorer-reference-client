@@ -559,7 +559,8 @@
 }
 
 .field-group input,
-.field-group select {
+.field-group select,
+.field-group textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
   border-radius: 14px;
@@ -570,9 +571,14 @@
 }
 
 .field-group input:focus,
-.field-group select:focus {
+.field-group select:focus,
+.field-group textarea:focus {
   outline: 2px solid #818cf8;
   outline-offset: 2px;
+}
+
+.field-group textarea {
+  resize: vertical;
 }
 
 .form-actions,
