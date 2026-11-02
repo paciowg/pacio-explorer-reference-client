@@ -140,7 +140,7 @@ describe('patient update entry point', () => {
     const medications = sections.find((node) => node.props.title === 'Medications')!
     const action = medications.props.renderItemActions as (resource: { resourceType: string; id?: string }) => ReactElement<Record<string, unknown>> | null
     const update = action(original)!
-    expect(update.props.children).toBe('Update Medication Statement')
+    expect(update.props.children).toBe('Edit Medication Statement')
     ;(update.props.onClick as () => void)()
     expect(harness.navigate).toHaveBeenCalledWith('/patients/p/medication-statements/external-statement/edit')
     expect(action({ resourceType: 'MedicationStatement' })).toBeNull()

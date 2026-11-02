@@ -51,7 +51,7 @@ export function PatientMedicationStatementEditPage({ patientId, statementId }: {
   if (!activeServer) return null
   const locked = busy || saved || uncertain
   return <section className="panel"><div className="panel-header"><div>
-    <h2>Update Medication Statement</h2>
+    <h2>Edit Medication Statement</h2>
     {data ? <p className="create-patient-name">{getDisplayNameFromHumanName(data.patient.name?.[0])}</p> : null}
   </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
     <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(path)}>Back to patient</button></div>

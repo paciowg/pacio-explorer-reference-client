@@ -4,13 +4,14 @@ import { describe, expect, it } from 'vitest'
 import { ExpandableFhirResource } from './FhirResourceDetails'
 
 describe('ExpandableFhirResource', () => {
-  it('keeps supplied update actions inside expanded content and does not add them by default', () => {
+  it('keeps supplied edit actions above JSON inside expanded content and does not add them by default', () => {
     const props = { title: 'Medication', resource: { resourceType: 'MedicationStatement', id: 's' }, details: null, baseUrl: 'https://example.test/fhir' }
-    const html = renderToStaticMarkup(<ExpandableFhirResource {...props} actions={<button type="button">Update Medication Statement</button>} />)
-    expect(html.indexOf('Update Medication Statement')).toBeGreaterThan(html.indexOf('</summary>'))
-    expect(html.indexOf('Update Medication Statement')).toBeLessThan(html.indexOf('</details>'))
+    const html = renderToStaticMarkup(<ExpandableFhirResource {...props} actions={<button type="button">Edit Medication Statement</button>} />)
+    expect(html.indexOf('Edit Medication Statement')).toBeGreaterThan(html.indexOf('</summary>'))
+    expect(html.indexOf('Edit Medication Statement')).toBeLessThan(html.indexOf('View FHIR JSON'))
+    expect(html).toContain('fhir-resource-actions fhir-resource-actions-stacked')
     expect(html).not.toContain('<details open=""')
-    expect(renderToStaticMarkup(<ExpandableFhirResource {...props} />)).not.toContain('Update Medication Statement')
+    expect(renderToStaticMarkup(<ExpandableFhirResource {...props} />)).not.toContain('Edit Medication Statement')
   })
   it('renders details in a closed native disclosure', () => {
     const html = renderToStaticMarkup(

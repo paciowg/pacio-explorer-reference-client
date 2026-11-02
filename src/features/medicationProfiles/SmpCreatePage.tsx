@@ -1,7 +1,7 @@
 /** Coordinates source List authoring and single-step collection publication with in-session recovery state. */
 import { useEffect, useRef, useState } from 'react'
 import type { List } from 'fhir/r4'
-import { EMPTY_REASONS, LIST_TYPES, uuidIdentifier } from '../../igs/pacioSmp/smp'
+import { uuidIdentifier } from '../../igs/pacioSmp/smp'
 import { TransferList } from '../../components/TransferList'
 import { getResourceTransferChoices } from '../../lib/fhir/resourceOptions'
 import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
@@ -15,11 +15,9 @@ import { prepareSmpSnapshot, SmpSourceChangedError, type PreparedSnapshot } from
 import { matchSmpPatient, publishSmpCollection, type DestinationMatch, type SmpProgress } from './smpPublishing'
 import { saveSmpMedicationList, type SmpListSaveProgress } from './smpListCreation'
 import { SmpCollectionListSelector } from './SmpCollectionListSelector'
+import { SmpListEmptyReason, SmpListFields } from './SmpListFields'
 
 type PreparedCollection = { snapshot: PreparedSnapshot; match: DestinationMatch; title: string; destination: string }
-
-// Limit authoring choices without changing recognition of existing medication Lists.
-const medicationListTypeChoices = LIST_TYPES.filter(([code]) => !['104206-8', '104207-6', '104208-4'].includes(code))
 
 export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'list' | 'collection' }) {
   const { activeServer, savedServers } = useSavedServers()
@@ -131,18 +129,17 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
         <fieldset disabled={locked}>
           {kind === 'collection' ? <DestinationServerField id="smp-destination" servers={savedServers} value={destination} disabled={locked} onChange={setDestination} /> : null}
           <div className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" value={title} required onChange={(e) => setTitle(e.target.value)} /></div>
-          {kind === 'list' ? <>
-            <p>Mode: snapshot · Status: current</p>
-            <div className="field-group"><label htmlFor="smp-type">List type</label><select id="smp-type" value={typeCode} required onChange={(e) => setTypeCode(e.target.value)}><option value="">Select a type</option>{medicationListTypeChoices.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></div>
-            <div className="field-group"><label htmlFor="smp-date">List date</label><input id="smp-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
-            <div className="field-group"><label htmlFor="smp-author">Author / source</label><select id="smp-author" required value={author} onChange={(e) => setAuthor(e.target.value)}><option value="">Select an author</option>{data.authors.map((o) => <option key={o.reference} value={o.reference}>{o.label}</option>)}</select></div>
-            <div className="field-group"><label htmlFor="smp-notes">Notes</label><textarea id="smp-notes" value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-          </> : null}
+          {kind === 'list' ? <SmpListFields value={{ typeCode, date, author, notes }} authors={data.authors} onChange={(patch) => {
+            if (patch.typeCode !== undefined) setTypeCode(patch.typeCode)
+            if (patch.date !== undefined) setDate(patch.date)
+            if (patch.author !== undefined) setAuthor(patch.author)
+            if (patch.notes !== undefined) setNotes(patch.notes)
+          }} /> : null}
           {kind === 'collection' ? <SmpCollectionListSelector key={reload} options={data.options} baseUrl={activeServer?.baseUrl || ''} patientId={patientId}
             values={selected} disabled={locked} onChange={setSelected} /> : <TransferList label="Medication statements" showDates disabled={locked} values={selected}
             options={getResourceTransferChoices(data.options.map((o) => ({ ...o, display: o.label })), ['MedicationStatement'])}
             onChange={(values) => { setSelected(values); if (values.length) setEmptyReason('') }} />}
-          {kind === 'list' && !selected.length ? <div className="field-group"><label htmlFor="smp-empty">Reason for an empty List</label><select id="smp-empty" required value={emptyReason} onChange={(e) => setEmptyReason(e.target.value)}><option value="">Select an explicit reason</option>{EMPTY_REASONS.map(([code, label]) => <option value={code} key={code}>{label}</option>)}</select></div> : null}
+          {kind === 'list' && !selected.length ? <SmpListEmptyReason value={emptyReason} onChange={setEmptyReason} /> : null}
         </fieldset>
         <button className="primary-button" type="submit" disabled={busy || (kind === 'list' && written) || Boolean(progress.current.uncertain || listProgress.current.uncertain)}>{busy ? (kind === 'list' ? 'Saving…' : 'Creating…') : kind === 'list' ? 'Save medication List' : progress.current.bundle ? 'Retry indexing' : written ? 'Retry creating SMP Collection' : 'Create SMP Collection'}</button>
       </form>
