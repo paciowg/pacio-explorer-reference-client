@@ -12,6 +12,7 @@ describe('parseHashRoute', () => {
   it.each([
     ['medication-lists/new', { name: 'smpListCreate' }],
     ['medication-lists/list-1', { name: 'smpListDetail', resourceId: 'list-1' }],
+    ['medication-lists/list%201/edit', { name: 'smpListEdit', resourceId: 'list 1' }],
     ['smp-collections/new?list=list-1', { name: 'smpCollectionCreate' }],
     ['smp-collections/index-1', { name: 'smpCollectionDetail', resourceId: 'index-1' }],
   ])('parses the SMP route %s', (path, expected) => {

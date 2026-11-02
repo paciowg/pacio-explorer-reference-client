@@ -42,6 +42,7 @@ vi.mock('../../lib/routing/routeNotification', () => ({ setRouteNotification: ha
 import { SmpCreatePage } from './SmpCreatePage'
 import { SmpCollectionListSelector } from './SmpCollectionListSelector'
 import { SmpMedicationListItem } from './SmpMedicationListItem'
+import { SmpListContent } from './SmpListContent'
 import { DestinationServerField } from '../servers/DestinationServerField'
 import { TransferList } from '../../components/TransferList'
 import { SmpSourceChangedError } from './smpReferences'
@@ -205,5 +206,27 @@ describe('collection preview loading', () => {
     await settle()
     expect(harness.details).toHaveBeenCalledTimes(1)
     expect(onChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('List edit action placement', () => {
+  it('keeps the edit button at the bottom above List JSON before and after loading members', async () => {
+    const memberList: List = { ...list, entry: [{ item: { reference: 'MedicationStatement/s', display: 'Existing medication' } }] }
+    harness.details.mockResolvedValue({ list: memberList, bundle: { resourceType: 'Bundle', type: 'collection' } })
+    const item = () => { harness.cursor = 0; return SmpMedicationListItem({ list: memberList, baseUrl: harness.server.baseUrl, patientId: 'p' }) }
+    let tree = item()
+    const edit = nodes(tree).find((node) => node.type === 'button' && node.props.children === 'Edit Medication List')!
+    expect(edit.props.className).toBe('secondary-button outline compact')
+    ;(edit.props.onClick as () => void)()
+    expect(harness.navigate).toHaveBeenCalledWith('/patients/p/medication-lists/l/edit')
+    ;(nodes(tree).find((node) => node.type === 'details')!.props.onToggle as (event: unknown) => void)({ currentTarget: { open: true } })
+    item(); await settle(); tree = item()
+    const content = nodes(tree).find((node) => node.type === SmpListContent)!
+    const details = SmpListContent(content.props as Parameters<typeof SmpListContent>[0])
+    const elements = nodes(details)
+    const action = elements.find((node) => node.type === 'button' && node.props.children === 'Edit Medication List')!
+    const footer = elements.find((node) => node.props.className === 'fhir-resource-actions fhir-resource-actions-stacked')!
+    expect(footer.props.children).toEqual([action, expect.objectContaining({ props: expect.objectContaining({ resource: memberList }) })])
+    expect(elements.indexOf(action)).toBeGreaterThan(elements.findIndex((node) => node.type === 'dt' && node.props.children === 'Medications'))
   })
 })

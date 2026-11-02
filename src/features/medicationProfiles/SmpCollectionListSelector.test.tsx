@@ -26,6 +26,7 @@ describe('collection list selection', () => {
     expect(html.indexOf('</label>')).toBeLessThan(html.indexOf('<details'))
     expect(html).not.toContain('transfer-list')
     expect(html).not.toContain('Loading medication List details')
+    expect(html).not.toContain('Edit Medication List')
   })
   it('keeps newest first, breaks clinical-date ties by update time, and preserves equal/undated order', () => {
     const html = renderToStaticMarkup(<SmpCollectionListSelector {...defaults} values={[]} onChange={() => {}} options={[

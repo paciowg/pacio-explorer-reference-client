@@ -8,6 +8,7 @@ import { formatDate, getCodeableConceptText } from '../../lib/fhir/formatters'
 import { SmpListContent } from './SmpListContent'
 import { loadSmpListDetails } from './smpListDetails'
 import { getResourceTimestamp } from '../../lib/fhir/resourceTimestamp'
+import { navigateTo } from '../../lib/routing/routes'
 
 export function SmpMedicationListItem({ list, baseUrl, patientId, selection }: { list: List; baseUrl: string; patientId: string; selection?: { checked: boolean; disabled: boolean; onChange: (checked: boolean) => void } }) {
   const [requested, setRequested] = useState(false)
@@ -23,6 +24,7 @@ export function SmpMedicationListItem({ list, baseUrl, patientId, selection }: {
   }, [requested, baseUrl, patientId, list])
   const title = list.title || getCodeableConceptText(list.code) || list.id || 'Medication List'
   const timestamp = selection ? getResourceTimestamp(list) : { dateValue: list.date, dateLabel: list.date ? 'List date' : undefined }
+  const editAction = !selection && list.id ? <button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/medication-lists/${encodeURIComponent(list.id!)}/edit`)}>Edit Medication List</button> : null
   return <li className={`clinical-list-item clinical-list-expandable-item${selection ? ' smp-selectable-list' : ''}`}>
     {selection ? <label className="smp-list-selection">
       <input type="checkbox" aria-label={`Include ${title}`} checked={selection.checked} disabled={selection.disabled}
@@ -35,9 +37,9 @@ export function SmpMedicationListItem({ list, baseUrl, patientId, selection }: {
       {requested && !data && !error ? <p className="info-banner" role="status">Loading medication List details…</p> : null}
       {error ? <p className="warning-banner" role="alert">{error}</p> : null}
       {data ? <>{data.warning ? <p className="warning-banner">{data.warning}</p> : null}
-        <SmpListContent list={data.list} resolve={createBundleIndex(data.bundle, baseUrl).resolve} baseUrl={baseUrl} embedded />
+        <SmpListContent list={data.list} resolve={createBundleIndex(data.bundle, baseUrl).resolve} baseUrl={baseUrl} embedded actions={editAction} />
       </> : null}
-      {!data ? <div className="fhir-resource-actions"><FhirJsonLink resource={list} baseUrl={baseUrl} /></div> : null}
+      {!data ? <div className={`fhir-resource-actions${editAction ? ' fhir-resource-actions-stacked' : ''}`}>{editAction}<FhirJsonLink resource={list} baseUrl={baseUrl} /></div> : null}
     </details>
   </li>
 }

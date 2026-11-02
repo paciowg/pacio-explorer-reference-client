@@ -98,7 +98,8 @@ export function SmpDetailPage({ patientId, resourceId, kind }: { patientId: stri
     {error ? <p className="error-banner" role="alert">{error}</p> : !data ? <p role="status">Loading…</p> : <>
       <p>{getDisplayNameFromHumanName(data.patient.name?.[0])}</p>
       {data.warning ? <p className="warning-banner">{data.warning}</p> : null}
-      {data.lists.map((list, i) => <SmpListContent key={`${list.id}:${i}`} list={list} resolve={resolve!} baseUrl={activeServer?.baseUrl} />)}
+      {data.lists.map((list, i) => <SmpListContent key={`${list.id}:${i}`} list={list} resolve={resolve!} baseUrl={activeServer?.baseUrl}
+        actions={<button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/medication-lists/${encodeURIComponent(resourceId)}/edit`)}>Edit Medication List</button>} />)}
     </>}
   </div>
 }

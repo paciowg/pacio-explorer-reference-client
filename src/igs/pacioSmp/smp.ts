@@ -13,6 +13,8 @@ export const LIST_TYPES = [
   ['104206-8', 'Private medication list'], ['104207-6', 'Medication administration list'],
   ['104208-4', 'Medication list for public health AndOr CDC reporting'], ['104209-2', 'Transfer medication list'],
 ] as const
+// These types remain recognizable on imported Lists but are not offered for new selections.
+export const MEDICATION_LIST_TYPE_CHOICES = LIST_TYPES.filter(([code]) => !['104206-8', '104207-6', '104208-4'].includes(code))
 export const EMPTY_REASONS = [
   ['nilknown', 'No known medications'], ['notasked', 'Medication information not asked'],
   ['withheld', 'Information withheld'], ['unavailable', 'Information unavailable'],

@@ -1,4 +1,5 @@
-/** Displays List membership with source links for live resources and captured JSON for snapshots, using only the supplied resolver. */
+/** Displays List membership with caller-owned actions and source links for live resources, or captured JSON for snapshots. */
+import type { ReactNode } from 'react'
 import type { List, MedicationStatement, Practitioner, PractitionerRole, Resource } from 'fhir/r4'
 import type { SmpResolver } from '../../igs/pacioSmp/smp'
 import { FhirResourceDetails } from '../../components/FhirResourceDetails'
@@ -16,7 +17,7 @@ export function SmpResourceContent({ resource, resolve, baseUrl, sourceResource 
     : <details><summary>Captured FHIR JSON</summary><FhirJson resource={resource} /></details>}</>
 }
 
-export function SmpListContent({ list, resolve, embedded = false, baseUrl, showListJson = true }: { list: List; resolve: SmpResolver; embedded?: boolean; baseUrl?: string; showListJson?: boolean }) {
+export function SmpListContent({ list, resolve, embedded = false, baseUrl, showListJson = true, actions }: { list: List; resolve: SmpResolver; embedded?: boolean; baseUrl?: string; showListJson?: boolean; actions?: ReactNode }) {
   const source = resolve(list.source?.reference, list)
   const role = source?.resourceType === 'PractitionerRole' ? source as PractitionerRole : undefined
   const practitioner = role ? resolve(role.practitioner?.reference, role) : undefined
@@ -49,7 +50,7 @@ export function SmpListContent({ list, resolve, embedded = false, baseUrl, showL
         sourceResource={sourceResource} /> : <p className="warning-banner">Statement unavailable{member ? ' or its patient could not be verified' : ''}: {entry.item.reference}</p>}</details>
       })}</dd>
     </div></dl> : null}
-    {baseUrl ? <div className="fhir-resource-actions"><FhirJsonLink resource={list} baseUrl={baseUrl} /></div>
+    {baseUrl ? <div className={`fhir-resource-actions${actions ? ' fhir-resource-actions-stacked' : ''}`}>{actions}<FhirJsonLink resource={list} baseUrl={baseUrl} /></div>
       : showListJson ? <details><summary>List FHIR JSON</summary><FhirJson resource={list} /></details> : null}
   </section>
 }
