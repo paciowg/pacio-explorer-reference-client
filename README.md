@@ -87,6 +87,14 @@ Destination Patient matching shares the TOC/ADI helper: reuse the source Patient
 
 The implementation targets the October 2, 2026 SMP development revision, including its official DocumentReference profile and LOINC `70006-2`. See the [SMP implementation notes](src/igs/pacioSmp/README.md) for the pinned artifacts, indexing convention, resource limits, and external validation handoff. MedicationRequest authoring remains deferred.
 
+### Sending saved documents
+
+TOC Document, ADI Document, and SMP Collection details offer **Send to another server** above the FHIR JSON links when their saved Bundle is available. The review page displays the captured content read-only and uses the existing destination dropdown, excluding the active server. **Send to server** writes to the selected saved server and returns to the source patient's Documents tab with a success notification naming the destination. Destination Patient matching uses the existing shared behavior internally.
+
+Sending preserves the saved Bundle's identifiers, timestamps, entries, references, attachments, and clinical values; it does not rebuild the document from current resources. The destination assigns a new outer Bundle resource ID and receives a companion DocumentReference associated with its Patient. Source storage IDs/version metadata are cleared from the two new outer resources; embedded resources remain unchanged. The index's Bundle URL is updated, its obsolete attachment hash/size are removed, and other source-relative index references become absolute source URLs. Missing Bundles, patient mismatches, and unresolved internal references block sending.
+
+Completed Patient and Bundle stages are retained for the current page session. A definite index rejection permits retry against the retained Bundle; an uncertain write disables retry until the destination is verified. Reloading or leaving the page discards recovery state. Live-server acceptance remains a separate check.
+
 ### Medication List editing
 
 **Edit Medication List** appears at the bottom of expanded Lists in Documents and on standalone List details, immediately above View FHIR JSON. It uses the same compact button and stacked action layout as **Edit Medication Statement**. It opens `/patients/:patientId/medication-lists/:resourceId/edit` on the active server, using the creation layout and controls for title, type, date, author, membership, and empty reason. Status and mode remain read-only. Existing notes are read-only; **New note** appends a timestamped annotation without an invented author. Back and successful saves return to Documents.
@@ -143,9 +151,12 @@ PMO form -> createPmoDocument -> PACIO ADI builders -> destination patient + pub
 TOC form -> createTocDocument -> PACIO TOC builders -> destination patient + publishing helpers -> FHIR transport
 ```
 
+TOC/ADI creation, SMP Collection creation, and sending saved documents share `publishPreparedDocument` for Patient, Bundle, and DocumentReference sequencing. SMP creation and sending retain its progress for in-session retries. Creation adapters prepare their Bundles first; sending supplies the saved snapshot without reference closure or rewriting. Shared matching, saved-snapshot loading and validation, destination index adaptation, and write-outcome handling live in `src/lib/fhir/`; feature adapters own profile-specific identification and checks.
+
 - `src/features/advanceDirectives/` owns PMO workflow orchestration, generic advance-directive display, and browser file/attachment behavior.
 - `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
 - `src/features/transitionsOfCare/` owns TOC selection, workflow orchestration, discovery, and display.
+- `src/features/documentSending/` owns the send page, read-only preview, and a thin TOC/ADI/SMP adapter. Its generic operations and tests live in `src/lib/fhir/savedDocuments.ts` and the adjacent test file.
 - `src/igs/pacioToc/` owns pure PACIO TOC section definitions and resource construction.
 - `src/igs/pacioPfe/` owns pure PFE Device, DeviceRequest, and NutritionOrder construction, profile-specific validation, demo terminology, and device extension interpretation.
 - `src/features/devices/` owns patient device viewing, destination reference choices, creation forms, and sequential publication.

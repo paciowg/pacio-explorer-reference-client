@@ -122,7 +122,8 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
           sections={sections}
         />
       ) : null}
-      <div className="page-actions">
+      <div className="fhir-resource-actions fhir-resource-actions-stacked">
+        {!isLoading && !errorMessage && bundle ? <button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/transitions-of-care/${encodeURIComponent(documentReferenceId)}/send`)}>Send to another server</button> : null}
         {documentReference?.id ? <div>DocumentReference: <FhirJsonLink resource={documentReference} baseUrl={activeServer.baseUrl} /></div> : null}
         {bundle?.id ? <div>Bundle: <FhirJsonLink resource={bundle} baseUrl={activeServer.baseUrl} /></div> : null}
       </div>

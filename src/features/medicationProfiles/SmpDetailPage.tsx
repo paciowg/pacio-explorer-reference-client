@@ -84,7 +84,8 @@ export function SmpDetailPage({ patientId, resourceId, kind }: { patientId: stri
           </section> : null}
           {data.warning ? <p className="warning-banner">{data.warning}</p> : null}
           {data.lists.map((list, i) => <SmpListContent key={`${list.id}:${i}`} list={list} resolve={resolve!} showListJson={false} />)}
-          <div className="page-actions">
+          <div className="fhir-resource-actions fhir-resource-actions-stacked">
+            {data.bundle.id ? <button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/smp-collections/${encodeURIComponent(resourceId)}/send`)}>Send to another server</button> : null}
             {index?.id ? <div>DocumentReference: <FhirJsonLink resource={index} baseUrl={activeServer.baseUrl} /></div> : null}
             {data.bundle.id ? <div>Bundle: <FhirJsonLink resource={data.bundle} baseUrl={activeServer.baseUrl} /></div> : null}
           </div>

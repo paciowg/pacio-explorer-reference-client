@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { parseHashRoute } from './routes'
 
 describe('parseHashRoute', () => {
+  it.each([['transitions-of-care', 'toc'], ['advance-directives', 'adi'], ['smp-collections', 'smp']])('parses %s send routes independently of detail and creation', (path, kind) => {
+    expect(parseHashRoute(`#/patients/patient%201/${path}/document%201/send`)).toEqual({ name: 'documentSend', patientId: 'patient 1', resourceId: 'document 1', kind })
+  })
   it('parses medication statement creation routes', () => {
     expect(parseHashRoute('#/patients/patient%201/medication-statements/new')).toEqual({ name: 'patientMedicationStatementCreate', patientId: 'patient 1' })
   })

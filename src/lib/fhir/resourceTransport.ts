@@ -2,6 +2,36 @@
 import type { Bundle, Resource } from 'fhir/r4'
 import { normalizeBaseUrl } from './url'
 
+export class FhirCreateError extends Error {
+  uncertain: boolean
+  constructor(message: string, uncertain: boolean) { super(message); this.uncertain = uncertain }
+}
+
+/** Creates a resource once and requires a trustworthy destination identity before permitting dependent writes. */
+export async function createResourceWithOutcome<T extends Resource>(baseUrl: string, resource: T): Promise<T> {
+  try {
+    const response = await fetch(`${normalizeBaseUrl(baseUrl)}/${resource.resourceType}`, { method: 'POST', cache: 'no-store',
+      headers: { Accept: 'application/fhir+json', 'Content-Type': 'application/fhir+json', Prefer: 'return=representation' }, body: JSON.stringify(resource) })
+    const raw = await response.text()
+    let body: Resource | { issue?: { diagnostics?: string; details?: { text?: string } }[] } | null = null
+    try { body = raw ? JSON.parse(raw) : null } catch { throw new FhirCreateError(`Unreadable ${resource.resourceType} response. Verify the destination before retrying.`, response.ok || response.status >= 500 || response.status === 408) }
+    if (!response.ok) {
+      const outcome = body as { issue?: { diagnostics?: string; details?: { text?: string } }[] } | null
+      throw new FhirCreateError(outcome?.issue?.[0]?.diagnostics || outcome?.issue?.[0]?.details?.text || `FHIR write failed (${response.status}).`, response.status >= 500 || response.status === 408)
+    }
+    if (body && 'resourceType' in body && body.resourceType === resource.resourceType && /^[A-Za-z0-9.-]{1,64}$/.test(body.id || '')) return body as T
+    const location = response.headers.get('location') || response.headers.get('content-location') || ''
+    let reference = ''
+    try { reference = serverResourceUrl(baseUrl, location).slice(normalizeBaseUrl(baseUrl).length + 1) } catch { /* An accepted write without a trustworthy identity must not be repeated. */ }
+    const match = reference.match(new RegExp(`^${resource.resourceType}/([A-Za-z0-9.-]+)(?:/_history/[^/]+)?$`))
+    if (!match) throw new FhirCreateError(`Server accepted ${resource.resourceType} without a usable same-server id. Verify the destination before retrying.`, true)
+    return { ...resource, id: match[1] }
+  } catch (error) {
+    if (error instanceof FhirCreateError) throw error
+    throw new FhirCreateError(error instanceof Error ? error.message : 'Write interrupted.', true)
+  }
+}
+
 async function parse(response: Response) {
   const text = await response.text()
   const body = text ? JSON.parse(text) : null

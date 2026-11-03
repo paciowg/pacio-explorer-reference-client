@@ -20,6 +20,7 @@ import { useSavedServers } from './features/servers/useSavedServers'
 import { SmpCreatePage } from './features/medicationProfiles/SmpCreatePage'
 import { SmpDetailPage } from './features/medicationProfiles/SmpDetailPage'
 import { SmpListEditPage } from './features/medicationProfiles/SmpListEditPage'
+import { SendDocumentPage } from './features/documentSending/SendDocumentPage'
 import {
   clearRouteNotification,
   getRouteNotification,
@@ -62,6 +63,7 @@ function App() {
     <AppLayout notification={notification}>
       {route.name === 'home' ? <ServerConnectPage /> : null}
       {route.name === 'patients' ? <PatientListPage /> : null}
+      {route.name === 'documentSend' ? <SendDocumentPage key={`${activeServer?.baseUrl}:${route.patientId}:${route.resourceId}:${route.kind}`} patientId={route.patientId} resourceId={route.resourceId} kind={route.kind} /> : null}
       {route.name === 'smpListEdit' ? <SmpListEditPage key={`${activeServer?.baseUrl}:${route.patientId}:${route.resourceId}`} patientId={route.patientId} resourceId={route.resourceId} /> : null}
       {route.name === 'smpListCreate' || route.name === 'smpCollectionCreate' ? <SmpCreatePage key={`${activeServer?.baseUrl}:${route.patientId}:${route.name}`} patientId={route.patientId} kind={route.name === 'smpListCreate' ? 'list' : 'collection'} /> : null}
       {route.name === 'smpListDetail' || route.name === 'smpCollectionDetail' ? <SmpDetailPage key={`${activeServer?.baseUrl}:${route.patientId}:${route.resourceId}:${route.name}`} patientId={route.patientId} resourceId={route.resourceId} kind={route.name === 'smpListDetail' ? 'list' : 'collection'} /> : null}
