@@ -171,7 +171,8 @@ export function AdvanceDirectiveDetailPage({
           </section>
         </>
       ) : null}
-      <div className="page-actions">
+      <div className="fhir-resource-actions fhir-resource-actions-stacked">
+        {!isLoading && !errorMessage && bundle ? <button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/advance-directives/${encodeURIComponent(documentReferenceId)}/send`)}>Send to another server</button> : null}
         {documentReference?.id ? <div>DocumentReference: <FhirJsonLink resource={documentReference} baseUrl={activeServer.baseUrl} /></div> : null}
         {bundle?.id ? <div>Bundle: <FhirJsonLink resource={bundle} baseUrl={activeServer.baseUrl} /></div> : null}
       </div>

@@ -22,9 +22,9 @@ vi.mock('../../lib/fhir/closedBundle', () => ({
 vi.mock('../../lib/fhir/destinationPatient', () => ({
   ensureDestinationPatient: mocks.ensureDestinationPatient,
 }))
-vi.mock('../../lib/fhir/client', () => ({
-  createBundle: mocks.createBundle,
-  createDocumentReference: mocks.createDocumentReference,
+vi.mock('../../lib/fhir/resourceTransport', async (original) => ({
+  ...await original<typeof import('../../lib/fhir/resourceTransport')>(),
+  createResourceWithOutcome: (baseUrl: string, resource: Bundle | DocumentReference) => resource.resourceType === 'Bundle' ? mocks.createBundle(baseUrl, resource) : mocks.createDocumentReference(baseUrl, resource),
 }))
 
 import { createPmoDocument } from './createPmoDocument'

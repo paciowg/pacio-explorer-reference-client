@@ -1,6 +1,19 @@
 /** Discovers resolvable FHIR references and rewrites references between bundled resources as UUID URNs. */
 import type { Bundle, BundleEntry, Resource } from 'fhir/r4'
 
+type Node = Record<string, unknown>
+export function walkReferences(resource: Resource, visit: (node: Node, owner: Resource, path: string) => void) {
+  function walk(value: unknown, owner: Resource, path: string, contained = false) {
+    if (Array.isArray(value)) { value.forEach((v, i) => walk(v, owner, `${path}[${i}]`, contained)); return }
+    if (!value || typeof value !== 'object') return
+    const node = value as Node
+    const scope = typeof node.resourceType === 'string' && !contained ? node as unknown as Resource : owner
+    if ('reference' in node || (node.identifier && !node.resourceType && Object.keys(node).every((k) => ['identifier', 'type', 'display', 'extension', 'id'].includes(k)))) visit(node, owner, path)
+    for (const [key, child] of Object.entries(node)) walk(child, scope, path ? `${path}.${key}` : key, key === 'contained')
+  }
+  walk(resource, resource, '')
+}
+
 type ResourceWithId = Resource & { id: string }
 
 function isObject(value: unknown): value is Record<string, unknown> {

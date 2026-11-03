@@ -3,28 +3,17 @@ import type { Bundle, DomainResource, List, MedicationStatement, Patient, Resour
 import { buildSmpCollection, uuidIdentifier, validateSmpMedicationList } from '../../igs/pacioSmp/smp'
 import { readServerResource, serverResourceUrl } from '../../lib/fhir/resourceTransport'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
+import { samePatient } from '../../lib/fhir/destinationPatient'
+import { walkReferences } from '../../lib/fhir/bundleReferences'
+
+export { samePatient } from '../../lib/fhir/destinationPatient'
+export { walkReferences } from '../../lib/fhir/bundleReferences'
 
 export function sourceReference(baseUrl: string, reference: string) {
   return serverResourceUrl(baseUrl, reference).slice(normalizeBaseUrl(baseUrl).length + 1)
 }
 
-export function samePatient(baseUrl: string, patientId: string, reference: string | undefined) {
-  if (!reference) return false
-  try { return sourceReference(baseUrl, reference).replace(/\/_history\/[^/]+$/, '') === `Patient/${patientId}` } catch { return false }
-}
-
 type Node = Record<string, unknown>
-export function walkReferences(resource: Resource, visit: (node: Node, owner: Resource, path: string) => void) {
-  function walk(value: unknown, owner: Resource, path: string, contained = false) {
-    if (Array.isArray(value)) { value.forEach((v, i) => walk(v, owner, `${path}[${i}]`, contained)); return }
-    if (!value || typeof value !== 'object') return
-    const node = value as Node
-    const scope = typeof node.resourceType === 'string' && !contained ? node as unknown as Resource : owner
-    if ('reference' in node || (node.identifier && !node.resourceType && Object.keys(node).every((k) => ['identifier', 'type', 'display', 'extension', 'id'].includes(k)))) visit(node, owner, path)
-    for (const [key, child] of Object.entries(node)) walk(child, scope, path ? `${path}.${key}` : key, key === 'contained')
-  }
-  walk(resource, resource, '')
-}
 
 export type PreparedSnapshot = { bundle: Bundle; originals: Map<string, Resource>; patient: Patient; readReferences?: Map<string, string> }
 

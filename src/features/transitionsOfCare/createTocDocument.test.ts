@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('../../lib/fhir/closedBundle', () => ({ closeBundleReferences: mocks.closeBundleReferences }))
 vi.mock('../../lib/fhir/destinationPatient', () => ({ ensureDestinationPatient: mocks.ensureDestinationPatient }))
-vi.mock('../../lib/fhir/client', () => ({ createBundle: mocks.createBundle, createDocumentReference: mocks.createDocumentReference }))
+vi.mock('../../lib/fhir/resourceTransport', async (original) => ({ ...await original<typeof import('../../lib/fhir/resourceTransport')>(),
+  createResourceWithOutcome: (baseUrl: string, resource: Bundle | DocumentReference) => resource.resourceType === 'Bundle' ? mocks.createBundle(baseUrl, resource) : mocks.createDocumentReference(baseUrl, resource),
+}))
 import { createTocDocument } from './createTocDocument'
 
 const patient: Patient = { resourceType: 'Patient', id: 'patient-1', name: [{ text: 'Ada Lovelace' }] }

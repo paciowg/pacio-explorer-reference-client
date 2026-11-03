@@ -2,6 +2,12 @@
 import type { Bundle, Patient } from 'fhir/r4'
 import { createPatient, searchPatients } from './client'
 import { normalizeBaseUrl } from './url'
+import { serverResourceUrl } from './resourceTransport'
+
+export function samePatient(baseUrl: string, patientId: string, reference: string | undefined) {
+  if (!reference) return false
+  try { return serverResourceUrl(baseUrl, reference).slice(normalizeBaseUrl(baseUrl).length + 1).replace(/\/_history\/[^/]+$/, '') === `Patient/${patientId}` } catch { return false }
+}
 
 export type DestinationPatientResult = {
   patient: Patient

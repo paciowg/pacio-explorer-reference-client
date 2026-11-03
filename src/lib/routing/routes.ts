@@ -19,12 +19,18 @@ export type AppRoute =
   | { name: 'smpListEdit'; patientId: string; resourceId: string }
   | { name: 'smpCollectionCreate'; patientId: string }
   | { name: 'smpCollectionDetail'; patientId: string; resourceId: string }
+  | { name: 'documentSend'; patientId: string; resourceId: string; kind: 'toc' | 'adi' | 'smp' }
 
 export function parseHashRoute(hash: string): AppRoute {
   const raw = hash.replace(/^#/, '') || '/'
   const [pathname, query = ''] = raw.split('?')
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`
   const segments = normalizedPath.split('/').filter(Boolean)
+
+  if (segments.length === 5 && segments[0] === 'patients' && segments[4] === 'send') {
+    const kind = segments[2] === 'transitions-of-care' ? 'toc' : segments[2] === 'advance-directives' ? 'adi' : segments[2] === 'smp-collections' ? 'smp' : null
+    if (kind) return { name: 'documentSend', patientId: decodeURIComponent(segments[1]), resourceId: decodeURIComponent(segments[3]), kind }
+  }
 
   if (segments.length === 5 && segments[0] === 'patients' && segments[2] === 'medication-lists' && segments[4] === 'edit') {
     return { name: 'smpListEdit', patientId: decodeURIComponent(segments[1]), resourceId: decodeURIComponent(segments[3]) }
