@@ -4,6 +4,7 @@ import { buildSmpDocumentReference } from '../../igs/pacioSmp/smp'
 import { publishPreparedDocument, type DestinationMatch, type DocumentPublicationProgress } from '../../lib/fhir/documentPublishing'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
 import { createResourceWithOutcome } from '../../lib/fhir/resourceTransport'
+import { portableDocumentPatient } from '../../lib/fhir/documentPortability'
 import { assertSnapshotUnchanged, sourceReference, type PreparedSnapshot } from './smpReferences'
 
 // Retain existing imports for List/MedicationStatement callers while the implementation lives in shared FHIR code.
@@ -19,22 +20,20 @@ export async function publishSmpCollection(input: { sourceBase: string; destinat
   if (!progress.bundle) await assertSnapshotUnchanged(input.sourceBase, input.snapshot)
   progress.publicationKey = publicationKey
   return publishPreparedDocument({
+    sourceBaseUrl: input.sourceBase,
     destinationBaseUrl: input.destinationBase,
     bundle: input.snapshot.bundle,
     ensurePatient: async () => {
       if (input.match.patient) return input.match.patient
-      const copy = structuredClone(input.snapshot.patient)
-      delete copy.id
-      delete copy.meta
-      return createResourceWithOutcome(input.destinationBase, copy)
+      return createResourceWithOutcome(input.destinationBase, portableDocumentPatient(input.snapshot.patient))
     },
     buildDocumentReference: (bundleUrl, patient) => {
       const firstList = input.snapshot.bundle.entry?.find((e) => e.resource?.resourceType === 'List')?.resource as List
-      // Index author targets are narrower than List.source; never use source-local ids across servers.
+      // Index author targets are narrower than List.source; the shared publisher handles cross-server omission.
       const originalList = [...input.snapshot.originals.values()].find((r) => r.resourceType === 'List') as List
       const source = originalList.source?.reference
       let author: Reference | undefined
-      if (normalizeBaseUrl(input.sourceBase) === normalizeBaseUrl(input.destinationBase) && source && !source.startsWith('#')) {
+      if (source && !source.startsWith('#')) {
         if (sourceReference(input.sourceBase, source).startsWith('PractitionerRole/')) author = originalList.source
       }
       if (!firstList || !patient.id) throw new Error('Invalid destination patient.')

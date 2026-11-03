@@ -2,7 +2,6 @@
 import type { Identifier, Patient, Reference } from 'fhir/r4'
 import { buildTocBundle, buildTocDocumentReference, type TocSectionSelection, type TocStatus } from '../../igs/pacioToc/tocDocument'
 import { publishDocument } from '../../lib/fhir/documentPublishing'
-import { normalizeBaseUrl } from '../../lib/fhir/url'
 
 function uuid() {
   return crypto.randomUUID()
@@ -26,8 +25,6 @@ export type CreateTocDocumentInput = {
 
 export async function createTocDocument(input: CreateTocDocumentInput) {
   const documentIdentifier = urnIdentifier()
-  const isCrossServer = normalizeBaseUrl(input.sourceBaseUrl) !==
-    normalizeBaseUrl(input.destinationBaseUrl)
   const initialBundle = buildTocBundle({
     ...input,
     compositionIdentifier: documentIdentifier,
@@ -45,10 +42,8 @@ export async function createTocDocument(input: CreateTocDocumentInput) {
         reference: `Patient/${destinationPatient.id}`,
         display: destinationPatient.name?.[0]?.text,
       },
-      // These optional Must Support references use source-local ids. Cross-server publication
-      // omits them from the index; participant details represented by the Composition remain.
-      author: isCrossServer ? undefined : input.author,
-      custodian: isCrossServer ? undefined : input.custodian,
+      author: input.author,
+      custodian: input.custodian,
       status: input.status,
       createdAt: input.createdAt,
       title: input.title,

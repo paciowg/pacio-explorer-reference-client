@@ -1,7 +1,6 @@
 /** Orchestrates construction and posting of an ADI PMO Bundle and its companion DocumentReference. */
 import type { CodeableConcept, Patient, Practitioner, PractitionerRole, Reference } from 'fhir/r4'
 import { publishDocument } from '../../lib/fhir/documentPublishing'
-import { normalizeBaseUrl } from '../../lib/fhir/url'
 import { buildAdiDocumentReference } from '../../igs/pacioAdi/documentReference'
 import { buildAdiPmoBundle, type PmoAttesterOption, type PmoDataEntererOption, type PmoStatus } from '../../igs/pacioAdi/pmoDocument'
 
@@ -36,8 +35,6 @@ export async function createPmoDocument(input: CreatePmoDocumentInput) {
   const documentIdentifierValue = createIdentifierValue()
   const setIdentifierValue = createIdentifierValue()
   const compositionFullUrl = `urn:uuid:${crypto.randomUUID()}`
-  const isCrossServer = normalizeBaseUrl(input.sourceBaseUrl) !==
-    normalizeBaseUrl(input.destinationBaseUrl)
   const initialBundle = buildAdiPmoBundle({
     patient: input.patient,
     practitionerRole: input.practitionerRole,
@@ -64,11 +61,9 @@ export async function createPmoDocument(input: CreatePmoDocumentInput) {
         reference: `Patient/${destinationPatient.id}`,
         display: destinationPatient.name?.[0]?.text,
       },
-      // These optional Must Support references use source-local ids. Cross-server publication
-      // omits them from the index; participant details represented by the Composition remain.
-      author: isCrossServer ? undefined : [input.author],
-      authenticator: isCrossServer ? undefined : input.authenticator,
-      custodian: isCrossServer ? undefined : input.custodian,
+      author: [input.author],
+      authenticator: input.authenticator,
+      custodian: input.custodian,
       status: input.status,
       signedDate: input.signedDate,
       createdAt: input.createdAt,

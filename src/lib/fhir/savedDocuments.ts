@@ -8,6 +8,7 @@ import { createResourceWithOutcome, serverResourceUrl } from './resourceTranspor
 import { normalizeBaseUrl } from './url'
 import { samePatient } from './destinationPatient'
 import { walkReferences } from './bundleReferences'
+import { portableCapturedBundle, portableDocumentIndex, portableDocumentPatient } from './documentPortability'
 
 export type SavedDocument = { bundle: Bundle; documentReference: DocumentReference; patient: Patient; bundleReference: string }
 
@@ -87,17 +88,13 @@ function forCreate<T extends Resource>(resource: T): T {
   if (copy.meta) {
     delete copy.meta.versionId
     delete copy.meta.lastUpdated
+    if (!Object.keys(copy.meta).length) delete copy.meta
   }
   return copy
 }
 
 export function destinationIndex(data: SavedDocument, sourceBase: string, patient: Patient, bundleUrl: string): DocumentReference {
   const index = forCreate(data.documentReference)
-  // Preserve source metadata references as absolute URLs, rather than accidentally retargeting local ids.
-  walkReferences(index, (node) => {
-    if (typeof node.reference !== 'string' || node.reference.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(node.reference)) return
-    node.reference = serverResourceUrl(sourceBase, node.reference)
-  })
   index.subject = { ...index.subject, reference: `Patient/${patient.id}` }
   const sourceUrl = getReferencedBundleUrl(data.documentReference, sourceBase)
   index.content = index.content.map((content) => {
@@ -114,7 +111,7 @@ export function destinationIndex(data: SavedDocument, sourceBase: string, patien
     if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url) && !url.startsWith('#')) copy.attachment.url = new URL(url, `${normalizeBaseUrl(sourceBase)}/`).href
     return copy
   })
-  return index
+  return portableDocumentIndex(index)
 }
 
 export async function sendSavedDocument(input: { sourceBase: string; destinationBase: string; data: SavedDocument }, progress: DocumentPublicationProgress) {
@@ -123,12 +120,15 @@ export async function sendSavedDocument(input: { sourceBase: string; destination
   validateSavedDocument(input.data, input.sourceBase, input.data.patient.id!)
   // Prepare and validate the index before any writes, including source-local metadata references.
   destinationIndex(input.data, input.sourceBase, { ...input.data.patient, id: 'pending' }, `${destination}/Bundle/pending`)
+  const bundle = portableCapturedBundle(forCreate(input.data.bundle), input.sourceBase)
+  const capturedPatient = input.data.bundle.entry!.find((entry) => entry.resource?.resourceType === 'Patient')!.resource as Patient
   return publishPreparedDocument({
+    sourceBaseUrl: input.sourceBase,
     destinationBaseUrl: destination,
-    bundle: forCreate(input.data.bundle),
+    bundle,
     ensurePatient: async () => {
-      const match = await matchDocumentPatient(input.sourceBase, destination, input.data.patient)
-      return match.patient || createResourceWithOutcome(destination, forCreate(input.data.patient))
+      const match = await matchDocumentPatient(input.sourceBase, destination, capturedPatient)
+      return match.patient || createResourceWithOutcome(destination, portableDocumentPatient(capturedPatient))
     },
     buildDocumentReference: (bundleUrl, patient) => destinationIndex(input.data, input.sourceBase, patient, bundleUrl),
   }, progress)

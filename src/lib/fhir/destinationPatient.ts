@@ -20,13 +20,6 @@ function firstPatient(bundle: Bundle) {
     .find((resource): resource is Patient => resource?.resourceType === 'Patient')
 }
 
-function portablePatientCopy(patient: Patient) {
-  const copy = JSON.parse(JSON.stringify(patient)) as Patient
-  delete copy.id
-  delete copy.meta
-  return copy
-}
-
 export async function findDestinationPatient(input: {
   sourceBaseUrl: string
   destinationBaseUrl: string
@@ -72,11 +65,15 @@ export async function ensureDestinationPatient(input: {
   sourceBaseUrl: string
   destinationBaseUrl: string
   patient: Patient
+  prepareCopy?: (patient: Patient) => Patient
 }): Promise<DestinationPatientResult> {
   const match = await findDestinationPatient(input)
   if (match) return { patient: match, created: false }
+  const copy = input.prepareCopy ? input.prepareCopy(input.patient) : structuredClone(input.patient)
+  delete copy.id
+  delete copy.meta
   return {
-    patient: await createPatient(input.destinationBaseUrl, portablePatientCopy(input.patient)),
+    patient: await createPatient(input.destinationBaseUrl, copy),
     created: true,
   }
 }
