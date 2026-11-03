@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TOC_SECTION_DEFINITIONS } from '../../igs/pacioToc/tocDocument'
 
 const mocks = vi.hoisted(() => ({
-  closeBundleReferences: vi.fn(async (_baseUrl: string, bundle: Bundle) => bundle),
+  closeBundleReferences: vi.fn(async (_baseUrl: string, bundle: Bundle): Promise<Bundle> => ({ ...bundle, entry: [...(bundle.entry || []),
+    { resource: { resourceType: 'PractitionerRole', id: 'role-1' } },
+    { resource: { resourceType: 'Organization', id: 'org-1' } },
+  ] })),
   ensureDestinationPatient: vi.fn(),
   createBundle: vi.fn(),
   createDocumentReference: vi.fn(),
@@ -53,8 +56,8 @@ describe('createTocDocument', () => {
     expect(document.custodian).toBeUndefined()
     expect(document.content[0].attachment.url).toBe('https://destination.test/fhir/Bundle/bundle-1')
     expect(composition).toBeDefined()
-    expect(composition?.author).toEqual([input.author])
-    expect(composition?.custodian).toEqual(input.custodian)
+    expect(composition?.author[0].reference).toBe(bundle.entry?.find((entry) => entry.resource?.resourceType === 'PractitionerRole')?.fullUrl)
+    expect(composition?.custodian?.reference).toBe(bundle.entry?.find((entry) => entry.resource?.resourceType === 'Organization')?.fullUrl)
     expect(document.masterIdentifier).toEqual(composition?.identifier)
     expect(mocks.createBundle.mock.invocationCallOrder[0]).toBeLessThan(mocks.createDocumentReference.mock.invocationCallOrder[0])
   })

@@ -28,7 +28,8 @@ function fixture(kind: SnapshotKind): SavedDocument {
   const documentReference: DocumentReference = { resourceType: 'DocumentReference', id: 'index', meta: { versionId: '2', lastUpdated: '2026-01-01T00:00:00Z', profile: ['https://profile.test/index'] },
     status: 'current', docStatus: 'final', subject: { reference: 'Patient/p', display: 'Pat Example' }, masterIdentifier: { system: 'https://docs.test', value: 'original' },
     identifier: [{ value: 'set-identifier' }], date: '2025-01-01T14:30:00Z', author: [{ reference: 'PractitionerRole/author', display: 'Original author' }],
-    extension: [{ url: 'https://extension.test', valueReference: { reference: 'Organization/custodian' } }],
+    custodian: { reference: 'Organization/custodian' },
+    extension: [{ url: 'https://extension.test', valueString: 'Captured metadata' }],
     content: [{ attachment: { contentType: 'application/fhir+json', url: 'Bundle/saved' } }],
   }
   leading.extension = [{ url: 'https://unrepresented.test', valueString: 'Keep this' }]
@@ -59,10 +60,12 @@ describe('sending saved documents', () => {
     const index = mocks.write.mock.calls[1][1] as DocumentReference
     expect(index).toMatchObject({ subject: { reference: 'Patient/destination-patient' }, masterIdentifier: before.documentReference.masterIdentifier,
       identifier: before.documentReference.identifier, date: before.documentReference.date,
-      author: [{ reference: `${sourceBase}/PractitionerRole/author`, display: 'Original author' }],
-      extension: [{ valueReference: { reference: `${sourceBase}/Organization/custodian` } }],
+      extension: before.documentReference.extension,
       content: [{ attachment: { url: `${destinationBase}/Bundle/new-Bundle` } }],
     })
+    expect(index.author).toBeUndefined()
+    expect(index.custodian).toBeUndefined()
+    expect(index.authenticator).toBeUndefined()
     expect(index.id).toBeUndefined()
     expect(index.meta?.versionId).toBeUndefined()
     expect(mocks.match).toHaveBeenCalledWith(sourceBase, destinationBase, patient)
@@ -112,6 +115,16 @@ describe('sending saved documents', () => {
     await expect(sendSavedDocument(input(fixture('document')), {})).rejects.toThrow('Search failed')
     expect(mocks.write).not.toHaveBeenCalled()
   })
+  it('rejects unfamiliar index and Patient reference dependencies before any writes', async () => {
+    const data = fixture('document')
+    data.documentReference.extension = [{ url: 'urn:custom', valueReference: { reference: 'Organization/custom' } }]
+    await expect(sendSavedDocument(input(data), {})).rejects.toThrow('Unsupported destination DocumentReference reference')
+    mocks.match.mockResolvedValue({ warning: '' })
+    const patientData = fixture('document')
+    ;(patientData.bundle.entry![1].resource as Patient).extension = [{ url: 'urn:custom', valueReference: { reference: 'urn:uuid:leading' } }]
+    await expect(sendSavedDocument(input(patientData), {})).rejects.toThrow('Unsupported destination Patient reference')
+    expect(mocks.write).not.toHaveBeenCalled()
+  })
 })
 
 describe('saved document validation and indexing', () => {
@@ -146,7 +159,7 @@ describe('saved document validation and indexing', () => {
     ;(data.bundle.entry![0].resource as Composition).section = [{ entry: [{ reference }] }]
     expect(() => validateSavedDocument(data, sourceBase, 'p')).toThrow('reference')
   })
-  it('accepts saved relative, absolute, historical, and contained references without rewriting them', async () => {
+  it('rewrites saved relative, absolute, and historical references while preserving contained references', async () => {
     const data = fixture('document')
     const composition = data.bundle.entry![0].resource as Composition
     data.bundle.entry![1].resource!.meta = { versionId: '1' }
@@ -155,20 +168,24 @@ describe('saved document validation and indexing', () => {
     composition.custodian = { reference: '#org' }
     composition.subject = { reference: 'Patient/p' }
     await sendSavedDocument(input(data), {})
-    expect(mocks.write.mock.calls[0][1].entry).toEqual(data.bundle.entry)
+    const sent = mocks.write.mock.calls[0][1]
+    expect(sent.entry[0].resource.subject.reference).toBe('urn:uuid:patient')
+    expect(sent.entry[0].resource.author[0].reference).toBe('urn:uuid:patient')
+    expect(sent.entry[0].resource.custodian.reference).toBe('#org')
+    expect(composition.subject?.reference).toBe('Patient/p')
   })
-  it('preserves external links that are not required Composition content', async () => {
+  it('rejects external links outside the accepted attachment URLs', async () => {
     const data = fixture('document')
     ;(data.bundle.entry![0].resource as Composition).relatesTo = [{ code: 'replaces', targetReference: { reference: 'https://archive.test/Composition/previous' } }]
-    await sendSavedDocument(input(data), {})
-    expect(mocks.write.mock.calls[0][1].entry).toEqual(data.bundle.entry)
+    await expect(sendSavedDocument(input(data), {})).rejects.toThrow('Unresolved captured reference')
+    expect(mocks.write).not.toHaveBeenCalled()
   })
-  it('preserves other attachments and absolute/contained metadata references', () => {
+  it('preserves other attachments while omitting optional participant references', () => {
     const data = fixture('document')
     data.documentReference.author = [{ reference: '#author' }, { reference: 'https://external.test/Practitioner/p' }]
     data.documentReference.content.push({ attachment: { url: 'Binary/pdf', title: 'Original PDF' } })
     const index = destinationIndex(data, sourceBase, destinationPatient, `${destinationBase}/Bundle/new`)
-    expect(index.author).toEqual(data.documentReference.author)
+    expect(index.author).toBeUndefined()
     expect(index.content[1].attachment.url).toBe(`${sourceBase}/Binary/pdf`)
   })
   it('drops byte metadata only for the relocated Bundle attachment', () => {

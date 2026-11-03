@@ -10,7 +10,9 @@ import {
 } from '../../test/fixtures/adiPmoFixture'
 
 const mocks = vi.hoisted(() => ({
-  closeBundleReferences: vi.fn(async (_baseUrl: string, bundle: Bundle) => bundle),
+  closeBundleReferences: vi.fn(async (_baseUrl: string, bundle: Bundle): Promise<Bundle> => ({ ...bundle, entry: [...(bundle.entry || []),
+    { resource: { resourceType: 'Organization', id: 'organization-1' } },
+  ] })),
   ensureDestinationPatient: vi.fn(),
   createBundle: vi.fn(),
   createDocumentReference: vi.fn(),
@@ -96,6 +98,7 @@ describe('createPmoDocument', () => {
       sourceBaseUrl: 'https://source.test/fhir/',
       destinationBaseUrl: 'https://destination.test/fhir/',
       patient: fixturePatient,
+      prepareCopy: expect.any(Function),
     })
     expect(mocks.createBundle.mock.calls[0][0]).toBe('https://destination.test/fhir/')
     expect(mocks.createDocumentReference.mock.calls[0][0]).toBe(
@@ -122,7 +125,7 @@ describe('createPmoDocument', () => {
       expect.objectContaining({ display: input.author.display }),
     ])
     expect(postedComposition.custodian).toEqual(
-      expect.objectContaining({ reference: 'Organization/organization-1' }),
+      expect.objectContaining({ reference: postedBundle.entry?.find((entry) => entry.resource?.resourceType === 'Organization')?.fullUrl }),
     )
     expect(postedComposition.identifier).toEqual(postedDocumentReference.masterIdentifier)
   })

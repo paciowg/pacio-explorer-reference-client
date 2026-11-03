@@ -1,11 +1,11 @@
 /** Shares destination matching and staged publication across document creation and sending; callers own Bundle preparation. */
 import type { Bundle, CapabilityStatement, DocumentReference, Patient } from 'fhir/r4'
-import { withUrnUuidBundleReferences } from './bundleReferences'
 import { validateFhirServer } from './client'
 import { closeBundleReferences } from './closedBundle'
 import { ensureDestinationPatient, findDestinationPatient } from './destinationPatient'
 import { createResourceWithOutcome, FhirCreateError } from './resourceTransport'
 import { normalizeBaseUrl } from './url'
+import { portableCapturedBundle, portableDocumentIndex, portableDocumentPatient } from './documentPortability'
 
 export type PublishDocumentInput = {
   sourceBaseUrl: string
@@ -19,6 +19,7 @@ export type PublishDocumentInput = {
 export type DocumentPublicationProgress = { destination?: string; patient?: Patient; bundle?: Bundle; index?: DocumentReference; uncertain?: string }
 export type DestinationMatch = { patient?: Patient; warning: string }
 type PreparedDocumentInput = {
+  sourceBaseUrl: string
   destinationBaseUrl: string
   bundle: Bundle
   ensurePatient: () => Promise<Patient>
@@ -32,6 +33,12 @@ export async function publishPreparedDocument(input: PreparedDocumentInput, prog
   if (progress.destination && progress.destination !== destination) throw new Error('The destination cannot change after sending has started.')
   if (progress.uncertain) throw new Error('Verify the destination server before starting another submission; the previous write outcome is uncertain.')
   if (progress.index) return progress.index
+  const buildIndex = (bundleUrl: string, patient: Patient) => {
+    const index = input.buildDocumentReference(bundleUrl, patient)
+    return normalizeBaseUrl(input.sourceBaseUrl) === destination ? index : portableDocumentIndex(index)
+  }
+  // Discover unsupported index dependencies before creating even the destination Patient.
+  buildIndex(`${destination}/Bundle/pending`, { resourceType: 'Patient', id: 'pending' })
   let stage = 'Patient'
   try {
     if (!progress.patient) progress.patient = await input.ensurePatient()
@@ -41,7 +48,7 @@ export async function publishPreparedDocument(input: PreparedDocumentInput, prog
     if (!progress.bundle.id) throw new FhirCreateError(input.missingBundleIdMessage || 'The server did not return an id for the created Bundle.', true)
     stage = 'DocumentReference'
     const bundleUrl = `${destination}/Bundle/${progress.bundle.id}`
-    progress.index = await createResourceWithOutcome(input.destinationBaseUrl, input.buildDocumentReference(bundleUrl, progress.patient))
+    progress.index = await createResourceWithOutcome(input.destinationBaseUrl, buildIndex(bundleUrl, progress.patient))
     return progress.index
   } catch (error) {
     if (error instanceof FhirCreateError && error.uncertain) {
@@ -76,8 +83,8 @@ export async function matchDocumentPatient(sourceBase: string, destinationBase: 
  */
 export async function publishDocument(input: PublishDocumentInput) {
   const closedBundle = await closeBundleReferences(input.sourceBaseUrl, input.bundle)
-  const portableBundle = withUrnUuidBundleReferences(closedBundle)
+  const portableBundle = portableCapturedBundle(closedBundle, input.sourceBaseUrl)
   return publishPreparedDocument({ ...input, bundle: portableBundle, ensurePatient: async () => (await ensureDestinationPatient({
-    sourceBaseUrl: input.sourceBaseUrl, destinationBaseUrl: input.destinationBaseUrl, patient: input.patient,
+    sourceBaseUrl: input.sourceBaseUrl, destinationBaseUrl: input.destinationBaseUrl, patient: input.patient, prepareCopy: portableDocumentPatient,
   })).patient })
 }
