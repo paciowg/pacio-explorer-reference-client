@@ -1,6 +1,6 @@
 /** Verifies shared practitioner choice matching and labels for mixed and role-only reference fields. */
 import { describe, expect, it } from 'vitest'
-import { formatResourceSelectionLabel, getPractitionerChoices, getResourceReferenceChoices, getResourceSelectionDisplay, getResourceTransferChoices, getRolePreferredReferenceOptions } from './resourceOptions'
+import { resolveOptionReference, formatResourceSelectionLabel, getPractitionerChoices, getResourceReferenceChoices, getResourceSelectionDisplay, getResourceTransferChoices, getRolePreferredReferenceOptions } from './resourceOptions'
 
 describe('shared practitioner choices', () => {
   it('adds transfer timestamps without putting them in resource labels or reference displays', () => {
@@ -57,5 +57,19 @@ describe('shared practitioner choices', () => {
     expect(choices.roleOptions.map((option) => option.value)).toEqual(['external', 'unresolved'])
     expect([...choices.unpairedPractitioners.keys()]).toEqual(['Practitioner/local'])
     expect(choices.practitionerByReference.has('https://other.test/fhir/Practitioner/local')).toBe(false)
+  })
+})
+
+describe('resolveOptionReference', () => {
+  const options = [{ reference: 'Patient/p1', display: 'Alex Smith', label: 'Patient: Alex Smith', resource: { resourceType: 'Patient' as const, id: 'p1' } }]
+  it('keeps optional selections empty and submits only the reference and display', () => {
+    expect(resolveOptionReference(options, '')).toBeUndefined()
+    expect(resolveOptionReference(options, 'Patient/p1')).toEqual({ reference: 'Patient/p1', display: 'Alex Smith' })
+    expect(resolveOptionReference(options, 'Patient/p1', ['Patient'])).toEqual({ reference: 'Patient/p1', display: 'Alex Smith' })
+  })
+  it('rejects missing or disallowed selections', () => {
+    for (const [value, types] of [['Patient/missing', ['Patient']], ['Patient/p1', ['Practitioner']], ['Patient/p1', []]] as const) {
+      expect(() => resolveOptionReference(options, value, types)).toThrow('A selected reference is no longer available on the destination.')
+    }
   })
 })

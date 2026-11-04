@@ -1,4 +1,5 @@
 /** Loads and displays an advance directive, enriching generic metadata from its document Bundle when available. */
+import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useMemo, useState } from 'react'
 import type { Bundle, DocumentReference } from 'fhir/r4'
 import { FhirJsonLink } from '../../components/FhirJsonLink'
@@ -109,10 +110,7 @@ export function AdvanceDirectiveDetailPage({
     <section className="panel">
       <div className="panel-header">
         <div><h2>Advance Directive</h2></div>
-        <div className="panel-server-details">
-          <span className="panel-server-label">{activeServer.label}</span>
-          <span className="panel-server-url">{activeServer.baseUrl}</span>
-        </div>
+        <PanelServerDetails label={activeServer.label} baseUrl={activeServer.baseUrl} />
       </div>
 
       <div className="page-actions page-actions-spaced">

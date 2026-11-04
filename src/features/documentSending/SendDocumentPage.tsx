@@ -1,6 +1,6 @@
 /** Owns destination-only submission of a saved document, retaining completed write stages for in-session retries. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
-import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import type { DocumentPublicationProgress } from '../../lib/fhir/documentPublishing'
 import type { SavedDocument } from '../../lib/fhir/savedDocuments'
 import { normalizeBaseUrl } from '../../lib/fhir/url'
@@ -57,11 +57,9 @@ export function SendDocumentPage({ patientId, resourceId, kind }: { patientId: s
   }
 
   return <section className="panel">
-    <div className="panel-header"><div>
-      <h2>Send {documentKindLabels[kind]}</h2>
-      {data ? <p className="create-patient-name">{getDisplayNameFromHumanName(data.patient.name?.[0])}</p> : null}
-    </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{sourceBase}</span></div></div>
-    <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(backPath)}>Back to patient</button></div>
+    <PatientFormHeader title={`Send ${documentKindLabels[kind]}`} patient={data?.patient}
+      serverLabel={activeServer.label} serverBaseUrl={sourceBase}
+      onBack={() => navigateTo(backPath)} backDisabled={busy} />
     {error ? <p className="error-banner" role="alert">{error}</p> : null}
     {loading ? <p role="status">Loading saved document…</p> : null}
     {!loading && !data ? <button type="button" className="secondary-button outline" onClick={() => setReload((n) => n + 1)}>Retry loading</button> : null}

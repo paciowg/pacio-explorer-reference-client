@@ -1,5 +1,5 @@
 /** Loads destination-local reference choices without creating a Patient or copying source clinical resources. */
-import type { Patient, Resource, Reference } from 'fhir/r4'
+import type { Patient, Resource } from 'fhir/r4'
 import { findDestinationPatient } from '../../lib/fhir/destinationPatient'
 import { fetchPatientEverything } from '../../lib/fhir/client'
 import { searchResources } from '../../lib/fhir/deviceTransport'
@@ -26,11 +26,4 @@ export async function loadDeviceCreateData(sourceBaseUrl: string, destinationBas
   if (destinationPatient?.id) resources.set(`Patient/${destinationPatient.id}`, destinationPatient)
   else resources.set('Patient/pending', { ...patient, id: 'pending' })
   return { patient: destinationPatient, warning, options: getRolePreferredReferenceOptions(resources, destinationBaseUrl) }
-}
-
-export function optionReference(options: ReferenceOption[], value: string): Reference | undefined {
-  if (!value) return undefined
-  const option = options.find((item) => item.reference === value)
-  if (!option) throw new Error('A selected reference is no longer available on the destination.')
-  return { reference: option.reference, display: option.display }
 }

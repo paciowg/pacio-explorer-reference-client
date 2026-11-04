@@ -1,5 +1,5 @@
 /** Loads destination-local nutrition choices using explicit patient allergy searches rather than relying on $everything. */
-import type { AllergyIntolerance, Bundle, Patient, Reference, Resource } from 'fhir/r4'
+import type { AllergyIntolerance, Bundle, Patient, Resource } from 'fhir/r4'
 import { findDestinationPatient } from '../../lib/fhir/destinationPatient'
 import { allergyBelongsToPatient } from '../../lib/fhir/allergies'
 import { searchResources } from '../../lib/fhir/resourceTransport'
@@ -30,11 +30,4 @@ export async function loadNutritionCreateData(sourceBaseUrl: string, destination
   }
   const options = getRolePreferredReferenceOptions(resources, destinationBaseUrl)
   return { patient: destinationPatient, options, warning }
-}
-
-export function nutritionReference(options: NutritionReferenceOption[], value: string, types: string[]): Reference | undefined {
-  if (!value) return undefined
-  const option = options.find((option) => option.reference === value && types.includes(option.resource.resourceType))
-  if (!option) throw new Error('A selected reference is no longer available on the destination.')
-  return { reference: option.reference, display: option.display }
 }

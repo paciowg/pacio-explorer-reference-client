@@ -1,4 +1,5 @@
 /** Coordinates the PMO form, supporting-resource lookup, validation, and ADI document submission. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useMemo, useState } from 'react'
 import type {
   Patient,
@@ -319,28 +320,10 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
 
   return (
     <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h2>Create ADI PMO</h2>
-          {patient ? <p className="create-patient-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
-        </div>
-
-        <div className="panel-server-details">
-          <span className="panel-server-label">{activeServer.label}</span>
-          <span className="panel-server-url">{activeServer.baseUrl}</span>
-        </div>
-      </div>
-
+      <PatientFormHeader title="Create ADI PMO" patient={patient}
+        serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
+        onBack={() => navigateTo(`/patients/${patientId}?view=documents`)} />
       <>
-        <div className="page-actions page-actions-spaced">
-          <button
-            type="button"
-            className="secondary-button outline"
-            onClick={() => navigateTo(`/patients/${patientId}?view=documents`)}
-          >
-            Back to patient
-          </button>
-        </div>
 
         {isLoading ? <div className="info-banner">Loading PMO creation form...</div> : null}
         {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}

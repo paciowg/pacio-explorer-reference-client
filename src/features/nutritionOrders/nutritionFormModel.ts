@@ -1,9 +1,10 @@
 /** Converts demo nutrition form state into typed PFE inputs and validates user-entered quantities, schedules, and references. */
+import { resolveOptionReference } from '../../lib/fhir/resourceOptions'
 import type { NutritionOrder, Quantity, Timing, TimingRepeat } from 'fhir/r4'
 import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
 import { NUTRITION_CHOICES, nutritionConcept } from '../../igs/pacioPfe/nutritionTerminology'
 import type { CreateNutritionOrderInput } from './createNutritionOrder'
-import { nutritionReference, type NutritionReferenceOption } from './nutritionCreateData'
+import { type NutritionReferenceOption } from './nutritionCreateData'
 
 export type QuantityValue = { value: string; unit: string }
 export type ScheduleValue = { frequency: string; period: string; unit: NonNullable<TimingRepeat['periodUnit']>; start: string; end: string }
@@ -56,7 +57,7 @@ export function nutritionFormInputs(form: NutritionForm, options: NutritionRefer
   const concept = (group: keyof typeof NUTRITION_CHOICES, code: string) => nutritionConcept(NUTRITION_CHOICES[group], code)
   const concepts = (group: keyof typeof NUTRITION_CHOICES, codes: string[]) => codes.map((code) => concept(group, code)!).filter(Boolean)
   const order: CreateNutritionOrderInput['order'] = { status: form.status, intent: form.intent, dateTime: orderDate,
-    encounter: nutritionReference(options, form.encounter, ['Encounter']), orderer: nutritionReference(options, form.orderer, ['Practitioner', 'PractitionerRole']),
+    encounter: resolveOptionReference(options, form.encounter, ['Encounter']), orderer: resolveOptionReference(options, form.orderer, ['Practitioner', 'PractitionerRole']),
     foodPreferenceModifier: concepts('preference', form.preferences), excludeFoodModifier: concepts('food', form.excludedFoods) }
   if (form.oralEnabled) order.oralDiet = { type: concepts('diet', form.oralTypes), nutrient: form.nutrients.map((nutrient) => ({ modifier: concept('nutrient', nutrient.modifier), amount: nutritionQuantity(nutrient.amount) })),
     texture: form.textures.map((texture) => ({ modifier: concept('texture', texture.modifier), foodType: concept('food', texture.food) })), fluidConsistencyType: concepts('fluid', form.fluids), instruction: form.oralInstruction }
@@ -72,5 +73,5 @@ export function nutritionFormInputs(form: NutritionForm, options: NutritionRefer
       return { schedule: administration.schedules[0] ? nutritionSchedule(administration.schedules[0]) : undefined, quantity: nutritionQuantity(administration.quantity),
         ...(administration.rateType === 'quantity' ? { rateQuantity: rate } : administration.rateType === 'ratio' ? { rateRatio: { numerator: rate, denominator } } : {}) }
     }) }
-  return { order, allergies: form.allergyMode === 'none-known' ? { mode: 'none-known' } : { mode: 'existing', references: form.allergies.map((reference) => nutritionReference(options, reference, ['AllergyIntolerance'])!) } }
+  return { order, allergies: form.allergyMode === 'none-known' ? { mode: 'none-known' } : { mode: 'existing', references: form.allergies.map((reference) => resolveOptionReference(options, reference, ['AllergyIntolerance'])!) } }
 }

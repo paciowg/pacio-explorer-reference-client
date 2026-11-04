@@ -1,8 +1,8 @@
 /** Coordinates destination selection, read-only reference loading, and submission of a patient PFE device request. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { Patient } from 'fhir/r4'
 import { fetchPatient } from '../../lib/fhir/client'
-import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { useSavedServers } from '../servers/useSavedServers'
@@ -58,11 +58,10 @@ export function PatientDeviceRequestCreatePage({ patientId }: { patientId: strin
     finally { submittingRef.current = false; setSubmitting(false) }
   }
   if (!activeServer) return null
-  return <section className="panel"><div className="panel-header"><div>
-          <h2>Create Device Request</h2>
-          {patient ? <p className="create-patient-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
-        </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <><div className="page-actions page-actions-spaced"><button type="button" disabled={submitting} className="secondary-button outline" onClick={() => navigateTo(`/patients/${patientId}?view=clinical`)}>Back to patient</button></div>
+  return <section className="panel"><PatientFormHeader title="Create Device Request" patient={patient}
+      serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
+      onBack={() => navigateTo(`/patients/${patientId}?view=clinical`)} backDisabled={submitting} />
+    <>
       <form noValidate onSubmit={(event) => void submit(event)}>
         <DestinationServerField id="device-destination" servers={savedServers} value={destination} disabled={submitting || Boolean(progress.current.patient) || Boolean(progress.current.uncertain)} resourceDescription="Device and DeviceRequest" onChange={(value) => {
           setDestination(value)

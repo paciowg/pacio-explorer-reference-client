@@ -1,7 +1,7 @@
 /** Coordinates identity-preserving live List updates on the active server and returns users to the patient's Documents tab. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import { TransferList } from '../../components/TransferList'
-import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import { FhirUpdateError, updateResource } from '../../lib/fhir/resourceTransport'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
@@ -52,11 +52,9 @@ export function SmpListEditPage({ patientId, resourceId }: { patientId: string; 
   if (!activeServer) return null
   const locked = busy || saved || uncertain
   const change = (patch: Partial<SmpListEdit>) => setEdit((value) => value ? { ...value, ...patch } : value)
-  return <section className="panel"><div className="panel-header"><div>
-    <h2>Edit Medication List</h2>
-    {data ? <p className="create-patient-name">{getDisplayNameFromHumanName(data.choices.patient.name?.[0])}</p> : null}
-  </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(path)}>Back to patient</button></div>
+  return <section className="panel"><PatientFormHeader title="Edit Medication List" patient={data?.choices.patient}
+      serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
+      onBack={() => navigateTo(path)} backDisabled={busy} />
     <div className="smp-page">
       {loading ? <p role="status">Loading medication List…</p> : null}
       {error ? <p className="error-banner" role="alert">{error}</p> : null}

@@ -1,4 +1,5 @@
 /** Loads patient data once across the personal, clinical, and document views, with a patient-only fallback when $everything fails. */
+import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useState } from 'react'
 import type { BundleEntry, Patient, Resource } from 'fhir/r4'
 import { ClinicalSummarySection } from '../../components/ClinicalSummarySection'
@@ -149,10 +150,7 @@ export function PatientSummaryPage({ patientId, view }: PatientSummaryPageProps)
           <h2>Patient summary</h2>
         </div>
 
-        <div className="panel-server-details">
-          <span className="panel-server-label">{activeServer.label}</span>
-          <span className="panel-server-url">{activeServer.baseUrl}</span>
-        </div>
+        <PanelServerDetails label={activeServer.label} baseUrl={activeServer.baseUrl} />
       </div>
 
       <div className="summary-preview-panel full-width-panel">

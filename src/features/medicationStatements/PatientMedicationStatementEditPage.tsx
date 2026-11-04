@@ -1,6 +1,6 @@
 /** Coordinates a source-server statement amendment while preserving its original resource and returning to Clinical Information. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
-import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import { FhirUpdateError, updateResource } from '../../lib/fhir/resourceTransport'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
@@ -50,11 +50,9 @@ export function PatientMedicationStatementEditPage({ patientId, statementId }: {
   }
   if (!activeServer) return null
   const locked = busy || saved || uncertain
-  return <section className="panel"><div className="panel-header"><div>
-    <h2>Edit Medication Statement</h2>
-    {data ? <p className="create-patient-name">{getDisplayNameFromHumanName(data.patient.name?.[0])}</p> : null}
-  </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(path)}>Back to patient</button></div>
+  return <section className="panel"><PatientFormHeader title="Edit Medication Statement" patient={data?.patient}
+      serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
+      onBack={() => navigateTo(path)} backDisabled={busy} />
     {loading ? <p className="info-banner" role="status">Loading medication statement...</p> : null}
     {error ? <p className="error-banner" role="alert">{error}</p> : null}
     {!loading && !data ? <button type="button" className="secondary-button" onClick={() => setReload((value) => value + 1)}>Retry loading</button> : null}

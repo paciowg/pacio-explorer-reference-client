@@ -1,8 +1,8 @@
 /** Owns controlled statement inputs and lossless request population, converting only explicitly entered fields into FHIR. */
-import type { Dosage, MedicationStatement, Reference } from 'fhir/r4'
+import type { Dosage, MedicationStatement } from 'fhir/r4'
 import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
 import { buildSmpMedicationStatement, type SmpStatementInput } from '../../igs/pacioSmp/medicationStatement'
-import type { ResourceReferenceOption } from '../../lib/fhir/resourceOptions'
+import { resolveOptionReference } from '../../lib/fhir/resourceOptions'
 import { REASON_TYPES, SOURCE_TYPES, type StatementCreateData, type StatementMedication } from './statementCreateData'
 
 export type StatementForm = {
@@ -22,13 +22,6 @@ export function selectStatementRequest(form: StatementForm, reference: string, d
   const choice = data.requests.find((request) => request.reference === reference)
   if (!choice) throw new Error('The selected MedicationRequest is unavailable.')
   return { ...form, basedOn: reference, medication: structuredClone(choice.medication), dosage: structuredClone(choice.resource.dosageInstruction || []) }
-}
-
-export function statementReference(options: ResourceReferenceOption[], value: string, types: string[]): Reference | undefined {
-  if (!value) return undefined
-  const option = options.find((item) => item.reference === value && types.includes(item.resource.resourceType))
-  if (!option) throw new Error('A selected reference is no longer available on the destination.')
-  return { reference: option.reference, display: option.display }
 }
 
 function validateDosages(dosages: Dosage[]) {
@@ -73,7 +66,7 @@ export function statementFormInputs(form: StatementForm, data: StatementCreateDa
   const medication = request ? structuredClone(request.medication) : structuredClone(form.medication)
   const dosage = request ? structuredClone(request.resource.dosageInstruction || []) : (populated(structuredClone(form.dosage)) as Dosage[] | undefined) || []
   if (!request) validateDosages(dosage)
-  if (!request && medication.medicationReference) medication.medicationReference = statementReference(data.options, medication.medicationReference.reference || '', ['Medication'])
+  if (!request && medication.medicationReference) medication.medicationReference = resolveOptionReference(data.options, medication.medicationReference.reference || '', ['Medication'])
   const date = (value: string, label: string) => value ? calendarDateValue(value, label) : undefined
   let effective: Pick<SmpStatementInput, 'effectiveDateTime' | 'effectivePeriod'> = {}
   if (form.effectiveKind === 'date') effective = { effectiveDateTime: calendarDateValue(form.effectiveStart, 'effective date') }
@@ -88,11 +81,11 @@ export function statementFormInputs(form: StatementForm, data: StatementCreateDa
     ...(request ? { basedOn: [{ reference: request.reference, display: request.display }] } : {}),
     ...(dosage.length ? { dosage } : {}),
     ...(form.dateAsserted ? { dateAsserted: date(form.dateAsserted, 'asserted date') } : {}),
-    ...(form.informationSource ? { informationSource: statementReference(data.options, form.informationSource, SOURCE_TYPES) } : {}),
-    ...(form.context ? { context: statementReference(data.options, form.context, ['Encounter']) } : {}),
+    ...(form.informationSource ? { informationSource: resolveOptionReference(data.options, form.informationSource, SOURCE_TYPES) } : {}),
+    ...(form.context ? { context: resolveOptionReference(data.options, form.context, ['Encounter']) } : {}),
     ...(form.category ? { category: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/medication-statement-category', code: form.category }] } } : {}),
     ...(form.statusReason.trim() ? { statusReason: [{ text: form.statusReason.trim() }] } : {}),
-    ...(form.reasonReferences.length ? { reasonReference: form.reasonReferences.map((value) => statementReference(data.options, value, REASON_TYPES)!) } : {}),
+    ...(form.reasonReferences.length ? { reasonReference: form.reasonReferences.map((value) => resolveOptionReference(data.options, value, REASON_TYPES)!) } : {}),
     ...(form.notes.trim() ? { note: [{ text: form.notes.trim() }] } : {}),
     adherence: form.adherence || undefined, adherenceReason: form.adherenceReason || undefined, adherenceReasonText: form.adherenceReasonText || undefined,
   }

@@ -1,8 +1,9 @@
 /** Converts demo form values into typed PFE builder inputs while leaving profile rules in the IG layer. */
+import { resolveOptionReference } from '../../lib/fhir/resourceOptions'
 import type { DeviceRequest, TimingRepeat } from 'fhir/r4'
 import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
 import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS, DEVICE_REASON_CODES, DEVICE_REASON_REFERENCE_TYPES, RELATIONSHIP_SYSTEM, snomedConcept, type PFEDeviceRequestInput } from '../../igs/pacioPfe/deviceRequest'
-import { optionReference, type ReferenceOption } from './deviceCreateData'
+import { type ReferenceOption } from './deviceCreateData'
 import type { CreateDeviceRequestInput } from './createDeviceRequest'
 
 export type ParameterValue = { code: string; kind: 'quantity' | 'concept' | 'boolean' | 'range'; value: string; unit: string; high: string }
@@ -43,12 +44,12 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
   if (!selected) throw new Error('Select a supported device type.')
   if (form.users.some((user) => !user.reference)) throw new Error('Select a reference for each device user.')
   const refs = (values: string[], types?: readonly string[]) => values.filter(Boolean).map((value) =>
-    optionReference(types ? options.filter((option) => types.includes(option.resource.resourceType)) : options, value)!)
+    resolveOptionReference(types ? options.filter((option) => types.includes(option.resource.resourceType)) : options, value)!)
   const strings = (values: string[]) => values.map((value) => value.trim()).filter(Boolean)
   const request: Omit<PFEDeviceRequestInput, 'subject' | 'device'> = {
     status: form.status, intent: form.intent,
     ...(form.priority ? { priority: form.priority as DeviceRequest['priority'] } : {}),
-    encounter: optionReference(options, form.encounter), requester: optionReference(options, form.requester),
+    encounter: resolveOptionReference(options, form.encounter), requester: resolveOptionReference(options, form.requester),
     ...(form.authoredOn ? { authoredOn: calendarDateValue(form.authoredOn, 'authored date') } : {}),
     priorRequest: refs(form.priorRequests), insurance: refs(form.insurance),
     reasonCode: form.reasonCodes.map((code) => {
@@ -59,7 +60,7 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
     reasonReference: refs(form.reasonReferences, DEVICE_REASON_REFERENCE_TYPES),
     note: strings(form.notes).map((text) => ({ text })), locations: form.locations.filter((location) => location.value.trim()).map((location) =>
       location.kind === 'text' ? location.value.trim() : snomedConcept('42665001', 'Nursing home')),
-    users: form.users.filter((user) => user.reference).map((user) => ({ user: optionReference(options, user.reference)!,
+    users: form.users.filter((user) => user.reference).map((user) => ({ user: resolveOptionReference(options, user.reference)!,
       ...(user.relationship ? { relationships: [{ coding: [{ system: RELATIONSHIP_SYSTEM, code: user.relationship, display: user.relationship }] }] } : {}) })),
     parameter: form.parameters.map((parameter) => {
       const code = DEVICE_PARAMETERS.find((code) => code.code === parameter.code)
@@ -89,5 +90,5 @@ export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): 
   const justification = { notes: strings(form.justificationNotes), assessments: refs(form.assessments), goals: refs(form.goals) }
   if (Object.values(justification).some((values) => values.length)) request.justifications = [justification]
   return { device: { type: snomedConcept(selected.code, selected.display), ...demoDeviceDefaults(selected),
-    owner: optionReference(options, form.owner) }, request }
+    owner: resolveOptionReference(options, form.owner) }, request }
 }

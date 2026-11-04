@@ -1,4 +1,5 @@
 /** Loads SMP details with patient checks and keeps collection resolution confined to the stored Bundle. */
+import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useState } from 'react'
 import type { Bundle, DocumentReference, List, Patient } from 'fhir/r4'
 import { isSmpIndex } from '../../igs/pacioSmp/smp'
@@ -57,10 +58,7 @@ export function SmpDetailPage({ patientId, resourceId, kind }: { patientId: stri
     return <section className="panel">
       <div className="panel-header">
         <h2>SMP Collection</h2>
-        <div className="panel-server-details">
-          <span className="panel-server-label">{activeServer.label}</span>
-          <span className="panel-server-url">{activeServer.baseUrl}</span>
-        </div>
+        <PanelServerDetails label={activeServer.label} baseUrl={activeServer.baseUrl} />
       </div>
       <div className="page-actions page-actions-spaced">
         <button type="button" className="secondary-button outline" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}?view=documents`)}>Back to patient</button>

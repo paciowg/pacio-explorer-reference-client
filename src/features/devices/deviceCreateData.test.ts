@@ -1,11 +1,12 @@
 /** Verifies read-only destination choice loading and pending-Patient selection without source-reference leakage. */
+import { resolveOptionReference } from '../../lib/fhir/resourceOptions'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ findDestinationPatient: vi.fn(), searchResources: vi.fn(), fetchPatientEverything: vi.fn() }))
 vi.mock('../../lib/fhir/destinationPatient', () => ({ findDestinationPatient: mocks.findDestinationPatient }))
 vi.mock('../../lib/fhir/deviceTransport', () => ({ searchResources: mocks.searchResources }))
 vi.mock('../../lib/fhir/client', () => ({ fetchPatientEverything: mocks.fetchPatientEverything }))
-import { loadDeviceCreateData, optionReference } from './deviceCreateData'
+import { loadDeviceCreateData } from './deviceCreateData'
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -34,9 +35,9 @@ describe('destination device choices', () => {
     ]))
     expect(options.find((option) => option.reference === 'PractitionerRole/absolute')?.label).toBe('PractitionerRole: Alex Smith — Therapist')
     expect(options.find((option) => option.reference === 'PractitionerRole/versioned')?.label).toBe('PractitionerRole: Alex Smith — Nurse')
-    expect(optionReference(options, 'PractitionerRole/relative')).toEqual({ reference: 'PractitionerRole/relative', display: 'Alex Smith — Physician' })
-    expect(optionReference(options.map((option) => ({ ...option, label: 'Changed UI label' })), 'PractitionerRole/relative')?.display).toBe('Alex Smith — Physician')
-    expect(() => optionReference(options, 'Practitioner/covered')).toThrow('no longer available')
+    expect(resolveOptionReference(options, 'PractitionerRole/relative')).toEqual({ reference: 'PractitionerRole/relative', display: 'Alex Smith — Physician' })
+    expect(resolveOptionReference(options.map((option) => ({ ...option, label: 'Changed UI label' })), 'PractitionerRole/relative')?.display).toBe('Alex Smith — Physician')
+    expect(() => resolveOptionReference(options, 'Practitioner/covered')).toThrow('no longer available')
   })
   it('keeps a pending patient choice without doing any patient-specific searches when no match exists', async () => {
     mocks.findDestinationPatient.mockResolvedValue(null)

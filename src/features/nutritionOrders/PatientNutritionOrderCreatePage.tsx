@@ -1,8 +1,8 @@
 /** Coordinates destination-local nutrition form loading and sequential publication while preserving created resources for retry. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { Patient } from 'fhir/r4'
 import { fetchPatient } from '../../lib/fhir/client'
-import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { useSavedServers } from '../servers/useSavedServers'
@@ -67,11 +67,10 @@ export function PatientNutritionOrderCreatePage({ patientId }: { patientId: stri
 
   if (!activeServer) return null
   const referenceLocked = Boolean(progress.current.patientCreated || progress.current.allergies || progress.current.createdAllergy)
-  return <section className="panel"><div className="panel-header"><div>
-          <h2>Create Nutrition Order</h2>
-          {patient ? <p className="create-patient-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
-        </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <><div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={submitting} onClick={() => navigateTo(`/patients/${patientId}?view=clinical`)}>Back to patient</button></div>
+  return <section className="panel"><PatientFormHeader title="Create Nutrition Order" patient={patient}
+      serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
+      onBack={() => navigateTo(`/patients/${patientId}?view=clinical`)} backDisabled={submitting} />
+    <>
       <form noValidate onSubmit={(event) => void submit(event)}>
         <DestinationServerField id="nutrition-destination" servers={savedServers} value={destination} disabled={submitting || referenceLocked || Boolean(progress.current.uncertain)} resourceDescription="NutritionOrder and, if needed, a no-known-food-allergy record" onChange={(destination) => {
           progress.current = {}

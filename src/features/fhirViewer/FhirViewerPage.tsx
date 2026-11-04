@@ -1,4 +1,5 @@
 /** Displays only the requested FHIR resource from the active server supplied by the app. */
+import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useState } from 'react'
 import type { Resource } from 'fhir/r4'
 import { FhirJson } from '../../components/FhirJson'
@@ -27,10 +28,7 @@ export function FhirViewerPage({ baseUrl, serverLabel, resourceType, resourceId 
   return <section className="panel">
     <div className="panel-header">
       <h2>{resourceType}/{resourceId} FHIR JSON</h2>
-      <div className="panel-server-details">
-        <span className="panel-server-label">{serverLabel}</span>
-        <span className="panel-server-url">{baseUrl}</span>
-      </div>
+      <PanelServerDetails label={serverLabel} baseUrl={baseUrl} />
     </div>
     <div className="fhir-viewer">
       <ResourceContent key={`${baseUrl}:${resourceType}/${resourceId}`} baseUrl={baseUrl} reference={`${resourceType}/${resourceId}`} />

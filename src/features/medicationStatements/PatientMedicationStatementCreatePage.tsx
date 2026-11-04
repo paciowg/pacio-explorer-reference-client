@@ -1,8 +1,8 @@
 /** Coordinates destination-local statement authoring and returns to the source patient's Clinical Information after publication. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { Patient } from 'fhir/r4'
 import { fetchPatient } from '../../lib/fhir/client'
-import { getDisplayNameFromHumanName } from '../../lib/fhir/formatters'
 import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { DestinationServerField } from '../servers/DestinationServerField'
@@ -63,11 +63,9 @@ export function PatientMedicationStatementCreatePage({ patientId }: { patientId:
   }
   if (!activeServer) return null
   const locked = busy || Boolean(progress.current.uncertain || progress.current.statement)
-  return <section className="panel"><div className="panel-header"><div>
-    <h2>Create Medication Statement</h2>
-    {patient ? <p className="create-patient-name">{getDisplayNameFromHumanName(patient.name?.[0])}</p> : null}
-  </div><div className="panel-server-details"><span className="panel-server-label">{activeServer.label}</span><span className="panel-server-url">{activeServer.baseUrl}</span></div></div>
-    <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(path)}>Back to patient</button></div>
+  return <section className="panel"><PatientFormHeader title="Create Medication Statement" patient={patient}
+      serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
+      onBack={() => navigateTo(path)} backDisabled={busy} />
     <form noValidate onSubmit={(event) => void submit(event)}>
       <DestinationServerField id="statement-destination" servers={savedServers} value={destination} disabled={locked || Boolean(progress.current.patient)} resourceDescription="MedicationStatement" onChange={(value) => {
         setDestination(value)

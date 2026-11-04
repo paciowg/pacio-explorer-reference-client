@@ -1,4 +1,5 @@
 /** Coordinates source List authoring and single-step collection publication with in-session recovery state. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { List } from 'fhir/r4'
 import { uuidIdentifier } from '../../igs/pacioSmp/smp'
@@ -110,17 +111,9 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
   }
 
   return <div className="panel">
-    <div className="panel-header">
-      <div>
-        <h2>{kind === 'list' ? 'Create Medication List' : 'Create SMP Collection'}</h2>
-        {data ? <p className="create-patient-name">{getDisplayNameFromHumanName(data.patient.name?.[0])}</p> : null}
-      </div>
-      <div className="panel-server-details">
-        <span className="panel-server-label">{activeServer?.label}</span>
-        <span className="panel-server-url">{activeServer?.baseUrl}</span>
-      </div>
-    </div>
-    <div className="page-actions page-actions-spaced"><button type="button" className="secondary-button outline" disabled={busy} onClick={() => navigateTo(`${path}?view=documents`)}>Back to patient</button></div>
+    <PatientFormHeader title={kind === 'list' ? 'Create Medication List' : 'Create SMP Collection'} patient={data?.patient}
+      serverLabel={activeServer?.label || ''} serverBaseUrl={activeServer?.baseUrl || ''}
+      onBack={() => navigateTo(`${path}?view=documents`)} backDisabled={busy} />
     <div className="smp-page">
     {kind === 'list' ? <p>Save a reusable, point-in-time List on the active source server. Existing statements are not changed.</p> : null}
     {error ? <p className="error-banner" role="alert">{error}</p> : null}

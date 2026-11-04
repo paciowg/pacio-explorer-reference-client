@@ -1,10 +1,11 @@
 /** Verifies direct destination-patient allergy searches, choice loading, and failure handling before any nutrition writes. */
+import { resolveOptionReference } from '../../lib/fhir/resourceOptions'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ findDestinationPatient: vi.fn(), searchResources: vi.fn() }))
 vi.mock('../../lib/fhir/destinationPatient', () => ({ findDestinationPatient: mocks.findDestinationPatient }))
 vi.mock('../../lib/fhir/resourceTransport', async (importOriginal) => ({ ...await importOriginal<typeof import('../../lib/fhir/resourceTransport')>(), searchResources: mocks.searchResources }))
-import { loadNutritionCreateData, nutritionReference, searchPatientAllergies } from './nutritionCreateData'
+import { loadNutritionCreateData, searchPatientAllergies } from './nutritionCreateData'
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -28,9 +29,9 @@ describe('nutrition destination choices', () => {
     expect(options.map((option) => option.reference)).toEqual(expect.arrayContaining(['Practitioner/standalone', 'Practitioner/external', 'PractitionerRole/unresolved', 'PractitionerRole/outside']))
     expect(options.find((option) => option.reference === 'PractitionerRole/dietitian')?.label).toBe('PractitionerRole: Alex Smith — Dietitian')
     expect(options.find((option) => option.reference === 'PractitionerRole/physician')?.label).toBe('PractitionerRole: Alex Smith — Physician')
-    expect(nutritionReference(options, 'PractitionerRole/dietitian', ['Practitioner', 'PractitionerRole'])).toEqual({ reference: 'PractitionerRole/dietitian', display: 'Alex Smith — Dietitian' })
-    expect(nutritionReference(options.map((option) => ({ ...option, label: 'Changed UI label' })), 'PractitionerRole/dietitian', ['Practitioner', 'PractitionerRole'])?.display).toBe('Alex Smith — Dietitian')
-    expect(nutritionReference(options, 'Practitioner/standalone', ['Practitioner', 'PractitionerRole'])?.reference).toBe('Practitioner/standalone')
+    expect(resolveOptionReference(options, 'PractitionerRole/dietitian', ['Practitioner', 'PractitionerRole'])).toEqual({ reference: 'PractitionerRole/dietitian', display: 'Alex Smith — Dietitian' })
+    expect(resolveOptionReference(options.map((option) => ({ ...option, label: 'Changed UI label' })), 'PractitionerRole/dietitian', ['Practitioner', 'PractitionerRole'])?.display).toBe('Alex Smith — Dietitian')
+    expect(resolveOptionReference(options, 'Practitioner/standalone', ['Practitioner', 'PractitionerRole'])?.reference).toBe('Practitioner/standalone')
   })
   it('loads allergies directly for the matched Patient, filtering other-patient results', async () => {
     mocks.searchResources.mockImplementation(async (_base, type) => ({ resourceType: 'Bundle', type: 'searchset', entry: type === 'AllergyIntolerance' ? [

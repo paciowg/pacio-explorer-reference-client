@@ -1,4 +1,5 @@
 /** Exercises destination-only controls, send navigation, and recovery locks without a browser or external writes. */
+import { PatientFormHeader } from '../../components/PatientFormHeader'
 import type { ReactElement, ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -48,6 +49,7 @@ function nodes(node: ReactNode): ReactElement<Record<string, unknown>>[] {
   if (!node || typeof node !== 'object') return []
   if (Array.isArray(node)) return node.flatMap(nodes)
   const element = node as ReactElement<Record<string, unknown>>
+  if (element.type === PatientFormHeader) return nodes(PatientFormHeader(element.props as Parameters<typeof PatientFormHeader>[0]))
   return [element, ...nodes(element.props?.children as ReactNode)]
 }
 function render(kind: DocumentKind = 'toc') { harness.cursor = 0; return SendDocumentPage({ patientId: 'p', resourceId: 'index', kind }) }

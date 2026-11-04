@@ -1,4 +1,5 @@
 /** Loads an indexed TOC document and presents its metadata and clinical sections. */
+import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useState } from 'react'
 import type { Bundle, DocumentReference } from 'fhir/r4'
 import { FhirJsonLink } from '../../components/FhirJsonLink'
@@ -94,10 +95,7 @@ export function TocDetailPage({ patientId, documentReferenceId }: TocDetailPageP
     <section className="panel">
       <div className="panel-header">
         <h2>Transition of Care</h2>
-        <div className="panel-server-details">
-          <span className="panel-server-label">{activeServer.label}</span>
-          <span className="panel-server-url">{activeServer.baseUrl}</span>
-        </div>
+        <PanelServerDetails label={activeServer.label} baseUrl={activeServer.baseUrl} />
       </div>
       <div className="page-actions page-actions-spaced">
         <button

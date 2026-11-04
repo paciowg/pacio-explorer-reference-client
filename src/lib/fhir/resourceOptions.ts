@@ -1,11 +1,18 @@
 /** Derives reusable resource choices and selection labels while keeping UI text separate from FHIR reference displays. */
-import type { Bundle, Organization, Practitioner, PractitionerRole, RelatedPerson, Resource } from 'fhir/r4'
+import type { Bundle, Organization, Practitioner, PractitionerRole, RelatedPerson, Reference, Resource } from 'fhir/r4'
 import { getCodeableConceptText, getDisplayNameFromHumanName, getPractitionerRoleDisplayName } from './formatters'
 import { getSimpleResourceDisplay } from './resourceDisplay'
 import { serverResourceUrl } from './resourceTransport'
 import { getResourceTimestamp } from './resourceTimestamp'
 
 export type ResourceReferenceOption = { reference: string; label: string; display: string; resource: Resource }
+
+export function resolveOptionReference(options: ResourceReferenceOption[], value: string, allowedTypes?: readonly string[]): Reference | undefined {
+  if (!value) return undefined
+  const option = options.find((item) => item.reference === value && (!allowedTypes || allowedTypes.includes(item.resource.resourceType)))
+  if (!option) throw new Error('A selected reference is no longer available on the destination.')
+  return { reference: option.reference, display: option.display }
+}
 
 export function formatResourceSelectionLabel(resourceType: string, display: string) {
   return `${resourceType}: ${display}`

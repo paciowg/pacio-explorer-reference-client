@@ -1,4 +1,5 @@
 /** Loads, filters, and displays patients from the active FHIR server. */
+import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchPatients } from '../../lib/fhir/client'
 import { navigateTo } from '../../lib/routing/routes'
@@ -66,10 +67,7 @@ export function PatientListPage() {
           <h2>Browse patients — {patients.length} available</h2>
         </div>
 
-        <div className="panel-server-details">
-          <span className="panel-server-label">{activeServer.label}</span>
-          <span className="panel-server-url">{activeServer.baseUrl}</span>
-        </div>
+        <PanelServerDetails label={activeServer.label} baseUrl={activeServer.baseUrl} />
       </div>
 
       <div className="patient-list-panel full-width-panel">
