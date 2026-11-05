@@ -1,4 +1,4 @@
-/** Loads and displays an advance directive, enriching generic metadata from its document Bundle when available. */
+/** Loads and displays an advance healthcare directive, enriching generic metadata from its document Bundle when available. */
 import { PanelServerDetails } from '../../components/PanelServerDetails'
 import { useEffect, useMemo, useState } from 'react'
 import type { Bundle, DocumentReference } from 'fhir/r4'
@@ -80,7 +80,7 @@ export function AdvanceDirectiveDetailPage({
       } catch (error) {
         if (!isMounted) return
         setErrorMessage(
-          error instanceof Error ? error.message : 'Unable to load the advance directive.',
+          error instanceof Error ? error.message : 'Unable to load the advance healthcare directive.',
         )
       } finally {
         if (isMounted) setIsLoading(false)
@@ -103,13 +103,13 @@ export function AdvanceDirectiveDetailPage({
   const pageTitle = bundleDerivedData?.composition.title ||
     getCodeableConceptText(bundleDerivedData?.composition.type) ||
     getCodeableConceptText(documentReference?.type) ||
-    'Advance Directive'
+    'Advance Healthcare Directive'
   const pageDate = bundleDerivedData?.composition.date || documentReference?.date
 
   return (
     <section className="panel">
       <div className="panel-header">
-        <div><h2>Advance Directive</h2></div>
+        <div><h2>Advance Healthcare Directive</h2></div>
         <PanelServerDetails label={activeServer.label} baseUrl={activeServer.baseUrl} />
       </div>
 
@@ -123,7 +123,7 @@ export function AdvanceDirectiveDetailPage({
         </button>
       </div>
 
-      {isLoading ? <div className="info-banner">Loading advance directive...</div> : null}
+      {isLoading ? <div className="info-banner">Loading advance healthcare directive...</div> : null}
       {bundleWarningMessage ? <div className="warning-banner">{bundleWarningMessage}</div> : null}
       {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
 

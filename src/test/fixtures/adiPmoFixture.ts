@@ -89,7 +89,7 @@ export const representativeAdiPmoBundle: Bundle = {
         language: 'en-US',
         text: {
           status: 'generated',
-          div: '<div xmlns="http://www.w3.org/1999/xhtml"><p>ADI Portable Medical Order for Ada Lovelace.</p><p>Status: Final Author: Dr. Grace Hopper — Physician Attester: Alex Attester Date signed: 2025-01-01T00:00:00.000Z Facilitator: Fran Facilitator Data enterer: Dana Enterer Includes advance directive source form PDF.</p></div>',
+          div: '<div xmlns="http://www.w3.org/1999/xhtml"><p>ADI Portable Medical Order for Ada Lovelace.</p><p>Status: Final Author: Dr. Grace Hopper — Physician Attester: Alex Attester Date signed: 2025-01-01T00:00:00.000Z Facilitator: Fran Facilitator Data enterer: Dana Enterer Includes advance healthcare directive source form PDF.</p></div>',
         },
         extension: [
           { url: 'http://hl7.org/fhir/us/pacio-adi/StructureDefinition/adi-docVersionNumber-extension', valueString: '20250102030405' },
@@ -113,8 +113,8 @@ export const representativeAdiPmoBundle: Bundle = {
         event: [{ code: [{ coding: [{ system: 'http://hl7.org/fhir/us/pacio-adi/CodeSystem/ADITempCS', code: 'acp-services', display: 'Advance care planning services' }], text: 'Advance care planning services' }], detail: [{ reference: 'PractitionerRole/facilitator-1', display: 'Fran Facilitator' }] }],
         section: [
           {
-            title: 'Advance directive source form',
-            code: { coding: [{ system: 'http://hl7.org/fhir/us/pacio-adi/CodeSystem/ADITempCS', code: 'advance_directive_source_form', display: 'Advance directive source form' }], text: 'Advance directive source form' },
+            title: 'Advance healthcare directive source form',
+            code: { coding: [{ system: 'http://hl7.org/fhir/us/pacio-adi/CodeSystem/ADITempCS', code: 'advance_directive_source_form', display: 'Advance healthcare directive source form' }], text: 'Advance healthcare directive source form' },
             text: { status: 'generated', div: '<div xmlns="http://www.w3.org/1999/xhtml"><p>Attached source form PDF for Ada Lovelace</p></div>' },
             entry: [{ reference: 'Binary/source-form-binary' }],
           },

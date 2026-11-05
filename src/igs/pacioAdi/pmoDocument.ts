@@ -72,7 +72,7 @@ function buildCompositionNarrative(input: { patientDisplayName: string; authorDi
     `Date signed: ${escapeHtml(input.signedDate)}`,
     input.facilitatorDisplay ? `Facilitator: ${escapeHtml(input.facilitatorDisplay)}` : '',
     input.dataEntererDisplay ? `Data enterer: ${escapeHtml(input.dataEntererDisplay)}` : '',
-    'Includes advance directive source form PDF.',
+    'Includes advance healthcare directive source form PDF.',
   ].filter(Boolean)
   return {
     status: 'generated',
@@ -111,8 +111,8 @@ function buildComposition(input: CreateAdiPmoBundleInput, sourceFormBinary: Bina
     ...(input.facilitator ? { event: [{ code: [{ coding: [ACP_SERVICES_CODE], text: ACP_SERVICES_CODE.display }], detail: [input.facilitator] }] } : {}),
     section: [
       {
-        title: 'Advance directive source form',
-        code: { coding: [{ system: ADI_TEMP_CODE_SYSTEM, code: 'advance_directive_source_form', display: 'Advance directive source form' }], text: 'Advance directive source form' },
+        title: 'Advance healthcare directive source form',
+        code: { coding: [{ system: ADI_TEMP_CODE_SYSTEM, code: 'advance_directive_source_form', display: 'Advance healthcare directive source form' }], text: 'Advance healthcare directive source form' },
         text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Attached source form PDF for ${escapeHtml(patientDisplayName)}</p></div>` },
         entry: [{ reference: `${sourceFormBinary.resourceType}/${sourceFormBinary.id}` }],
       },

@@ -38,7 +38,7 @@ export type TocSectionDefinition = {
 }
 
 export const TOC_SECTION_DEFINITIONS: TocSectionDefinition[] = [
-  { key: 'advanceDirectives', title: 'Advance Directives', system: LOINC, code: '42348-3', display: 'Advance healthcare directives' },
+  { key: 'advanceDirectives', title: 'Advance Healthcare Directives', system: LOINC, code: '42348-3', display: 'Advance healthcare directives' },
   { key: 'allergies', title: 'Allergies and Adverse Reactions', system: LOINC, code: '48765-2', display: 'Allergies and adverse reactions Document' },
   { key: 'behavioralHealth', title: 'Behavioral Health', system: TOC_TEMP_CODES, code: 'behavioral_health_summary', display: 'Behavioral Health Summary' },
   { key: 'functionalStatus', title: 'Functional Status', system: LOINC, code: '47420-5', display: 'Functional status' },

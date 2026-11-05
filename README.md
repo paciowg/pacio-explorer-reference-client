@@ -18,12 +18,12 @@ This application currently supports a handful of PACIO workflows in addition to 
 
 From the patient summary, you can open either type of document:
 
-- An advance directive. The client displays generic `DocumentReference` metadata and, when its attachment references a document Bundle, loads its Composition and PDF source forms.
+- An advance healthcare directive. The client displays generic `DocumentReference` metadata and, when its attachment references a document Bundle, loads its Composition and PDF source forms.
 - A Transition of Care (TOC) document. The client loads the same-server document Bundle referenced by its `DocumentReference`, then presents Composition metadata, required TOC sections, reasons for empty sections, and readable summaries of included resources.
 
 Missing scalar values display as `--`; loaded empty lists display `None recorded`; sections requiring an unavailable `$everything` Bundle display `Unavailable`.
 
-The patient display has three top navigation tabs: **Personal Information** (the default), **Clinical Information**, and **Documents**. The patient header remains visible across views, and switching tabs preserves loaded data and expanded entries. Documents shows four sections in order: TOC Documents, Advance Directives, SMP Medication Lists, and SMP Collections, each with empty states and creation actions. Each tab has a bookmarkable URL; document workflows return to Documents, while device and nutrition creation return to Clinical Information.
+The patient display has three top navigation tabs: **Personal Information** (the default), **Clinical Information**, and **Documents**. The patient header remains visible across views, and switching tabs preserves loaded data and expanded entries. Documents shows four sections in order: TOC Documents, Advance Healthcare Directives, SMP Medication Lists, and SMP Collections, each with empty states and creation actions. Each tab has a bookmarkable URL; document workflows return to Documents, while device and nutrition creation return to Clinical Information.
 
 Expand a clinical entry and choose **View FHIR JSON ↗** to open its current server resource in a new tab. The Patient link is visible below the patient name; document links are on their detail pages. The viewer displays indented, syntax-colored, selectable JSON. The viewer shows only the requested resource. Document detail pages offer separate DocumentReference and Bundle links when available; expanded device requests and usage records offer separate links for the event and its available standalone Device. Contained resources remain within their parent resource JSON. The viewer requires an active server connection and reads from that server; it fetches current data rather than a snapshot of the clinical display.
 
@@ -33,11 +33,11 @@ From a patient summary, open the TOC creation flow and choose a destination FHIR
 
 The active server remains the source of the document data and is preselected as the destination. For a different destination, the client first searches for the patient by complete identifiers and then by name. A successful search with no match causes a copy of the Patient, without the source `id` or `meta`, to be created. A failed search stops publication because the client cannot safely determine whether the patient is absent.
 
-The client builds a PACIO TOC document Bundle and posts it with a companion TOC `DocumentReference` to the destination. Selected advance directives remain linked as separate documents; their contents are not merged into the TOC document. See [TOC document construction and references](#toc-document-construction-and-references) for technical details.
+The client builds a PACIO TOC document Bundle and posts it with a companion TOC `DocumentReference` to the destination. Selected advance healthcare directives remain linked as separate documents; their contents are not merged into the TOC document. See [TOC document construction and references](#toc-document-construction-and-references) for technical details.
 
 ### Create an ADI PMO document
 
-The PACIO Advance Directive Interoperability (ADI) workflow creates a portable medical order (PMO) document. From a patient summary, select the PMO creation flow and provide the required author, attester, authenticator, signed date, PDF source form, and destination FHIR server.
+The PACIO ADI workflow for advance healthcare directives creates a portable medical order (PMO) document. From a patient summary, select the PMO creation flow and provide the required author, attester, authenticator, signed date, PDF source form, and destination FHIR server.
 
 Destination selection and patient matching work as described in [Create a Transition of Care document](#create-a-transition-of-care-document). The active server remains the source of the document data.
 
@@ -142,7 +142,7 @@ npm run build
 npm run lint
 ```
 
-Before a release, manually smoke-test server connection and saved-server flows, patient search and fallback behavior, advance-directive PDF opening, and ADI and TOC creation to both the active server and another saved CORS-enabled FHIR R4 server.
+Before a release, manually smoke-test server connection and saved-server flows, patient search and fallback behavior, advance healthcare directive PDF opening, and ADI and TOC creation to both the active server and another saved CORS-enabled FHIR R4 server.
 
 ### Architecture
 
@@ -155,7 +155,7 @@ TOC form -> createTocDocument -> PACIO TOC builders -> destination patient + pub
 
 TOC/ADI creation, SMP Collection creation, and sending saved documents share `publishPreparedDocument` for Patient, Bundle, and DocumentReference sequencing. SMP creation and sending retain its progress for in-session retries. Creation adapters prepare their Bundles first; sending prepares references using only the saved snapshot, without fetching live clinical dependencies. Shared portability helpers adapt destination indexes, prepare standalone Patient copies, and rewrite captured Bundle references. Shared matching, saved-snapshot loading and validation, destination index adaptation, and write-outcome handling live in `src/lib/fhir/`; feature adapters own profile-specific identification and checks.
 
-- `src/features/advanceDirectives/` owns PMO workflow orchestration, generic advance-directive display, and browser file/attachment behavior.
+- `src/features/advanceDirectives/` owns PMO workflow orchestration, generic advance healthcare directive display, and browser file/attachment behavior.
 - `src/igs/pacioAdi/` owns pure PACIO ADI resource construction and ADI interpretation. It has no React, network, storage, or browser-file dependencies.
 - `src/features/transitionsOfCare/` owns TOC selection, workflow orchestration, discovery, and display.
 - `src/features/documentSending/` owns the send page, read-only preview, and a thin TOC/ADI/SMP adapter. Its generic operations and tests live in `src/lib/fhir/savedDocuments.ts` and the adjacent test file.
@@ -167,7 +167,7 @@ TOC/ADI creation, SMP Collection creation, and sending saved documents share `pu
 - `src/features/patientSummary/` owns patient-summary composition and demographics.
 - `src/components/` owns reusable presentation components and presentation types.
 
-Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance-directive display remains available for non-ADI `DocumentReference` resources; PACIO ADI enrichment is optional.
+Generic FHIR mechanics contain no PACIO profiles or terminology. Generic advance healthcare directive display remains available for non-ADI `DocumentReference` resources; PACIO ADI enrichment is optional.
 
 ### Multi-selection controls
 
@@ -185,7 +185,7 @@ Display calendar dates and partial dates at their original precision. When a val
 
 ### Patient page listing order
 
-All dated clinical listings on the main patient page display newest first: Active Problems, Medications, Devices, Nutrition Orders, Known Allergies, Most Recent Vitals, Advance Directives, Transitions of Care, SMP Medication Lists, and SMP Collections. For matching valid clinical dates, `meta.lastUpdated` breaks ties newest first; valid update timestamps precede missing or invalid ones. Complete ties and entries with missing or invalid clinical dates retain their existing order, with undated entries last. Update timestamps never replace clinical dates or change the displayed date. Apply the same tie-breaker when selecting the latest usable vital reading. Use `compareClinicalDatesDesc` in `src/lib/dateTime.ts` on raw FHIR dates before formatting and before applying list limits.
+All dated clinical listings on the main patient page display newest first: Active Problems, Medications, Devices, Nutrition Orders, Known Allergies, Most Recent Vitals, Advance Healthcare Directives, Transitions of Care, SMP Medication Lists, and SMP Collections. For matching valid clinical dates, `meta.lastUpdated` breaks ties newest first; valid update timestamps precede missing or invalid ones. Complete ties and entries with missing or invalid clinical dates retain their existing order, with undated entries last. Update timestamps never replace clinical dates or change the displayed date. Apply the same tie-breaker when selecting the latest usable vital reading. Use `compareClinicalDatesDesc` in `src/lib/dateTime.ts` on raw FHIR dates before formatting and before applying list limits.
 
 Keep sorting and display dates aligned with each section's existing precedence: problems use onset then recorded date; medications use asserted date, effective date, then effective-period start; allergies use last occurrence then recorded date; nutrition orders use order date; documents use DocumentReference date. Device requests use authoredOn; device usage uses recordedOn, timingDateTime, then timingPeriod.start. Standalone Devices have no summary event date and sort last; manufacture and expiration dates are not event-date substitutes. Associated Devices remain inside their request/usage expansion.
 
@@ -207,7 +207,7 @@ The client builds a profiled PACIO TOC document Bundle, resolves its references 
 
 For same-server publication, the companion `DocumentReference` retains its author, authenticator, and custodian references. For cross-server publication, those optional Must Support references are omitted because their source-local resource IDs do not establish identities on the destination server. Participant details represented by the Composition remain in the document Bundle; the destination Patient remains the `DocumentReference.subject`.
 
-Selected advance directives are included as ADI `DocumentReference` entries. Their existing attachment links continue to identify the separate ADI document Bundles; those Bundles are not flattened into the TOC document.
+Selected advance healthcare directives are included as ADI `DocumentReference` entries. Their existing attachment links continue to identify the separate ADI document Bundles; those Bundles are not flattened into the TOC document.
 
 ### Deliberate constraints
 
@@ -237,7 +237,7 @@ Do not treat these as settled guidance. A separate conformance-focused change sh
 - `#/patients/:id?view=clinical` — patient clinical information
 - `#/patients/:id?view=documents` — patient documents
 - `#/patients/:id/portable-medical-orders/new` — create an ADI portable medical order
-- `#/patients/:id/advance-directives/:documentReferenceId` — advance-directive detail
+- `#/patients/:id/advance-directives/:documentReferenceId` — advance healthcare directive detail
 - `#/patients/:id/transitions-of-care/new` — create a Transition of Care document
 - `#/patients/:id/transitions-of-care/:documentReferenceId` — Transition of Care detail
 - `#/patients/:id/device-requests/new` — create a PFE Device and DeviceRequest

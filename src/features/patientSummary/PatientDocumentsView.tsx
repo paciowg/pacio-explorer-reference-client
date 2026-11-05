@@ -16,7 +16,7 @@ export function PatientDocumentsView({ summary, baseUrl, patientId }: { summary:
       footer={<div className="clinical-section-footer"><button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${patientId}/transitions-of-care/new`)}>Create TOC document</button></div>}
     />
     <SelectableClinicalSummarySection
-      title="Advance Directives"
+      title="Advance Healthcare Directives"
       items={summary.advanceDirectives}
       emptyMessage={summary.clinicalSectionEmptyMessage}
       onSelect={(item) => navigateTo(`/patients/${patientId}/advance-directives/${item.id}`)}

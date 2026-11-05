@@ -50,7 +50,7 @@ describe('ADI PMO builders', () => {
     expect(composition?.text?.div).toContain('ADI Portable Medical Order for Ada Lovelace.')
     expect(composition?.text?.div).toContain('Facilitator: Fran Facilitator')
     expect(composition?.section?.map((section) => section.title)).toEqual([
-      'Advance directive source form', 'Portable Medical Orders',
+      'Advance healthcare directive source form', 'Portable Medical Orders',
     ])
     expect(composition?.section?.[0]?.entry).toEqual([{ reference: 'Binary/source-form-binary' }])
     expect(composition?.author).toEqual([
