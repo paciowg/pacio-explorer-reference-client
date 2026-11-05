@@ -25,7 +25,7 @@ export function SmpDocumentsContent({ baseUrl, patientId, data, error = '' }: { 
   const indexError = error || data?.indexError
   return <>
     <section className="summary-card clinical-summary-card">
-      <div className="clinical-summary-header"><h3>SMP Medication Lists</h3><span className="clinical-summary-cap">Up to 10 items</span></div>
+      <div className="clinical-summary-header"><h3>Standardized Medication Profile Medication Lists</h3><span className="clinical-summary-cap">Up to 10 items</span></div>
       {listError ? <p className="warning-banner">Lists unavailable: {listError}</p> : !data ? <p role="status">Loading medication Lists…</p>
         : data.lists?.length ? <ul className="clinical-list">{[...data.lists].sort((a, b) => compareClinicalDatesDesc(a.date, b.date, a.meta?.lastUpdated, b.meta?.lastUpdated)).slice(0, 10).map((list) =>
           <SmpMedicationListItem key={`${baseUrl}:${patientId}:${list.id}`} list={list} baseUrl={baseUrl} patientId={patientId} />
@@ -33,7 +33,7 @@ export function SmpDocumentsContent({ baseUrl, patientId, data, error = '' }: { 
       <div className="clinical-section-footer"><button type="button" className="secondary-button outline compact" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/medication-lists/new`)}>Create medication list</button></div>
     </section>
     <section className="summary-card clinical-summary-card">
-      <div className="clinical-summary-header"><h3>SMP Collections</h3><span className="clinical-summary-cap">Up to 10 items</span></div>
+      <div className="clinical-summary-header"><h3>Standardized Medication Profile Collections</h3><span className="clinical-summary-cap">Up to 10 items</span></div>
       {indexError ? <p className="warning-banner">Collections unavailable: {indexError}</p> : !data ? <p role="status">Loading SMP collections…</p>
         : data.indexes?.length ? <ul className="clinical-list">{[...data.indexes].sort((a, b) => compareClinicalDatesDesc(a.date, b.date, a.meta?.lastUpdated, b.meta?.lastUpdated)).slice(0, 10).map((index) => <li key={index.id} className="clinical-list-selectable-item">
           <button type="button" className="clinical-select-button" onClick={() => navigateTo(`/patients/${encodeURIComponent(patientId)}/smp-collections/${encodeURIComponent(index.id!)}`)}>

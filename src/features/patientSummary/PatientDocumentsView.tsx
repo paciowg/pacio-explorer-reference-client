@@ -9,7 +9,7 @@ type DocumentsSummary = Pick<PatientSummaryModel, 'advanceDirectives' | 'transit
 export function PatientDocumentsView({ summary, baseUrl, patientId }: { summary: DocumentsSummary; baseUrl: string; patientId: string }) {
   return <>
     <SelectableClinicalSummarySection
-      title="TOC Documents"
+      title="Transitions of Care Documents"
       items={summary.transitionOfCares}
       emptyMessage={summary.clinicalSectionEmptyMessage}
       onSelect={(item) => navigateTo(`/patients/${patientId}/transitions-of-care/${item.id}`)}

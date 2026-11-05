@@ -27,7 +27,7 @@ describe('SMP Documents sections', () => {
   it('uses a collapsed clinical disclosure for Lists instead of a link to their standalone page', () => {
     const html = renderToStaticMarkup(<SmpDocumentsContent baseUrl={baseUrl} patientId="p" data={data} />)
     expect(html.match(/<section class="summary-card clinical-summary-card">/g)).toHaveLength(2)
-    const lists = html.slice(0, html.indexOf('<h3>SMP Collections</h3>'))
+    const lists = html.slice(0, html.indexOf('<h3>Standardized Medication Profile Collections</h3>'))
     expect(lists).toContain('<li class="clinical-list-item clinical-list-expandable-item"><details class="clinical-entry-disclosure"><summary>')
     expect(lists).toContain('Discharge medications')
     expect(lists).toContain('1 medication')
