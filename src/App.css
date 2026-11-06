@@ -851,6 +851,27 @@
   color: #991b1b;
 }
 
+.error-banner ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.validation-field-invalid {
+  outline: 2px solid #b91c1c;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.field-error {
+  color: #991b1b;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.field-error p {
+  margin: 0.35rem 0;
+}
+
 /* Patient pages */
 
 .patient-search-group {

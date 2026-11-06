@@ -4,6 +4,7 @@ import { EMPTY_REASONS, MEDICATION_LIST_TYPE_CHOICES } from '../../igs/pacioSmp/
 import { calendarDateValue } from '../../lib/dateTime'
 import type { SmpChoices } from './smpData'
 import { samePatient, sourceReference } from './smpReferences'
+import { issueCollector } from '../../lib/formValidation'
 
 export const EXISTING_LIST_VALUE = '__existing__'
 const EMPTY_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/list-empty-reason'
@@ -27,6 +28,16 @@ export function hasSmpListEdits(original: List, edit: SmpListEdit) {
   return edit.title !== initial.title || edit.typeCode !== initial.typeCode || edit.date !== initial.date || edit.author !== initial.author ||
     edit.emptyReason !== initial.emptyReason || Boolean(edit.notes.trim()) ||
     edit.selected.length !== initial.selected.length || edit.selected.some((value) => !initial.selected.includes(value))
+}
+
+export function validateSmpListEdit(original: List, edit: SmpListEdit, choices: SmpChoices, baseUrl: string, patientId: string) {
+  const initial = initialSmpListEdit(original)
+  const v = issueCollector()
+  for (const [field, key] of [['smp-title', 'title'], ['smp-type', 'typeCode'], ['smp-date', 'date'], ['smp-author', 'author']] as const) {
+    v.check(field, () => buildSmpListUpdate(original, { ...initial, [key]: edit[key] }, choices, baseUrl, patientId, ''))
+  }
+  v.check(edit.selected.length ? 'Medication statements' : 'smp-empty', () => buildSmpListUpdate(original, { ...initial, selected: edit.selected, emptyReason: edit.emptyReason }, choices, baseUrl, patientId, ''))
+  return v.issues
 }
 
 // Keep historical references distinct, but recognize relative and same-server absolute aliases.

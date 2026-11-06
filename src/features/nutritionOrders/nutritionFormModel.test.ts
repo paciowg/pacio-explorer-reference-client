@@ -1,9 +1,24 @@
 /** Verifies explicit allergy decisions, component conversion, and quantity/schedule validation before nutrition writes. */
 import { describe, expect, it, vi } from 'vitest'
 import { buildPfeNutritionOrder } from '../../igs/pacioPfe/nutritionOrder'
-import { emptyQuantity, initialNutritionForm, newAdministration, newSchedule, newSupplement, nutritionFormInputs, nutritionQuantity, nutritionSchedule } from './nutritionFormModel'
+import { emptyQuantity, initialNutritionForm, newAdministration, newSchedule, newSupplement, nutritionFormInputs, nutritionQuantity, nutritionSchedule, validateNutritionForm } from './nutritionFormModel'
 
 describe('nutrition form conversion', () => {
+  it('reports allergy and component requirements together, then clears both after correction', () => {
+    const form = initialNutritionForm()
+    expect(validateNutritionForm(form, []).map((issue) => issue.field)).toEqual(['allergies', 'components'])
+    expect(validateNutritionForm({ ...form, allergyMode: 'none-known', oralEnabled: true, oralInstruction: 'With meals' }, [])).toEqual([])
+  })
+  it('reports independent errors in repeated schedules and rates with their exact row keys', () => {
+    const form = { ...initialNutritionForm(), allergyMode: 'existing' as const, dateTime: '', supplementsEnabled: true,
+      supplements: [{ ...newSupplement(), schedules: [{ ...newSchedule(), frequency: '1.5', period: '0' }] }],
+      enteralEnabled: true, administrations: [{ ...newAdministration(), rateType: 'ratio' as const }] }
+    expect(validateNutritionForm(form, []).map((issue) => issue.field)).toEqual([
+      'allergies', 'Order date', 'supplements.0.schedules.0.Times per period', 'supplements.0.schedules.0.Period length',
+      'administrations.0.Rate amount', 'administrations.0.Rate denominator',
+    ])
+    expect(validateNutritionForm({ ...form, allergyMode: 'none-known', dateTime: '2026-11-06', supplementsEnabled: false, enteralEnabled: false, oralEnabled: true, oralInstruction: 'With meals' }, [])).toEqual([])
+  })
   it('defaults order date to the local calendar and rejects invalid calendar dates', () => {
     vi.useFakeTimers()
     try {

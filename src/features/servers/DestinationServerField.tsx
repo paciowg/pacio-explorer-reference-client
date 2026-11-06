@@ -1,4 +1,5 @@
 /** Presents a saved-server destination choice without changing the application's active source server. */
+import { ValidationField } from '../../components/SubmissionForm'
 import type { SavedServer } from './serverStorage'
 
 type DestinationServerFieldProps = {
@@ -12,7 +13,7 @@ type DestinationServerFieldProps = {
 
 export function DestinationServerField(props: DestinationServerFieldProps) {
   return (
-    <div className="field-group">
+    <ValidationField field={props.id} className="field-group">
       <label htmlFor={props.id}>Destination FHIR server</label>
       <select
         id={props.id}
@@ -32,6 +33,6 @@ export function DestinationServerField(props: DestinationServerFieldProps) {
         The {props.resourceDescription ?? 'Bundle and DocumentReference'} will be written here. The patient will be copied if no
         match is found.
       </small>
-    </div>
+    </ValidationField>
   )
 }

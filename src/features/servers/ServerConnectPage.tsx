@@ -1,4 +1,6 @@
 /** Supports validating, saving, selecting, and removing browser-local FHIR server connections. */
+import { SubmissionForm, SubmissionErrors, ValidationField } from '../../components/SubmissionForm'
+import { issueCollector } from '../../lib/formValidation'
 import { useMemo, useState } from 'react'
 import { validateFhirServer } from '../../lib/fhir/client'
 import { formatDate } from '../../lib/fhir/formatters'
@@ -19,6 +21,12 @@ export function ServerConnectPage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const hasSavedServers = useMemo(() => savedServers.length > 0, [savedServers])
+
+  function validateForm() {
+    const v = issueCollector()
+    v.require('server-url', baseUrl.trim(), 'Enter a FHIR base URL.')
+    return v.issues
+  }
 
   async function handleConnect(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -71,14 +79,14 @@ export function ServerConnectPage() {
       </div>
 
       <div className="server-layout">
-        <form className="server-form" onSubmit={handleConnect}>
+        <SubmissionForm className="server-form" error={errorMessage} validate={validateForm} onSubmit={handleConnect}>
           {successMessage ? (
             <div className="success-banner">{successMessage}</div>
           ) : null}
 
-          {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
+          <SubmissionErrors error={errorMessage} />
 
-          <div className="field-group">
+          <ValidationField field="server-label" className="field-group">
             <label htmlFor="server-label">Server label</label>
             <input
               id="server-label"
@@ -86,9 +94,9 @@ export function ServerConnectPage() {
               value={label}
               onChange={(event) => setLabel(event.target.value)}
             />
-          </div>
+          </ValidationField>
 
-          <div className="field-group">
+          <ValidationField field="server-url" className="field-group">
             <label htmlFor="server-url">FHIR base URL</label>
             <input
               id="server-url"
@@ -96,7 +104,7 @@ export function ServerConnectPage() {
               value={baseUrl}
               onChange={(event) => setBaseUrl(event.target.value)}
             />
-          </div>
+          </ValidationField>
 
           <div className="form-actions">
             <button type="submit" className="primary-button" disabled={isConnecting}>
@@ -104,7 +112,7 @@ export function ServerConnectPage() {
             </button>
 
             <button
-              type="button"
+              type="reset"
               className="secondary-button outline"
               onClick={() => {
                 setLabel(INITIAL_LABEL)
@@ -117,7 +125,7 @@ export function ServerConnectPage() {
               Reset
             </button>
           </div>
-        </form>
+        </SubmissionForm>
 
         <div className="saved-server-panel">
           <h3>Previously Connected Servers</h3>

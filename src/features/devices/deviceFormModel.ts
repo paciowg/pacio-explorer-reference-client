@@ -5,6 +5,7 @@ import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
 import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS, DEVICE_REASON_CODES, DEVICE_REASON_REFERENCE_TYPES, RELATIONSHIP_SYSTEM, snomedConcept, type PFEDeviceRequestInput } from '../../igs/pacioPfe/deviceRequest'
 import { type ReferenceOption } from './deviceCreateData'
 import type { CreateDeviceRequestInput } from './createDeviceRequest'
+import { issueCollector } from '../../lib/formValidation'
 
 export type ParameterValue = { code: string; kind: 'quantity' | 'concept' | 'boolean' | 'range'; value: string; unit: string; high: string }
 export type UserValue = { reference: string; relationship: string }
@@ -37,6 +38,44 @@ function positiveNumber(value: string, label: string) {
 function number(value: string) {
   if (!value.trim() || !Number.isFinite(Number(value))) throw new Error('Enter a numeric parameter value.')
   return Number(value)
+}
+
+export function validateDeviceForm(form: DeviceForm, options: ReferenceOption[]) {
+  const v = issueCollector()
+  v.require('Device type', ASSISTIVE_DEVICES.some((device) => device.code === form.type), 'Select a supported device type.')
+  if (form.authoredOn) v.check('Authored date', () => calendarDateValue(form.authoredOn, 'authored date'))
+  for (const [field, value] of [['Organization responsible for device', form.owner], ['Encounter', form.encounter], ['Requester', form.requester]]) {
+    v.check(field, () => resolveOptionReference(options, value))
+  }
+  for (const [field, values] of [['Prior requests', form.priorRequests], ['Insurance', form.insurance], ['Supporting assessments', form.assessments], ['Supporting goals', form.goals], ['Reason references', form.reasonReferences]] as const) {
+    values.forEach((value) => v.check(field, () => resolveOptionReference(options, value)))
+  }
+  form.users.forEach((user, index) => {
+    const field = `users.${index}.User ${index + 1}`
+    v.require(field, user.reference, 'Select a reference for each device user.')
+    if (user.reference) v.check(field, () => resolveOptionReference(options, user.reference))
+  })
+  form.parameters.forEach((parameter, index) => {
+    const key = `parameters.${index}.`
+    v.require(`${key}Parameter ${index + 1}`, DEVICE_PARAMETERS.some((code) => code.code === parameter.code), 'Select a supported parameter code.')
+    if (parameter.kind === 'concept') v.require(`${key}Value`, parameter.value.trim(), 'Enter a parameter value.')
+    if (parameter.kind === 'quantity' || parameter.kind === 'range') v.check(`${key}${parameter.kind === 'range' ? 'Low value' : 'Value'}`, () => number(parameter.value))
+    if (parameter.kind === 'range') {
+      v.check(`${key}High value`, () => number(parameter.high))
+      v.require(`${key}High value`, !parameter.value.trim() || !parameter.high.trim() || !(Number(parameter.high) < Number(parameter.value)), 'Parameter range end must not precede its start.')
+    }
+  })
+  if (form.occurrence) {
+    if (form.occurrence !== 'timing') v.require('Start date', form.start, 'Enter an occurrence start date.')
+    v.require('End date', !form.start || !form.end || form.end >= form.start, 'Occurrence end must not precede its start.')
+    if (form.occurrence === 'timing') {
+      v.check('Times per period', () => {
+        if (!Number.isInteger(positiveNumber(form.frequency, 'Frequency'))) throw new Error('Frequency must be a whole number.')
+      })
+      v.check('Period length', () => positiveNumber(form.period, 'Repeat period'))
+    }
+  }
+  return v.issues
 }
 
 export function deviceFormInputs(form: DeviceForm, options: ReferenceOption[]): Pick<CreateDeviceRequestInput, 'device' | 'request'> {

@@ -1,4 +1,5 @@
 /** Coordinates destination-local statement authoring and returns to the source patient's Clinical Information after publication. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { Patient } from 'fhir/r4'
@@ -9,7 +10,7 @@ import { DestinationServerField } from '../servers/DestinationServerField'
 import { useSavedServers } from '../servers/useSavedServers'
 import { createPatientMedicationStatement, type StatementCreationProgress } from './createMedicationStatement'
 import { loadStatementCreateData, type StatementCreateData } from './statementCreateData'
-import { initialStatementForm, statementFormInputs } from './statementFormModel'
+import { initialStatementForm, statementFormInputs, validateStatementForm } from './statementFormModel'
 import { MedicationStatementForm } from './MedicationStatementForm'
 
 export function PatientMedicationStatementCreatePage({ patientId }: { patientId: string }) {
@@ -66,7 +67,7 @@ export function PatientMedicationStatementCreatePage({ patientId }: { patientId:
   return <section className="panel"><PatientFormHeader title="Create Medication Statement" patient={patient}
       serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
       onBack={() => navigateTo(path)} backDisabled={busy} />
-    <form noValidate onSubmit={(event) => void submit(event)}>
+    <SubmissionForm error={error} validate={() => data ? validateStatementForm(form, data) : []} onSubmit={submit}>
       <DestinationServerField id="statement-destination" servers={savedServers} value={destination} disabled={locked || Boolean(progress.current.patient)} resourceDescription="MedicationStatement" onChange={(value) => {
         setDestination(value)
         setData(null)
@@ -77,12 +78,12 @@ export function PatientMedicationStatementCreatePage({ patientId }: { patientId:
           dosage: previous.basedOn ? [] : previous.dosage, informationSource: '', context: '', reasonReferences: [] }))
       }} />
       {loading ? <p className="info-banner" role="status">Loading destination reference choices...</p> : null}
-      {error ? <p className="error-banner" role="alert">{error}</p> : null}
+      <SubmissionErrors error={error} />
       {!loading && !data ? <button type="button" className="secondary-button" onClick={() => setReload((value) => value + 1)}>Retry loading choices</button> : null}
       {data?.warning ? <p className="warning-banner">{data.warning}</p> : null}
       {data && !data.patient ? <p className="info-banner">No matching patient was found. A Patient will be created when you submit.</p> : null}
       {data ? <><MedicationStatementForm value={form} data={data} disabled={locked || loading} onChange={setForm} />
         <button type="submit" className="primary-button toc-submit" disabled={locked || loading}>{busy ? 'Creating...' : 'Create Medication Statement'}</button></> : null}
-    </form>
+    </SubmissionForm>
   </section>
 }

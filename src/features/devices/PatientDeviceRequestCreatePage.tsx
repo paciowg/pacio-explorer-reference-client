@@ -1,4 +1,5 @@
 /** Coordinates destination selection, read-only reference loading, and submission of a patient PFE device request. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { Patient } from 'fhir/r4'
@@ -9,7 +10,7 @@ import { useSavedServers } from '../servers/useSavedServers'
 import { DestinationServerField } from '../servers/DestinationServerField'
 import { createPatientDeviceRequest, type DeviceCreationProgress } from './createDeviceRequest'
 import { loadDeviceCreateData, type DeviceCreateData } from './deviceCreateData'
-import { deviceFormInputs, initialDeviceForm } from './deviceFormModel'
+import { deviceFormInputs, initialDeviceForm, validateDeviceForm } from './deviceFormModel'
 import { DeviceRequestForm } from './DeviceRequestForm'
 
 export function PatientDeviceRequestCreatePage({ patientId }: { patientId: string }) {
@@ -62,19 +63,19 @@ export function PatientDeviceRequestCreatePage({ patientId }: { patientId: strin
       serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
       onBack={() => navigateTo(`/patients/${patientId}?view=clinical`)} backDisabled={submitting} />
     <>
-      <form noValidate onSubmit={(event) => void submit(event)}>
+      <SubmissionForm error={error} validate={() => data ? validateDeviceForm(form, data.options) : []} onSubmit={submit}>
         <DestinationServerField id="device-destination" servers={savedServers} value={destination} disabled={submitting || Boolean(progress.current.patient) || Boolean(progress.current.uncertain)} resourceDescription="Device and DeviceRequest" onChange={(value) => {
           setDestination(value)
           setForm((form) => ({ ...form, owner: '', requester: '', encounter: '', users: [], priorRequests: [], insurance: [], assessments: [], goals: [], reasonReferences: [] }))
         }} />
         {loading ? <p className="info-banner">Loading destination reference choices...</p> : null}
-        {error ? <p className="error-banner" role="alert">{error}</p> : null}
+        <SubmissionErrors error={error} />
         {!loading && !data && patient ? <button type="button" className="secondary-button" onClick={() => setReload((value) => value + 1)}>Retry loading choices</button> : null}
         {data?.warning ? <p className="warning-banner">{data.warning}</p> : null}
         {data && !data.patient ? <p className="info-banner">No matching patient was found. A Patient will be created when you submit.</p> : null}
         {data ? <><DeviceRequestForm value={form} options={data.options} disabled={submitting || loading || Boolean(progress.current.uncertain)} deviceLocked={Boolean(progress.current.device)} onChange={setForm} />
           <button type="submit" className="primary-button toc-submit" disabled={submitting || loading || Boolean(progress.current.uncertain)}>{submitting ? 'Creating...' : progress.current.device ? 'Retry DeviceRequest creation' : 'Create Device Request'}</button></> : null}
-      </form>
+      </SubmissionForm>
     </>
   </section>
 }

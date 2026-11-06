@@ -1,4 +1,5 @@
 /** Coordinates identity-preserving live List updates on the active server and returns users to the patient's Documents tab. */
+import { SubmissionForm, SubmissionErrors, ValidationField } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import { TransferList } from '../../components/TransferList'
@@ -7,7 +8,7 @@ import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { useSavedServers } from '../servers/useSavedServers'
 import { loadSmpListEditData, type SmpListEditData } from './smpListEditData'
-import { buildSmpListUpdate, hasSmpListEdits, initialSmpListEdit, type SmpListEdit } from './smpListEditModel'
+import { buildSmpListUpdate, hasSmpListEdits, initialSmpListEdit, type SmpListEdit, validateSmpListEdit } from './smpListEditModel'
 import { SmpListEmptyReason, SmpListFields } from './SmpListFields'
 
 export function SmpListEditPage({ patientId, resourceId }: { patientId: string; resourceId: string }) {
@@ -57,16 +58,16 @@ export function SmpListEditPage({ patientId, resourceId }: { patientId: string; 
       onBack={() => navigateTo(path)} backDisabled={busy} />
     <div className="smp-page">
       {loading ? <p role="status">Loading medication List…</p> : null}
-      {error ? <p className="error-banner" role="alert">{error}</p> : null}
+      {!data && error ? <p className="error-banner" role="alert">{error}</p> : null}
       {!loading && !data ? <button type="button" className="secondary-button" onClick={() => setReload((value) => value + 1)}>Retry loading</button> : null}
       {uncertain ? <p className="warning-banner">The update outcome is uncertain. Verify the List on the server before starting another edit; automatic retry is disabled.</p> : null}
-      {data && edit ? <form noValidate onSubmit={(event) => void submit(event)}><fieldset disabled={locked}>
-        <div className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" required value={edit.title} onChange={(event) => change({ title: event.target.value })} /></div>
+      {data && edit ? <SubmissionForm error={error} checkConstraints={false} validate={() => data && edit && activeServer ? validateSmpListEdit(data.original, edit, data.choices, activeServer.baseUrl, patientId) : []} onSubmit={submit}><SubmissionErrors error={error} /><fieldset disabled={locked}>
+        <ValidationField field="smp-title" className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" required value={edit.title} onChange={(event) => change({ title: event.target.value })} /></ValidationField>
         <SmpListFields value={edit} authors={data.choices.authors} original={data.original} onChange={change} />
         <TransferList label="Medication statements" showDates disabled={locked} values={edit.selected} options={data.memberOptions}
           onChange={(selected) => change({ selected, emptyReason: selected.length ? '' : edit.emptyReason })} />
         {!edit.selected.length ? <SmpListEmptyReason value={edit.emptyReason} original={data.original} onChange={(emptyReason) => change({ emptyReason })} /> : null}
-      </fieldset><button type="submit" className="primary-button" disabled={locked || !hasSmpListEdits(data.original, edit)}>{busy ? 'Saving…' : 'Save changes'}</button></form> : null}
+      </fieldset><button type="submit" className="primary-button" disabled={locked || !hasSmpListEdits(data.original, edit)}>{busy ? 'Saving…' : 'Save changes'}</button></SubmissionForm> : null}
     </div>
   </section>
 }

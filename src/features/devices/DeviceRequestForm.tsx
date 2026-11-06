@@ -1,4 +1,5 @@
 /** Presents a small, repeatable PFE creation form using destination-local reference choices and existing form styling. */
+import { ValidationField, ValidationScope } from '../../components/SubmissionForm'
 import type { DeviceForm, ParameterValue, UserValue } from './deviceFormModel'
 import type { ReferenceOption } from './deviceCreateData'
 import { ASSISTIVE_DEVICES, demoDeviceDefaults, DEVICE_PARAMETERS, DEVICE_REASON_CODES, DEVICE_REASON_REFERENCE_TYPES } from '../../igs/pacioPfe/deviceRequest'
@@ -8,13 +9,13 @@ import { TransferList } from '../../components/TransferList'
 type Props = { value: DeviceForm; options: ReferenceOption[]; disabled: boolean; deviceLocked: boolean; onChange: (value: DeviceForm) => void }
 
 function TextField({ label, value, onChange, type = 'text', required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
-  return <div className="field-group"><label>{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} required={required} /></label></div>
+  return <ValidationField field={label} className="field-group"><label>{label}<input type={type} step={type === 'number' ? 'any' : undefined} value={value} onChange={(event) => onChange(event.target.value)} required={required} /></label></ValidationField>
 }
 
 function Choice({ label, value, onChange, choices, optional = true }: { label: string; value: string; onChange: (value: string) => void; choices: Array<{ value: string; label: string }>; optional?: boolean }) {
-  return <div className="field-group"><label>{label}<select value={value} onChange={(event) => onChange(event.target.value)} required={!optional}>
+  return <ValidationField field={label} className="field-group"><label>{label}<select value={value} onChange={(event) => onChange(event.target.value)} required={!optional}>
     {optional ? <option value="">None selected</option> : null}{choices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
-  </select></label></div>
+  </select></label></ValidationField>
 }
 const codes = (values: readonly string[]) => values.map((value) => ({ value, label: value.replaceAll('-', ' ') }))
 
@@ -65,14 +66,14 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
         {form.occurrence === 'period' || form.occurrence === 'timing' ? <TextField label="End date" type="date" value={form.end} onChange={(value) => set('end', value)} /> : null}
         {form.occurrence === 'timing' ? <div className="toc-metadata-grid"><TextField label="Times per period" type="number" value={form.frequency} onChange={(value) => set('frequency', value)} /><TextField label="Period length" type="number" value={form.period} onChange={(value) => set('period', value)} /><Choice label="Period unit" value={form.periodUnit} optional={false} choices={codes(['h', 'd', 'wk', 'mo'])} onChange={(value) => set('periodUnit', value as DeviceForm['periodUnit'])} /></div> : null}
       </fieldset>
-      <fieldset className="toc-section-card"><legend>Parameters</legend>{form.parameters.map((parameter, index) => <div className="device-repeat-row" key={index}>
+      <fieldset className="toc-section-card"><legend>Parameters</legend>{form.parameters.map((parameter, index) => <ValidationScope name={`parameters.${index}`} key={index}><div className="device-repeat-row">
         <Choice label={`Parameter ${index + 1}`} optional={false} value={parameter.code} choices={DEVICE_PARAMETERS.map((code) => ({ value: code.code, label: code.display }))} onChange={(code) => updateParameter(index, { code })} />
         <Choice label="Value type" optional={false} value={parameter.kind} choices={codes(['quantity', 'concept', 'boolean', 'range'])} onChange={(kind) => updateParameter(index, { kind: kind as ParameterValue['kind'], value: kind === 'boolean' ? 'true' : '' })} />
         {parameter.kind === 'boolean' ? <Choice label="Value" optional={false} value={parameter.value} choices={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} onChange={(value) => updateParameter(index, { value })} /> : <TextField label={parameter.kind === 'range' ? 'Low value' : 'Value'} value={parameter.value} required onChange={(value) => updateParameter(index, { value })} />}
         {parameter.kind === 'range' ? <TextField label="High value" value={parameter.high} required onChange={(high) => updateParameter(index, { high })} /> : null}
         {parameter.kind === 'range' || parameter.kind === 'quantity' ? <TextField label="Unit" value={parameter.unit} onChange={(unit) => updateParameter(index, { unit })} /> : null}
         <button type="button" className="secondary-button compact" onClick={() => set('parameters', form.parameters.filter((_, position) => position !== index))}>Remove parameter</button>
-      </div>)}<button type="button" className="secondary-button compact" onClick={() => set('parameters', [...form.parameters, { code: DEVICE_PARAMETERS[0].code, kind: 'quantity', value: '', unit: '', high: '' }])}>Add parameter</button></fieldset>
+      </div></ValidationScope>)}<button type="button" className="secondary-button compact" onClick={() => set('parameters', [...form.parameters, { code: DEVICE_PARAMETERS[0].code, kind: 'quantity', value: '', unit: '', high: '' }])}>Add parameter</button></fieldset>
     </div></details>
     <details><summary>Reasons for this request</summary><div className="device-form-fields">
       <p className="helper-text">Optional: select coded reasons, supporting records, or both. These selections complement clinical justification.</p>
@@ -86,11 +87,11 @@ export function DeviceRequestForm({ value: form, options, disabled, deviceLocked
         {location.kind === 'text' ? <TextField label="Preferred location" value={location.value} onChange={(value) => set('locations', form.locations.map((old, position) => position === index ? { ...old, value } : old))} /> : <Choice label="Location" value={location.value} optional={false} choices={[{ value: '42665001', label: 'Nursing home' }]} onChange={(value) => set('locations', form.locations.map((old, position) => position === index ? { ...old, value } : old))} />}
         <button type="button" className="secondary-button compact" onClick={() => set('locations', form.locations.filter((_, position) => position !== index))}>Remove location</button>
       </div>)}<button type="button" className="secondary-button compact" onClick={() => set('locations', [...form.locations, { kind: 'text', value: '' }])}>Add location</button></fieldset>
-      <fieldset className="toc-section-card"><legend>Device users</legend>{form.users.map((user, index) => <div className="device-repeat-row" key={index}>
+      <fieldset className="toc-section-card"><legend>Device users</legend>{form.users.map((user, index) => <ValidationScope name={`users.${index}`} key={index}><div className="device-repeat-row">
         <Choice label={`User ${index + 1}`} value={user.reference} optional={false} choices={choices(['Patient', 'RelatedPerson', 'Practitioner', 'PractitionerRole', 'CareTeam'])} onChange={(reference) => updateUser(index, { reference })} />
         <Choice label="Relationship to device" value={user.relationship} choices={codes(['patient', 'operator', 'custodian', 'maintainer'])} onChange={(relationship) => updateUser(index, { relationship })} />
         <button type="button" className="secondary-button compact" onClick={() => set('users', form.users.filter((_, position) => position !== index))}>Remove user</button>
-      </div>)}<button type="button" className="secondary-button compact" onClick={() => set('users', [...form.users, { reference: choices(['Patient'])[0]?.value || '', relationship: 'patient' }])}>Add user</button></fieldset>
+      </div></ValidationScope>)}<button type="button" className="secondary-button compact" onClick={() => set('users', [...form.users, { reference: choices(['Patient'])[0]?.value || '', relationship: 'patient' }])}>Add user</button></fieldset>
       <RepeatedText label="Justification notes" values={form.justificationNotes} onChange={(value) => set('justificationNotes', value)} />
       {references('Supporting assessments', 'assessments', ['Observation'])}{references('Supporting goals', 'goals', ['Goal'])}
     </div></details>

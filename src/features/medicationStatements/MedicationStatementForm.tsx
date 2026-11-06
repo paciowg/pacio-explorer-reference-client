@@ -1,4 +1,5 @@
 /** Presents statement authoring with an optional authoritative request, lossless dosage review, and destination-local selections. */
+import { ValidationField, ValidationScope } from '../../components/SubmissionForm'
 import type { Dosage, TimingRepeat } from 'fhir/r4'
 import { TransferList } from '../../components/TransferList'
 import { ADHERENCE_CODES, ADHERENCE_REASONS, catalogMedication, MEDICATION_CATALOG, MEDICATION_ROUTES, OTHER_ADHERENCE_REASON, STATEMENT_STATUSES } from '../../igs/pacioSmp/medicationStatement'
@@ -12,10 +13,10 @@ const choices = (values: readonly string[]) => values.map((value) => ({ value, l
 const DOSE_UNITS = [['mg', 'mg'], ['g', 'g'], ['mL', 'mL'], ['[iU]', 'international units'], ['{tbl}', 'tablets'], ['{capsule}', 'capsules'], ['{puff}', 'puffs']]
 
 function Select({ label, value, options, onChange, required = false }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void; required?: boolean }) {
-  return <div className="field-group"><label>{label}<select value={value} required={required} onChange={(event) => onChange(event.target.value)}><option value="">{required ? 'Select a value' : 'None selected'}</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div>
+  return <ValidationField field={label} className="field-group"><label>{label}<select value={value} required={required} onChange={(event) => onChange(event.target.value)}><option value="">{required ? 'Select a value' : 'None selected'}</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></ValidationField>
 }
 function Input({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
-  return <div className="field-group"><label>{label}<input type={type} step={type === 'number' ? 'any' : undefined} value={value} onChange={(event) => onChange(event.target.value)} /></label></div>
+  return <ValidationField field={label} className="field-group"><label>{label}<input type={type} step={type === 'number' ? 'any' : undefined} value={value} onChange={(event) => onChange(event.target.value)} /></label></ValidationField>
 }
 
 // Imported dosage can contain fields beyond the editor's subset; show every field without changing the copied structure.
@@ -42,7 +43,7 @@ function DosageEditor({ values, onChange }: { values: Dosage[]; onChange: (value
       const first = { ...dose.doseAndRate?.[0], doseRange: undefined, doseQuantity: { ...quantity, value: value === '' ? undefined : Number(value) } }
       set({ doseAndRate: [first, ...(dose.doseAndRate?.slice(1) || [])] })
     }
-    return <fieldset key={index} className="toc-section-card"><legend>Dosage {index + 1}</legend><div className="toc-metadata-grid">
+    return <ValidationScope name={`dosages.${index}`} key={index}><fieldset className="toc-section-card"><legend>Dosage {index + 1}</legend><div className="toc-metadata-grid">
       <Input label="Dosage instructions" value={dose.text || ''} onChange={(text) => set({ text: text || undefined })} />
       <Input label="Dose amount" type="number" value={quantity?.value?.toString() || ''} onChange={amount} />
       <Select label="Dose unit" value={quantity?.code || ''} options={DOSE_UNITS.map(([value, label]) => ({ value, label }))} onChange={(code) => {
@@ -60,7 +61,7 @@ function DosageEditor({ values, onChange }: { values: Dosage[]; onChange: (value
       <Input label="As-needed reason" value={getCodeableConceptText(dose.asNeededCodeableConcept)} onChange={(text) => set({ asNeededBoolean: text ? undefined : dose.asNeededBoolean, asNeededCodeableConcept: text ? { text } : undefined })} />
       <Input label="Additional instructions" value={dose.additionalInstruction?.map(getCodeableConceptText).join('; ') || ''} onChange={(text) => set({ additionalInstruction: text ? [{ text }] : undefined })} />
       <Input label="Patient instructions" value={dose.patientInstruction || ''} onChange={(patientInstruction) => set({ patientInstruction: patientInstruction || undefined })} />
-    </div><details><summary>All dosage details</summary><DosageReview values={[dose]} /></details><button type="button" className="secondary-button compact" onClick={() => onChange(values.filter((_, position) => position !== index))}>Remove dosage</button></fieldset>
+    </div><details><summary>All dosage details</summary><DosageReview values={[dose]} /></details><button type="button" className="secondary-button compact" onClick={() => onChange(values.filter((_, position) => position !== index))}>Remove dosage</button></fieldset></ValidationScope>
   })}<button type="button" className="secondary-button compact" onClick={() => onChange([...values, {}])}>Add dosage</button></>
 }
 
@@ -98,6 +99,6 @@ export function MedicationStatementForm({ value: form, data, disabled, onChange 
       <Select label="Category" value={form.category} options={choices(['inpatient', 'outpatient', 'community', 'patientspecified'])} onChange={(value) => set('category', value)} />
       <Input label="Status reason" value={form.statusReason} onChange={(value) => set('statusReason', value)} />
     </div><TransferList label="Reason references" showDates options={getResourceTransferChoices(data.options, REASON_TYPES)} values={form.reasonReferences} disabled={disabled} onChange={(value) => set('reasonReferences', value)} /></div></details>
-    <div className="field-group"><label htmlFor="statement-notes">Notes</label><textarea id="statement-notes" rows={4} value={form.notes} onChange={(event) => set('notes', event.target.value)} /></div>
+    <ValidationField field="statement-notes" className="field-group"><label htmlFor="statement-notes">Notes</label><textarea id="statement-notes" rows={4} value={form.notes} onChange={(event) => set('notes', event.target.value)} /></ValidationField>
   </fieldset>
 }

@@ -1,4 +1,5 @@
 /** Presents controlled multi-selection with independently searchable panes without owning option loading or validation. */
+import { ValidationField } from './SubmissionForm'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { compareTransferListDates, filterTransferListOptions, transferListSelection } from './transferListModel'
 import { formatDate } from '../lib/fhir/formatters'
@@ -86,10 +87,10 @@ export function TransferList({ label, options, values, disabled = false, showDat
     </section>
   }
 
-  return <fieldset className="toc-section-card transfer-list" disabled={disabled}>
+  return <ValidationField as="fieldset" field={label} className="toc-section-card transfer-list" disabled={disabled}>
     <legend>{label}</legend>
     <p className="transfer-list-help">Add items from Available to Selected. Remove items to move them back.</p>
     <div className="transfer-list-columns">{pane(visibleAvailable, available.length, true)}{pane(visibleSelected, selected.length, false)}</div>
     <p className="transfer-list-status" role="status">{selected.length} selected</p>
-  </fieldset>
+  </ValidationField>
 }

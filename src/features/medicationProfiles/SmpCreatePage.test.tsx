@@ -1,4 +1,5 @@
 /** Exercises collection form submission, retry state, and live List previews without a browser or FHIR server. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import type { ReactElement, ReactNode } from 'react'
 import type { List, Patient } from 'fhir/r4'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -77,7 +78,7 @@ function select(tree: ReactNode, destination = harness.server.baseUrl) {
   ;(elements.find((node) => node.type === DestinationServerField)!.props.onChange as (value: string) => void)(destination)
 }
 function submit(tree: ReactNode) {
-  const form = nodes(tree).find((node) => node.type === 'form')!
+  const form = nodes(tree).find((node) => node.type === SubmissionForm)!
   ;(form.props.onSubmit as (event: { preventDefault: () => void }) => void)({ preventDefault() {} })
 }
 function submitButton(tree: ReactNode) { return nodes(tree).find((node) => node.type === 'button' && node.props.type === 'submit')! }
@@ -108,7 +109,7 @@ describe('single-page collection creation', () => {
     submit(await loaded())
     await settle()
     expect(harness.prepare).not.toHaveBeenCalled()
-    expect(nodes(render()).find((node) => node.props.role === 'alert')?.props.children).toContain('at least one List')
+    expect(nodes(render()).find((node) => (node.props.role === 'alert' || (node.type === SubmissionErrors && Boolean(node.props.error))))?.props.error).toContain('at least one List')
     select(render())
     harness.prepare.mockRejectedValueOnce(new Error('Member unavailable'))
     submit(render())

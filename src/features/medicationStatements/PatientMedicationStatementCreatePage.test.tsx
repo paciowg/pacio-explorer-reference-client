@@ -1,4 +1,5 @@
 /** Exercises create-page loading, destination changes, navigation, and duplicate/uncertain submission guards without a browser. */
+import { SubmissionForm } from '../../components/SubmissionForm'
 import type { ReactElement, ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -64,7 +65,7 @@ function update(tree: ReactNode, values: Partial<StatementForm>) {
   ;(form.props.onChange as (value: StatementForm) => void)({ ...(form.props.value as StatementForm), ...values })
 }
 function submit(tree: ReactNode) {
-  const form = nodes(tree).find((node) => node.type === 'form')!
+  const form = nodes(tree).find((node) => node.type === SubmissionForm)!
   ;(form.props.onSubmit as (event: { preventDefault(): void }) => void)({ preventDefault() {} })
 }
 beforeEach(() => {

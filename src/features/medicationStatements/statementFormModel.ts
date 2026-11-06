@@ -1,7 +1,8 @@
 /** Owns controlled statement inputs and lossless request population, converting only explicitly entered fields into FHIR. */
 import type { Dosage, MedicationStatement } from 'fhir/r4'
 import { calendarDateValue, localDateInputValue } from '../../lib/dateTime'
-import { buildSmpMedicationStatement, type SmpStatementInput } from '../../igs/pacioSmp/medicationStatement'
+import { ADHERENCE_CODES, adherenceReasonConcept, buildSmpMedicationStatement, OTHER_ADHERENCE_REASON, STATEMENT_STATUSES, type SmpStatementInput } from '../../igs/pacioSmp/medicationStatement'
+import { issueCollector } from '../../lib/formValidation'
 import { resolveOptionReference } from '../../lib/fhir/resourceOptions'
 import { REASON_TYPES, SOURCE_TYPES, type StatementCreateData, type StatementMedication } from './statementCreateData'
 
@@ -24,27 +25,71 @@ export function selectStatementRequest(form: StatementForm, reference: string, d
   return { ...form, basedOn: reference, medication: structuredClone(choice.medication), dosage: structuredClone(choice.resource.dosageInstruction || []) }
 }
 
-function validateDosages(dosages: Dosage[]) {
-  for (const dose of dosages) {
+function dosageIssues(dosages: Dosage[]) {
+  const v = issueCollector()
+  dosages.forEach((dose, index) => {
+    const key = `dosages.${index}.`
     const repeat = dose.timing?.repeat
-    for (const [label, value] of [['Dose', dose.doseAndRate?.[0]?.doseQuantity?.value], ['Frequency', repeat?.frequency], ['Period', repeat?.period]] as const) {
-      if (value !== undefined && (!Number.isFinite(value) || value <= 0)) throw new Error(`${label} must be a positive number.`)
+    for (const [label, field, value] of [['Dose', 'Dose amount', dose.doseAndRate?.[0]?.doseQuantity?.value], ['Frequency', 'Times per period', repeat?.frequency], ['Period', 'Period length', repeat?.period]] as const) {
+      v.require(`${key}${field}`, value === undefined || (Number.isFinite(value) && value > 0), `${label} must be a positive number.`)
     }
-    if (repeat?.frequency !== undefined && !Number.isInteger(repeat.frequency)) throw new Error('Frequency must be a whole number.')
-    if ((repeat?.frequency !== undefined || repeat?.period !== undefined) && (!repeat.frequency || !repeat.period || !repeat.periodUnit)) throw new Error('Complete the frequency, period, and period unit.')
+    v.require(`${key}Times per period`, repeat?.frequency === undefined || Number.isInteger(repeat.frequency), 'Frequency must be a whole number.')
+    if (repeat?.frequency !== undefined || repeat?.period !== undefined) {
+      for (const [field, value] of [['Times per period', repeat.frequency], ['Period length', repeat.period], ['Period unit', repeat.periodUnit]]) {
+        v.require(`${key}${field}`, value, 'Complete the frequency, period, and period unit.')
+      }
+    }
     const amount = dose.doseAndRate?.[0]?.doseQuantity
-    if (amount && (amount.value === undefined || (!amount.code && !amount.unit))) throw new Error('Provide both a dose amount and its unit.')
-    if (repeat?.timeOfDay) repeat.timeOfDay = repeat.timeOfDay.map((time) => {
-      if (!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?$/.test(time)) throw new Error('Enter clock times as HH:MM or HH:MM:SS.')
-      return time.length === 5 ? `${time}:00` : time
-    })
+    if (amount && (amount.value !== undefined || amount.code || amount.unit)) {
+      v.require(`${key}Dose amount`, amount.value !== undefined, 'Provide both a dose amount and its unit.')
+      v.require(`${key}Dose unit`, amount.code || amount.unit, 'Provide both a dose amount and its unit.')
+    }
+    v.require(`${key}Clock times (comma separated, HH:MM)`, !repeat?.timeOfDay?.some((time) => !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?$/.test(time)), 'Enter clock times as HH:MM or HH:MM:SS.')
     if (repeat?.boundsPeriod) {
       const { start, end } = repeat.boundsPeriod
-      if (start && !Number.isFinite(Date.parse(start))) throw new Error('Enter a valid dosage start date.')
-      if (end && !Number.isFinite(Date.parse(end))) throw new Error('Enter a valid dosage end date.')
-      if (start && end && Date.parse(end) < Date.parse(start)) throw new Error('Dosage end must not precede its start.')
+      v.require(`${key}Dosage start date`, !start || Number.isFinite(Date.parse(start)), 'Enter a valid dosage start date.')
+      v.require(`${key}Dosage end date`, !end || Number.isFinite(Date.parse(end)), 'Enter a valid dosage end date.')
+      v.require(`${key}Dosage end date`, !start || !end || !(Date.parse(end) < Date.parse(start)), 'Dosage end must not precede its start.')
     }
+  })
+  return v.issues
+}
+
+function validateDosages(dosages: Dosage[]) {
+  const issues = dosageIssues(dosages)
+  if (issues.length) throw new Error(issues[0].message)
+  for (const dose of dosages) {
+    const repeat = dose.timing?.repeat
+    if (repeat?.timeOfDay) repeat.timeOfDay = repeat.timeOfDay.map((time) => time.length === 5 ? `${time}:00` : time)
   }
+}
+
+export function validateStatementForm(form: StatementForm, data: StatementCreateData) {
+  const v = issueCollector()
+  v.require('Based on MedicationRequest (optional)', !form.basedOn || data.requests.some((request) => request.reference === form.basedOn), 'The selected MedicationRequest is unavailable.')
+  v.require('Status', STATEMENT_STATUSES.includes(form.status as typeof STATEMENT_STATUSES[number]), 'Select a medication-use status.')
+  if (!form.basedOn) {
+    v.require('Medication', Number(Boolean(form.medication.medicationCodeableConcept)) + Number(Boolean(form.medication.medicationReference)) === 1, 'Select exactly one medication.')
+    if (form.medication.medicationCodeableConcept) v.require('Medication', form.medication.medicationCodeableConcept.coding?.some((coding) => coding.system && coding.code), 'A coded medication is required.')
+    if (form.medication.medicationReference) v.check('Medication', () => resolveOptionReference(data.options, form.medication.medicationReference!.reference || '', ['Medication']))
+    v.issues.push(...dosageIssues(form.dosage))
+  }
+  if (form.dateAsserted) v.check('Date asserted', () => calendarDateValue(form.dateAsserted, 'asserted date'))
+  if (form.effectiveKind === 'date') v.check('Effective date', () => calendarDateValue(form.effectiveStart, 'effective date'))
+  if (form.effectiveKind === 'period') {
+    v.require('Effective start date', form.effectiveStart || form.effectiveEnd, 'Enter at least one effective date range boundary.')
+    if (form.effectiveStart) v.check('Effective start date', () => calendarDateValue(form.effectiveStart, 'effective start date'))
+    if (form.effectiveEnd) v.check('Effective end date', () => calendarDateValue(form.effectiveEnd, 'effective end date'))
+    v.require('Effective end date', !form.effectiveStart || !form.effectiveEnd || form.effectiveEnd >= form.effectiveStart, 'Effective end must not precede its start.')
+  }
+  v.require('Adherence', !form.adherence || ADHERENCE_CODES.includes(form.adherence as typeof ADHERENCE_CODES[number]), 'Select a supported adherence value.')
+  v.require('Adherence', form.adherence || !form.adherenceReason.trim(), 'Select adherence before providing an adherence reason.')
+  v.check(form.adherenceReason === OTHER_ADHERENCE_REASON ? 'Other adherence reason' : 'Adherence reason', () => adherenceReasonConcept(form.adherenceReason, form.adherenceReasonText))
+  for (const [field, value, types] of [['Information source', form.informationSource, SOURCE_TYPES], ['Encounter', form.context, ['Encounter']]] as const) {
+    v.check(field, () => resolveOptionReference(data.options, value, types))
+  }
+  form.reasonReferences.forEach((reference) => v.check('Reason references', () => resolveOptionReference(data.options, reference, REASON_TYPES)))
+  return v.issues
 }
 
 function populated(value: unknown): unknown {

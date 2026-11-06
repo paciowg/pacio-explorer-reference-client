@@ -1,4 +1,6 @@
 /** Coordinates the PMO form, supporting-resource lookup, validation, and ADI document submission. */
+import { SubmissionForm, SubmissionErrors, ValidationField } from '../../components/SubmissionForm'
+import { issueCollector } from '../../lib/formValidation'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useMemo, useState } from 'react'
 import type {
@@ -200,6 +202,18 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
     }
   }, [dataEntererOptions, dataEntererReference])
 
+  function validateForm() {
+    const v = issueCollector()
+    v.require('pmo-destination-server', savedServers.some((server) => server.baseUrl === destinationBaseUrl), 'Please select a destination FHIR server.')
+    v.require('pmo-author', practitionerRoles.some((option) => option.value === authorRoleId), 'Please select an author.')
+    v.require('pmo-attester', attesterOptions.some((option) => option.reference === attesterReference), 'Please select an attester.')
+    v.require('pmo-authenticator', authenticatorOptions.some((option) => option.value === authenticatorReference), 'Please select an authenticator.')
+    v.require('pmo-pdf', pdfFile, 'Please upload a PDF source form.')
+    v.check('pmo-signed-date', () => calendarDateValue(signedDate, 'signing date'))
+    v.check('pmo-context-period-end', () => calendarDateValue(contextPeriodEnd, 'relevant-through date'))
+    return v.issues
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -326,10 +340,10 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
       <>
 
         {isLoading ? <div className="info-banner">Loading PMO creation form...</div> : null}
-        {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
+        {(isLoading || !patient) && errorMessage ? <div className="error-banner" role="alert">{errorMessage}</div> : null}
 
         {!isLoading && patient ? (
-          <form onSubmit={handleSubmit}>
+          <SubmissionForm error={errorMessage} validate={validateForm} onSubmit={handleSubmit}>
             <DestinationServerField
               id="pmo-destination-server"
               servers={savedServers}
@@ -337,8 +351,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
               disabled={isSubmitting}
               onChange={setDestinationBaseUrl}
             />
+            <SubmissionErrors error={errorMessage} />
 
-            <div className="field-group">
+            <ValidationField field="pmo-status" className="field-group">
               <label htmlFor="pmo-status">Document status</label>
               <select
                 id="pmo-status"
@@ -350,9 +365,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 <option value="final">Final</option>
                 <option value="amended">Amended</option>
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-author" className="field-group">
               <label htmlFor="pmo-author">Author (PractitionerRole)</label>
               <select
                 id="pmo-author"
@@ -367,9 +382,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-facilitator" className="field-group">
               <label htmlFor="pmo-facilitator">Facilitator</label>
               <select
                 id="pmo-facilitator"
@@ -384,9 +399,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-data-enterer" className="field-group">
               <label htmlFor="pmo-data-enterer">Data enterer</label>
               <select
                 id="pmo-data-enterer"
@@ -401,9 +416,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-attester" className="field-group">
               <label htmlFor="pmo-attester">Attester party</label>
               <select
                 id="pmo-attester"
@@ -418,9 +433,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-authenticator" className="field-group">
               <label htmlFor="pmo-authenticator">Authenticator party</label>
               <select
                 id="pmo-authenticator"
@@ -435,9 +450,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-custodian" className="field-group">
               <label htmlFor="pmo-custodian">Custodian (Organization)</label>
               <select
                 id="pmo-custodian"
@@ -452,9 +467,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-signed-date" className="field-group">
               <label htmlFor="pmo-signed-date">Date signed</label>
               <input
                 id="pmo-signed-date"
@@ -463,9 +478,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 onChange={(event) => setSignedDate(event.target.value)}
                 disabled={isSubmitting}
               />
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-context-period-end" className="field-group">
               <label htmlFor="pmo-context-period-end">Relevant through</label>
               <input
                 id="pmo-context-period-end"
@@ -477,9 +492,9 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 }}
                 disabled={isSubmitting}
               />
-            </div>
+            </ValidationField>
 
-            <div className="field-group">
+            <ValidationField field="pmo-pdf" className="field-group">
               <label htmlFor="pmo-pdf">Source form PDF</label>
               <input
                 id="pmo-pdf"
@@ -488,7 +503,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 onChange={(event) => setPdfFile(event.target.files?.[0] || null)}
                 disabled={isSubmitting}
               />
-            </div>
+            </ValidationField>
 
             <p className="file-input-hint">
               Upload the PDF source form. It will be embedded in the generated ADI Bundle as
@@ -500,7 +515,7 @@ export function PatientPmoCreatePage({ patientId }: PatientPmoCreatePageProps) {
                 {isSubmitting ? 'Creating...' : 'Create ADI PMO'}
               </button>
             </div>
-          </form>
+          </SubmissionForm>
         ) : null}
       </>
     </section>

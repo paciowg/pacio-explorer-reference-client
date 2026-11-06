@@ -1,5 +1,7 @@
 /** Presents TOC metadata and required-section controls while leaving workflow state and submission to its page. */
-import type { FormEventHandler } from 'react'
+import { SubmissionForm, SubmissionErrors, ValidationField } from '../../components/SubmissionForm'
+import type { SubmitEvent } from 'react'
+import type { FormIssue } from '../../lib/formValidation'
 import { FhirResourceTypeBadge } from '../../components/FhirResourceTypeBadge'
 import type { TocSectionKey, TocStatus } from '../../igs/pacioToc/tocDocument'
 import type { OrganizationOption, PractitionerRoleOption } from '../../lib/fhir/resourceOptions'
@@ -35,13 +37,15 @@ type TocCreateFormProps = {
   onDestinationServerChange: (baseUrl: string) => void
   onSectionSelectionChange: (key: TocSectionKey, references: string[]) => void
   onEmptyReasonChange: (key: TocSectionKey, reason: string) => void
-  onSubmit: FormEventHandler<HTMLFormElement>
+  onSubmit: (event: SubmitEvent<HTMLFormElement>) => void | Promise<void>
+  error?: string
+  validate?: () => FormIssue[]
 }
 
 function TocMetadataFields(props: TocCreateFormProps) {
   return (
     <div className="toc-metadata-grid">
-      <div className="field-group">
+      <ValidationField field="toc-title" className="field-group">
         <label htmlFor="toc-title">Title</label>
         <input
           id="toc-title"
@@ -49,8 +53,8 @@ function TocMetadataFields(props: TocCreateFormProps) {
           onChange={(event) => props.onTitleChange(event.target.value)}
           disabled={props.isSubmitting}
         />
-      </div>
-      <div className="field-group">
+      </ValidationField>
+      <ValidationField field="toc-status" className="field-group">
         <label htmlFor="toc-status">Document status</label>
         <select
           id="toc-status"
@@ -62,8 +66,8 @@ function TocMetadataFields(props: TocCreateFormProps) {
           <option value="final">Final</option>
           <option value="amended">Amended</option>
         </select>
-      </div>
-      <div className="field-group">
+      </ValidationField>
+      <ValidationField field="toc-author" className="field-group">
         <label htmlFor="toc-author">Author</label>
         <select
           id="toc-author"
@@ -76,8 +80,8 @@ function TocMetadataFields(props: TocCreateFormProps) {
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
-      </div>
-      <div className="field-group">
+      </ValidationField>
+      <ValidationField field="toc-custodian" className="field-group">
         <label htmlFor="toc-custodian">Custodian</label>
         <select
           id="toc-custodian"
@@ -90,7 +94,7 @@ function TocMetadataFields(props: TocCreateFormProps) {
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
-      </div>
+      </ValidationField>
     </div>
   )
 }
@@ -162,7 +166,7 @@ function TocSectionCard(props: TocSectionCardProps) {
       )}
 
       {selectedReferences.length === 0 ? (
-        <div className="field-group toc-empty-reason">
+        <ValidationField className="field-group toc-empty-reason">
           <label htmlFor={`empty-${section.key}`}>Empty reason</label>
           <select
             id={`empty-${section.key}`}
@@ -173,7 +177,7 @@ function TocSectionCard(props: TocSectionCardProps) {
               <option key={reason.code} value={reason.code}>{reason.label}</option>
             ))}
           </select>
-        </div>
+        </ValidationField>
       ) : null}
     </fieldset>
   )
@@ -181,7 +185,7 @@ function TocSectionCard(props: TocSectionCardProps) {
 
 export function TocCreateForm(props: TocCreateFormProps) {
   return (
-    <form onSubmit={props.onSubmit}>
+    <SubmissionForm error={props.error} validate={props.validate} onSubmit={props.onSubmit}>
       <DestinationServerField
         id="toc-destination-server"
         servers={props.savedServers}
@@ -189,6 +193,7 @@ export function TocCreateForm(props: TocCreateFormProps) {
         disabled={props.isSubmitting}
         onChange={props.onDestinationServerChange}
       />
+      <SubmissionErrors error={props.error} />
       <TocMetadataFields {...props} />
       <div className="toc-form-heading">
         <div>
@@ -200,7 +205,7 @@ export function TocCreateForm(props: TocCreateFormProps) {
         </div>
         <span className="panel-tag">{props.selectedCount} selected</span>
       </div>
-      <div className="toc-section-grid">
+      <ValidationField field="entries" className="toc-section-grid">
         {props.sections.map((section) => (
           <TocSectionCard
             key={section.key}
@@ -212,12 +217,12 @@ export function TocCreateForm(props: TocCreateFormProps) {
             onEmptyReasonChange={props.onEmptyReasonChange}
           />
         ))}
-      </div>
+      </ValidationField>
       <div className="form-actions toc-submit">
         <button type="submit" className="primary-button" disabled={props.isSubmitting}>
           {props.isSubmitting ? 'Creating TOC...' : 'Create TOC document'}
         </button>
       </div>
-    </form>
+    </SubmissionForm>
   )
 }

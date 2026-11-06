@@ -45,7 +45,7 @@ describe('statement form', () => {
   it('locks medication, reviews all copied dosage fields, and restores dosage editing when unset', () => {
     const selected = selectStatementRequest(initialStatementForm(), 'MedicationRequest/r', data)
     const html = renderToStaticMarkup(<MedicationStatementForm value={selected} data={data} disabled={false} onChange={() => {}} />)
-    expect(html).toContain('<fieldset disabled="" class="device-form-fields"><div class="field-group"><label>Medication')
+    expect(html).toMatch(/<fieldset disabled="" class="device-form-fields"><div[^>]*class="field-group"><label>Medication/)
     expect(html).toContain('First instruction')
     expect(html).toContain('Second instruction')
     expect(html).toContain('Max Dose Per Lifetime')

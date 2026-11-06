@@ -1,4 +1,5 @@
 /** Exercises destination-only controls, send navigation, and recovery locks without a browser or external writes. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import type { ReactElement, ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -64,7 +65,7 @@ async function settle(kind: DocumentKind = 'toc') {
 const button = (tree: ReactNode) => nodes(tree).find((node) => node.type === 'button' && node.props.type === 'submit')!
 const destination = (tree: ReactNode) => nodes(tree).find((node) => node.type === DestinationServerField)!
 function choose(tree: ReactNode) { (destination(tree).props.onChange as (value: string) => void)(servers[1].baseUrl) }
-function submit(tree: ReactNode) { (nodes(tree).find((node) => node.type === 'form')!.props.onSubmit as (event: unknown) => void)({ preventDefault() {} }) }
+function submit(tree: ReactNode) { (nodes(tree).find((node) => node.type === SubmissionForm)!.props.onSubmit as (event: unknown) => void)({ preventDefault() {} }) }
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -106,7 +107,7 @@ describe('saved document send page', () => {
     render(); choose(await settle()); submit(render()); const tree = await settle()
     expect(destination(tree).props.disabled).toBe(true)
     expect(button(tree).props.disabled).toBe(false)
-    expect(nodes(tree).some((node) => node.props.children === 'Index rejected')).toBe(true)
+    expect(nodes(tree).some((node) => node.type === SubmissionErrors && node.props.error === 'Index rejected')).toBe(true)
     submit(tree); await settle()
     expect(harness.load).toHaveBeenCalledOnce()
     expect(harness.send).toHaveBeenCalledTimes(2)
@@ -136,7 +137,7 @@ describe('saved document send page', () => {
   it('does not expose a send form after load failure and allows a load retry', async () => {
     harness.load.mockRejectedValueOnce(new Error('Patient mismatch'))
     render(); let tree = await settle()
-    expect(nodes(tree).some((node) => node.type === 'form')).toBe(false)
+    expect(nodes(tree).some((node) => node.type === SubmissionForm)).toBe(false)
     const retry = nodes(tree).find((node) => node.type === 'button' && node.props.children === 'Retry loading')!
     ;(retry.props.onClick as () => void)()
     render(); tree = await settle()

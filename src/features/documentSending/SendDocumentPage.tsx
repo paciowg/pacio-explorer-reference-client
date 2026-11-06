@@ -1,4 +1,5 @@
 /** Owns destination-only submission of a saved document, retaining completed write stages for in-session retries. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { DocumentPublicationProgress } from '../../lib/fhir/documentPublishing'
@@ -60,17 +61,18 @@ export function SendDocumentPage({ patientId, resourceId, kind }: { patientId: s
     <PatientFormHeader title={`Send ${documentKindLabels[kind]}`} patient={data?.patient}
       serverLabel={activeServer.label} serverBaseUrl={sourceBase}
       onBack={() => navigateTo(backPath)} backDisabled={busy} />
-    {error ? <p className="error-banner" role="alert">{error}</p> : null}
+    {!data && error ? <p className="error-banner" role="alert">{error}</p> : null}
     {loading ? <p role="status">Loading saved document…</p> : null}
     {!loading && !data ? <button type="button" className="secondary-button outline" onClick={() => setReload((n) => n + 1)}>Retry loading</button> : null}
     {data ? <>
       <p>Send the saved content to another FHIR server.</p>
       {!servers.length ? <p className="info-banner">Connect to another FHIR server to save a destination, then return to this source server.</p> : null}
-      <form onSubmit={(event) => { void submit(event) }}>
+      <SubmissionForm error={error} onSubmit={submit}>
         <DestinationServerField id="send-document-destination" servers={servers} value={destination} disabled={locked || !servers.length} onChange={setDestination} />
+        <SubmissionErrors error={error} />
         <SavedDocumentPreview data={data} kind={kind} sourceBase={sourceBase} />
         <div className="page-actions page-actions-spaced"><button type="submit" className="primary-button" disabled={disabled}>{busy ? 'Sending…' : 'Send to server'}</button></div>
-      </form>
+      </SubmissionForm>
       {progress.current.bundle && !progress.current.uncertain && !progress.current.index ? <p className="info-banner">The Bundle was saved on the destination server. Sending again will retry its DocumentReference only.</p> : null}
       {progress.current.uncertain ? <p className="warning-banner" role="alert">The {progress.current.uncertain} write outcome is uncertain. Verify the destination server before starting another submission; retry is disabled.</p> : null}
     </> : null}

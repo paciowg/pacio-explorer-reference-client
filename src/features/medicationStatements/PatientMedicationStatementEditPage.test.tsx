@@ -1,4 +1,5 @@
 /** Exercises update-page submission/navigation and confirms update entry points belong only to the patient's Medications section. */
+import { SubmissionForm } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import type { ReactElement, ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -67,7 +68,7 @@ function change(tree: ReactNode, patch: Partial<StatementEdit>) {
   ;(current.props.onChange as (value: StatementEdit) => void)({ ...(current.props.value as StatementEdit), ...patch })
 }
 function submit(tree: ReactNode) {
-  const element = nodes(tree).find((node) => node.type === 'form')!
+  const element = nodes(tree).find((node) => node.type === SubmissionForm)!
   ;(element.props.onSubmit as (event: { preventDefault(): void }) => void)({ preventDefault() {} })
 }
 beforeEach(() => {

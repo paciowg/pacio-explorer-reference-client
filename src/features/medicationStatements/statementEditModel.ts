@@ -1,6 +1,7 @@
 /** Models a limited statement amendment while preserving all original content outside explicitly edited fields. */
 import type { CodeableConcept, Extension, MedicationStatement } from 'fhir/r4'
 import { ADHERENCE_CODES, adherenceReasonCode, adherenceReasonConcept, OTHER_ADHERENCE_REASON, SMP_ADHERENCE, STATEMENT_STATUSES } from '../../igs/pacioSmp/medicationStatement'
+import { issueCollector } from '../../lib/formValidation'
 
 export const EDIT_STATUSES = [...STATEMENT_STATUSES, 'entered-in-error'] as const
 const ADHERENCE_SYSTEM = 'http://hl7.org/fhir/CodeSystem/medication-statement-adherence'
@@ -30,6 +31,15 @@ export function hasStatementEdits(original: MedicationStatement, edit: Statement
 
 function reasonHasChanged(initial: StatementEdit, edit: StatementEdit) {
   return edit.adherenceReason !== initial.adherenceReason || (edit.adherenceReason === OTHER_ADHERENCE_REASON && edit.adherenceReasonText.trim() !== initial.adherenceReasonText.trim())
+}
+
+export function validateStatementEdit(original: MedicationStatement, edit: StatementEdit) {
+  const initial = initialStatementEdit(original)
+  const v = issueCollector()
+  if (edit.status !== initial.status) v.require('statement-edit-status', EDIT_STATUSES.includes(edit.status as typeof EDIT_STATUSES[number]), 'Select a supported medication-use status.')
+  if (edit.adherence && edit.adherence !== initial.adherence) v.require('statement-edit-adherence', ADHERENCE_CODES.includes(edit.adherence as typeof ADHERENCE_CODES[number]), 'Select a supported adherence value.')
+  if (edit.adherence && reasonHasChanged(initial, edit)) v.check(edit.adherenceReason === OTHER_ADHERENCE_REASON ? 'statement-edit-reason-text' : 'statement-edit-reason', () => adherenceReasonConcept(edit.adherenceReason, edit.adherenceReasonText))
+  return v.issues
 }
 
 function setAdherenceValue(extension: Extension, url: string, value: CodeableConcept | undefined) {

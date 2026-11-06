@@ -113,7 +113,7 @@ describe('transfer list', () => {
 
   it('disables every transfer action along with the fieldset', () => {
     const html = renderToStaticMarkup(<TransferList label="Insurance" options={options} values={['Coverage/a']} disabled onChange={() => {}} />)
-    expect(html).toContain('<fieldset class="toc-section-card transfer-list" disabled="">')
+    expect(html).toMatch(/<fieldset[^>]*disabled=""[^>]*class="toc-section-card transfer-list"/)
     expect(html.match(/<button[^>]*disabled=""/g)).toHaveLength(2)
     expect(html.match(/<input[^>]*disabled=""/g)).toHaveLength(2)
   })

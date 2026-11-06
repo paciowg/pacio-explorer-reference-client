@@ -3,7 +3,7 @@ import type { List, MedicationStatement, PractitionerRole } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { buildSmpMedicationList, SMP_LIST } from '../../igs/pacioSmp/smp'
 import type { SmpChoices } from './smpData'
-import { buildSmpListUpdate, EXISTING_LIST_VALUE, existingEntryValue, hasSmpListEdits, initialSmpListEdit, type SmpListEdit } from './smpListEditModel'
+import { buildSmpListUpdate, EXISTING_LIST_VALUE, existingEntryValue, hasSmpListEdits, initialSmpListEdit, validateSmpListEdit, type SmpListEdit } from './smpListEditModel'
 
 const base = 'https://source.test/fhir'
 const timestamp = '2026-11-02T18:00:00Z'
@@ -28,6 +28,12 @@ const original: List = { resourceType: 'List', id: 'list', status: 'retired', mo
 const update = (patch: Partial<SmpListEdit>, list = original, data = choices) => buildSmpListUpdate(list, { ...initialSmpListEdit(list), ...patch }, data, base, 'p', timestamp)
 
 describe('List update model', () => {
+  it('collects all changed-field errors while leaving incomplete imported metadata editable', () => {
+    const imported = { ...original, title: undefined, date: undefined, source: undefined, code: undefined }
+    expect(validateSmpListEdit(imported, { ...initialSmpListEdit(imported), notes: 'A new note' }, choices, base, 'p')).toEqual([])
+    const edit = { ...initialSmpListEdit(original), title: '', typeCode: '', date: '', author: '', selected: [], emptyReason: '' }
+    expect(validateSmpListEdit(original, edit, choices, base, 'p').map((issue) => issue.field)).toEqual(['smp-title', 'smp-type', 'smp-date', 'smp-author', 'smp-empty'])
+  })
   it('preserves the complete original on initialization and does not identify any edits', () => {
     const edit = initialSmpListEdit(original)
     expect(edit.typeCode).toBe(EXISTING_LIST_VALUE)

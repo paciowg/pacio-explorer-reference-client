@@ -2,7 +2,7 @@
 import type { MedicationRequest } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { ADHERENCE_CODES, buildSmpMedicationStatement, catalogMedication, MEDICATION_CATALOG, OTHER_ADHERENCE_REASON, SMP_ADHERENCE, SMP_STATEMENT } from '../../igs/pacioSmp/medicationStatement'
-import { initialStatementForm, selectStatementRequest, statementFormInputs } from './statementFormModel'
+import { initialStatementForm, selectStatementRequest, statementFormInputs, validateStatementForm } from './statementFormModel'
 import type { StatementCreateData } from './statementCreateData'
 
 const request: MedicationRequest = { resourceType: 'MedicationRequest', id: 'r', status: 'active', intent: 'order', subject: { reference: 'Patient/p' },
@@ -17,6 +17,14 @@ const data: StatementCreateData = { patient: { resourceType: 'Patient', id: 'p' 
 const form = () => ({ ...initialStatementForm(), status: 'active' as const, medication: { medicationCodeableConcept: catalogMedication('313782') } })
 
 describe('statement inputs', () => {
+  it('collects all independent fields and preserves dosage row indices when a preceding row is empty', () => {
+    const input = { ...initialStatementForm(), adherence: 'taking', adherenceReason: OTHER_ADHERENCE_REASON,
+      dosage: [{}, { timing: { repeat: { frequency: -1, period: 0 } } }] }
+    expect(validateStatementForm(input, data).map((issue) => issue.field)).toEqual([
+      'Status', 'Medication', 'dosages.1.Times per period', 'dosages.1.Period length', 'dosages.1.Period length', 'dosages.1.Period unit', 'Other adherence reason',
+    ])
+    expect(validateStatementForm(form(), data)).toEqual([])
+  })
   it('uses the 20 distinct supplied products without preset clinical assertions', () => {
     expect(MEDICATION_CATALOG).toHaveLength(20)
     expect(new Set(MEDICATION_CATALOG.map(([code]) => code)).size).toBe(20)

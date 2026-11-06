@@ -3,10 +3,15 @@ import type { MedicationStatement } from 'fhir/r4'
 import { describe, expect, it } from 'vitest'
 import { externalMedicationStatement as original } from '../../test/fixtures/externalMedicationStatement'
 import { ADHERENCE_CODES, ADHERENCE_REASONS, adherenceReasonConcept, OTHER_ADHERENCE_REASON, SMP_ADHERENCE } from '../../igs/pacioSmp/medicationStatement'
-import { buildStatementUpdate, EXISTING_ADHERENCE, EXISTING_ADHERENCE_REASON, hasStatementEdits, initialStatementEdit, statementAdherence } from './statementEditModel'
+import { buildStatementUpdate, EXISTING_ADHERENCE, EXISTING_ADHERENCE_REASON, hasStatementEdits, initialStatementEdit, statementAdherence, validateStatementEdit } from './statementEditModel'
 
 const timestamp = '2026-10-29T12:00:00Z'
 describe('limited statement updates', () => {
+  it('collects changed status and reason errors while allowing untouched imported values', () => {
+    const edit = initialStatementEdit(original)
+    expect(validateStatementEdit(original, edit)).toEqual([])
+    expect(validateStatementEdit(original, { ...edit, status: 'unsupported', adherenceReason: OTHER_ADHERENCE_REASON, adherenceReasonText: '' }).map((issue) => issue.field)).toEqual(['statement-edit-status', 'statement-edit-reason-text'])
+  })
   it('round trips unchanged content without clinical defaults or an SMP profile declaration', () => {
     const edit = initialStatementEdit(original)
     expect(edit).toEqual({ status: 'active', adherence: 'taking', adherenceReason: EXISTING_ADHERENCE_REASON, adherenceReasonText: '', newNote: '' })

@@ -1,4 +1,5 @@
 /** Coordinates destination-local nutrition form loading and sequential publication while preserving created resources for retry. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { Patient } from 'fhir/r4'
@@ -9,7 +10,7 @@ import { useSavedServers } from '../servers/useSavedServers'
 import { DestinationServerField } from '../servers/DestinationServerField'
 import { createPatientNutritionOrder, type NutritionCreationProgress } from './createNutritionOrder'
 import { loadNutritionCreateData, type NutritionCreateData } from './nutritionCreateData'
-import { initialNutritionForm, nutritionFormInputs } from './nutritionFormModel'
+import { initialNutritionForm, nutritionFormInputs, validateNutritionForm } from './nutritionFormModel'
 import { NutritionOrderForm } from './NutritionOrderForm'
 
 export function PatientNutritionOrderCreatePage({ patientId }: { patientId: string }) {
@@ -71,7 +72,7 @@ export function PatientNutritionOrderCreatePage({ patientId }: { patientId: stri
       serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
       onBack={() => navigateTo(`/patients/${patientId}?view=clinical`)} backDisabled={submitting} />
     <>
-      <form noValidate onSubmit={(event) => void submit(event)}>
+      <SubmissionForm error={error} validate={() => data ? validateNutritionForm(form, data.options) : []} onSubmit={submit}>
         <DestinationServerField id="nutrition-destination" servers={savedServers} value={destination} disabled={submitting || referenceLocked || Boolean(progress.current.uncertain)} resourceDescription="NutritionOrder and, if needed, a no-known-food-allergy record" onChange={(destination) => {
           progress.current = {}
           setData(null)
@@ -80,13 +81,13 @@ export function PatientNutritionOrderCreatePage({ patientId }: { patientId: stri
           setForm((form) => ({ ...form, encounter: '', orderer: '', allergies: [], allergyMode: '' }))
         }} />
         {loading ? <p className="info-banner">Loading destination nutrition choices...</p> : null}
-        {error ? <p className="error-banner" role="alert">{error}</p> : null}
+        <SubmissionErrors error={error} />
         {!loading && !data ? <button type="button" className="secondary-button" onClick={() => setReload((value) => value + 1)}>Retry loading choices</button> : null}
         {data?.warning ? <p className="warning-banner">{data.warning}</p> : null}
         {data && !data.patient ? <p className="info-banner">No matching patient was found. A Patient will be created when you submit.</p> : null}
         {data ? <><NutritionOrderForm value={form} options={data.options} disabled={submitting || loading || Boolean(progress.current.uncertain)} allergyLocked={referenceLocked} onChange={setForm} />
           <button type="submit" className="primary-button toc-submit" disabled={submitting || loading || Boolean(progress.current.uncertain)}>{submitting ? 'Creating...' : progress.current.allergies ? 'Retry NutritionOrder creation' : 'Create Nutrition Order'}</button></> : null}
-      </form>
+      </SubmissionForm>
     </>
   </section>
 }

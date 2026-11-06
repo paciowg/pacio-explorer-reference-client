@@ -1,9 +1,17 @@
 /** Verifies typed form conversion, schedule validation, and destination-only selections before submission. */
 import { describe, expect, it, vi } from 'vitest'
-import { deviceFormInputs, initialDeviceForm } from './deviceFormModel'
+import { deviceFormInputs, initialDeviceForm, validateDeviceForm } from './deviceFormModel'
 import type { ReferenceOption } from './deviceCreateData'
 
 describe('device form conversion', () => {
+  it('collects independent schedule, parameter, and user errors and drops removed rows', () => {
+    const form = { ...initialDeviceForm(), occurrence: 'timing' as const, frequency: '1.5', period: '0',
+      parameters: [{ code: '103355008', kind: 'range' as const, value: 'bad', high: '', unit: '' }], users: [{ reference: '', relationship: '' }] }
+    expect(validateDeviceForm(form, []).map((issue) => issue.field)).toEqual([
+      'users.0.User 1', 'parameters.0.Low value', 'parameters.0.High value', 'Times per period', 'Period length',
+    ])
+    expect(validateDeviceForm({ ...form, occurrence: '', parameters: [], users: [] }, [])).toEqual([])
+  })
   it('defaults authored date to the local calendar and omits an optional blank date', () => {
     vi.useFakeTimers()
     try {

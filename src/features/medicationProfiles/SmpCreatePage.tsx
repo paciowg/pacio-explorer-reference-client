@@ -1,4 +1,8 @@
 /** Coordinates source List authoring and single-step collection publication with in-session recovery state. */
+import { SubmissionForm, SubmissionErrors, ValidationField } from '../../components/SubmissionForm'
+import { issueCollector } from '../../lib/formValidation'
+import { calendarDateValue } from '../../lib/dateTime'
+import { EMPTY_REASONS, MEDICATION_LIST_TYPE_CHOICES } from '../../igs/pacioSmp/smp'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import type { List } from 'fhir/r4'
@@ -58,6 +62,23 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
   const written = Boolean(progress.current.patient || progress.current.bundle || progress.current.uncertain || listProgress.current.list || listProgress.current.uncertain)
   const locked = busy || written
 
+  function validateForm() {
+    const v = issueCollector()
+    // Retained collection writes must remain retryable with their original, locked inputs.
+    if (written) return v.issues
+    v.require('smp-title', title.trim(), 'Enter a List or collection title.')
+    if (kind === 'collection') {
+      v.require('smp-destination', savedServers.some((server) => server.baseUrl === destination), 'Select a destination FHIR server.')
+      v.require('selected', selected.length, 'Select at least one saved medication List.')
+    } else {
+      v.require('smp-type', MEDICATION_LIST_TYPE_CHOICES.some(([code]) => code === typeCode), 'Select a medication list type.')
+      v.check('smp-date', () => calendarDateValue(date, 'List date'))
+      v.require('smp-author', data?.authors.some((option) => option.reference === author), 'Select the List author.')
+      if (!selected.length) v.require('smp-empty', EMPTY_REASONS.some(([code]) => code === emptyReason), 'Select statements or an explicit empty reason.')
+    }
+    return v.issues
+  }
+
   async function perform(action: () => Promise<void>) {
     if (inFlight.current) return
     inFlight.current = true
@@ -116,26 +137,27 @@ export function SmpCreatePage({ patientId, kind }: { patientId: string; kind: 'l
       onBack={() => navigateTo(`${path}?view=documents`)} backDisabled={busy} />
     <div className="smp-page">
     {kind === 'list' ? <p>Save a reusable, point-in-time List on the active source server. Existing statements are not changed.</p> : null}
-    {error ? <p className="error-banner" role="alert">{error}</p> : null}
+    {!data && error ? <p className="error-banner" role="alert">{error}</p> : null}
     {!data ? <p role="status">{error ? 'Source choices unavailable.' : 'Loading source choices…'}</p> : <>
-      <form onSubmit={(e) => { e.preventDefault(); void perform(kind === 'list' ? saveList : createCollection) }}>
+      <SubmissionForm error={error} validate={validateForm} onSubmit={(e) => { e.preventDefault(); return perform(kind === 'list' ? saveList : createCollection) }}>
         <fieldset disabled={locked}>
           {kind === 'collection' ? <DestinationServerField id="smp-destination" servers={savedServers} value={destination} disabled={locked} onChange={setDestination} /> : null}
-          <div className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" value={title} required onChange={(e) => setTitle(e.target.value)} /></div>
+          <SubmissionErrors error={error} />
+          <ValidationField field="smp-title" className="field-group"><label htmlFor="smp-title">Title</label><input id="smp-title" value={title} required onChange={(e) => setTitle(e.target.value)} /></ValidationField>
           {kind === 'list' ? <SmpListFields value={{ typeCode, date, author, notes }} authors={data.authors} onChange={(patch) => {
             if (patch.typeCode !== undefined) setTypeCode(patch.typeCode)
             if (patch.date !== undefined) setDate(patch.date)
             if (patch.author !== undefined) setAuthor(patch.author)
             if (patch.notes !== undefined) setNotes(patch.notes)
           }} /> : null}
-          {kind === 'collection' ? <SmpCollectionListSelector key={reload} options={data.options} baseUrl={activeServer?.baseUrl || ''} patientId={patientId}
-            values={selected} disabled={locked} onChange={setSelected} /> : <TransferList label="Medication statements" showDates disabled={locked} values={selected}
+          {kind === 'collection' ? <ValidationField field="selected"><SmpCollectionListSelector key={reload} options={data.options} baseUrl={activeServer?.baseUrl || ''} patientId={patientId}
+            values={selected} disabled={locked} onChange={setSelected} /></ValidationField> : <TransferList label="Medication statements" showDates disabled={locked} values={selected}
             options={getResourceTransferChoices(data.options.map((o) => ({ ...o, display: o.label })), ['MedicationStatement'])}
             onChange={(values) => { setSelected(values); if (values.length) setEmptyReason('') }} />}
           {kind === 'list' && !selected.length ? <SmpListEmptyReason value={emptyReason} onChange={setEmptyReason} /> : null}
         </fieldset>
         <button className="primary-button" type="submit" disabled={busy || (kind === 'list' && written) || Boolean(progress.current.uncertain || listProgress.current.uncertain)}>{busy ? (kind === 'list' ? 'Saving…' : 'Creating…') : kind === 'list' ? 'Save medication List' : progress.current.bundle ? 'Retry indexing' : written ? 'Retry creating SMP Collection' : 'Create SMP Collection'}</button>
-      </form>
+      </SubmissionForm>
       {prepared.current?.match.warning ? <p className="warning-banner">{prepared.current.match.warning}</p> : null}
       {progress.current.patient ? <p>Retained destination Patient: {progress.current.patient.id}</p> : null}
       {progress.current.bundle ? <p>Retained Bundle: <a href={`${prepared.current?.destination}/Bundle/${progress.current.bundle.id}`} target="_blank" rel="noreferrer">{prepared.current?.destination}/Bundle/{progress.current.bundle.id}</a></p> : null}

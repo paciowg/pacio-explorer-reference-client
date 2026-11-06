@@ -1,5 +1,6 @@
 /** Coordinates review, validation, and submission of a PACIO TOC document. */
 import { PatientFormHeader } from '../../components/PatientFormHeader'
+import { issueCollector } from '../../lib/formValidation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Bundle, Patient, Questionnaire } from 'fhir/r4'
 import { TOC_SECTION_DEFINITIONS, type TocSectionKey, type TocStatus } from '../../igs/pacioToc/tocDocument'
@@ -172,6 +173,16 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
     setSelected((current) => ({ ...current, [key]: references }))
   }
 
+  function validateForm() {
+    const v = issueCollector()
+    v.require('toc-destination-server', savedServers.some((server) => server.baseUrl === destinationBaseUrl), 'Please select a destination FHIR server.')
+    v.require('toc-title', title.trim(), 'Please enter a document title.')
+    v.require('toc-author', authorOptions.some((option) => option.value === authorId), 'Please select an author.')
+    v.require('toc-custodian', custodianOptions.some((option) => option.value === custodianId), 'Please select a custodian.')
+    v.require('entries', selectedCount, 'Select at least one clinical entry for the TOC document.')
+    return v.issues
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!activeServer || !patient) return
@@ -242,9 +253,11 @@ export function PatientTocCreatePage({ patientId }: PatientTocCreatePageProps) {
       <>
         {isLoading ? <div className="info-banner">Loading TOC creation form...</div> : null}
         {warningMessage ? <div className="warning-banner">{warningMessage}</div> : null}
-        {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
+        {(isLoading || !patient) && errorMessage ? <div className="error-banner" role="alert">{errorMessage}</div> : null}
         {!isLoading && patient ? (
           <TocCreateForm
+            error={errorMessage}
+            validate={validateForm}
             title={title}
             status={status}
             authorId={authorId}

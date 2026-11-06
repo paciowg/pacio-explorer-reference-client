@@ -1,4 +1,5 @@
 /** Exercises live List editor submission, navigation, and failure recovery without a browser or external writes. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import type { ReactElement, ReactNode } from 'react'
 import type { List } from 'fhir/r4'
@@ -66,7 +67,7 @@ function change(tree: ReactNode, patch: Partial<SmpListEdit>) {
   ;(fields(tree).props.onChange as (patch: Partial<SmpListEdit>) => void)(patch)
 }
 function submit(tree: ReactNode) {
-  const form = nodes(tree).find((node) => node.type === 'form')!
+  const form = nodes(tree).find((node) => node.type === SubmissionForm)!
   ;(form.props.onSubmit as (event: { preventDefault(): void }) => void)({ preventDefault() {} })
 }
 beforeEach(() => {
@@ -129,7 +130,7 @@ describe('List edit page', () => {
     ;(selector.props.onChange as (selected: string[]) => void)([])
     submit(render()); tree = await settle()
     expect(harness.save).not.toHaveBeenCalled()
-    expect(nodes(tree).some((node) => node.props.role === 'alert')).toBe(true)
+    expect(nodes(tree).some((node) => (node.props.role === 'alert' || (node.type === SubmissionErrors && Boolean(node.props.error))))).toBe(true)
     expect(fields(tree).props.value).toMatchObject({ selected: [] })
     expect(button(tree).props.disabled).toBe(false)
   })

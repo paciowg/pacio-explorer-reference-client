@@ -1,4 +1,5 @@
 /** Coordinates a source-server statement amendment while preserving its original resource and returning to Clinical Information. */
+import { SubmissionForm, SubmissionErrors } from '../../components/SubmissionForm'
 import { PatientFormHeader } from '../../components/PatientFormHeader'
 import { useEffect, useRef, useState } from 'react'
 import { FhirUpdateError, updateResource } from '../../lib/fhir/resourceTransport'
@@ -6,7 +7,7 @@ import { getRouteHref, navigateTo } from '../../lib/routing/routes'
 import { setRouteNotification } from '../../lib/routing/routeNotification'
 import { useSavedServers } from '../servers/useSavedServers'
 import { loadStatementEditData, type StatementEditData } from './statementEditData'
-import { buildStatementUpdate, hasStatementEdits, initialStatementEdit, type StatementEdit } from './statementEditModel'
+import { buildStatementUpdate, hasStatementEdits, initialStatementEdit, type StatementEdit, validateStatementEdit } from './statementEditModel'
 import { MedicationStatementEditForm } from './MedicationStatementEditForm'
 
 export function PatientMedicationStatementEditPage({ patientId, statementId }: { patientId: string; statementId: string }) {
@@ -54,12 +55,12 @@ export function PatientMedicationStatementEditPage({ patientId, statementId }: {
       serverLabel={activeServer.label} serverBaseUrl={activeServer.baseUrl}
       onBack={() => navigateTo(path)} backDisabled={busy} />
     {loading ? <p className="info-banner" role="status">Loading medication statement...</p> : null}
-    {error ? <p className="error-banner" role="alert">{error}</p> : null}
+    {!data && error ? <p className="error-banner" role="alert">{error}</p> : null}
     {!loading && !data ? <button type="button" className="secondary-button" onClick={() => setReload((value) => value + 1)}>Retry loading</button> : null}
     {uncertain ? <p className="warning-banner">The update outcome is uncertain. Verify the statement on the server before starting another edit; automatic retry is disabled.</p> : null}
-    {data && edit ? <form noValidate onSubmit={(event) => void submit(event)}>
+    {data && edit ? <SubmissionForm error={error} validate={() => data && edit ? validateStatementEdit(data.original, edit) : []} onSubmit={submit}><SubmissionErrors error={error} />
       <MedicationStatementEditForm data={data} value={edit} disabled={locked} onChange={setEdit} />
       <button type="submit" className="primary-button toc-submit" disabled={locked || !hasStatementEdits(data.original, edit)}>{busy ? 'Saving...' : 'Save changes'}</button>
-    </form> : null}
+    </SubmissionForm> : null}
   </section>
 }
